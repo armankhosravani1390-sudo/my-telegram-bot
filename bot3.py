@@ -1,10 +1,13 @@
 import telebot
 import time
+import threading
+from flask import Flask
 
 TOKEN = "8299446091:AAG3rkzDotNZ4KLObMy_BJ4Lm_sCBs-DHKE"
 OWNER_ID = 6703121829
 
 bot = telebot.TeleBot(TOKEN)
+app = Flask(name)
 
 @bot.message_handler(commands=['start'])
 def start(msg):
@@ -21,11 +24,20 @@ def forward_all(msg):
     bot.send_message(OWNER_ID, f"👤 {user.first_name} (@{user.username}) | ID: {user.id}")
     bot.reply_to(msg, "🧑🏻‍💻 : پیام شما با موفقیت ارسال شد ✅")
 
-print("✅ Robot is running...")
+@app.route('/')
+def home():
+    return "Bot is running!"
 
-while True:
-    try:
-        bot.polling(none_stop=True)
-    except:
-        print("Error, restarting...")
-        time.sleep(3)
+def run_bot():
+    print("✅ Robot is running...")
+    while True:
+        try:
+            bot.polling(none_stop=True)
+        except Exception as e:
+            print(f"Error: {e}")
+            time.sleep(5)
+
+if name == "main":
+    bot_thread = threading.Thread(target=run_bot)
+    bot_thread.start()
+    app.run(host='0.0.0.0', port=8080)
