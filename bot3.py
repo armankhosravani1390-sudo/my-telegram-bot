@@ -222,7 +222,7 @@ def run_bot():
             print(f"Error: {e}")
             time.sleep(5)
 
-if __name__ == "main":
+if __name__ == "__main__":
     bot_thread = threading.Thread(target=run_bot)
     bot_thread.start()
     app.run(host='0.0.0.0', port=8080)
