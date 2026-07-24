@@ -36,31 +36,26 @@ def save_data():
 load_data()
 @bot.message_handler(commands=['start'])
 def start(msg):
-    bot.reply_to(msg, "سلام امیدوارم حالتون خوب باشه لطفا دستور helpme/ را بزنید")
-    bot.reply_to(msg, "برای دیدن بقیه دستورات لطفا دستور Info/ را بزنید")
-    bot.reply_to(msg, "بعد از تمام شدن سوالتون با زدن دستور Close/ خارج شوید")
-    bot.reply_to(msg, "برای سوال از دستور Soal/ استفاده کنید")
+    bot.reply_to(msg, "سلام امیدوارم حالتون خوب باشه لطفا دستور info/ را بزنید")
 @bot.message_handler(commands=['info'])
 def info(msg):
-    bot.reply_to(msg, "/helpme : صحبت با ادمین")
-    bot.reply_to(msg, "/Info : لیست دستورات")
-    bot.reply_to(msg, "/Close : خروج از helpme")
-    bot.reply_to(msg, "/Soal : ارسال سوال")
-    bot.reply_to(msg, "/Open : باز کردن چت")
+    bot.reply_to(msg, "/helpme : TimeLess صحبت با")
+    bot.reply_to(msg, "/close : خروج از helpme")
+    bot.reply_to(msg, "/soal : ارسال سوال")
 @bot.message_handler(commands=['helpme'])
 def helpme(msg):
     user_id = msg.from_user.id
     waiting_for_message[user_id] = True
-    bot.reply_to(msg, "وارد حالت ارسال پیام شدید")
+    bot.reply_to(msg, "شدید TimeLess شما وارد حالت ارسال پیام به ")
 
 @bot.message_handler(commands=['close'])
 def close(msg):
     user_id = msg.from_user.id
     if user_id in waiting_for_message:
         waiting_for_message[user_id] = False
-        bot.reply_to(msg, "از حالت ارسال خارج شدید")
+        bot.reply_to(msg, "از حالت helpme/ خارج شدید")
     else:
-        bot.reply_to(msg, "در حالت ارسال نیستید")
+        bot.reply_to(msg, "درحالت ارسال پیام نیستید")
 @bot.message_handler(commands=['soal'])
 def soal(msg):
     global ticket_counter
@@ -73,8 +68,8 @@ def soal(msg):
         return
     
     if len(parts) < 2:
-        bot.reply_to(msg, "لطفا بعد از /Soal پیام خود را بنویسید")
-        bot.reply_to(msg, "Tips : /Soal Hi")
+        bot.reply_to(msg, "لطفا بعد از /soal پیام خود را بنویسید")
+        bot.reply_to(msg, "Tips : /soal Hi")
         return
     
     soal_text = parts[1]
@@ -161,7 +156,7 @@ def close_chat(msg):
             btn_no = telebot.types.InlineKeyboardButton("خیر", callback_data=f"keep_{user_id}")
             markup.add(btn_yes, btn_no)
             
-            bot.send_message(user_id, "آیا میخواهید نوشته ها پاک شود؟", reply_markup=markup)
+            bot.send_message(user_id, "یا از این گفت و گو راضی بودید ؟", reply_markup=markup)
             bot.reply_to(msg, f"چت پایان یافت")
             
             if user_id in user_ticket_status:
@@ -194,12 +189,12 @@ def forward_all(msg):
 def handle_callbacks(call):
     if call.data.startswith('delete_'):
         user_id = int(call.data.split('_')[1])
-        bot.send_message(user_id, "تاریخچه پاک شد")
-        bot.answer_callback_query(call.id, "پاک شد")
+        bot.send_message(user_id, "با تشکر از شما")
+        bot.answer_callback_query(call.id, "آرزویه موفقیت برای شما")
     elif call.data.startswith('keep_'):
         user_id = int(call.data.split('_')[1])
-        bot.send_message(user_id, "تاریخچه نگهداری شد")
-        bot.answer_callback_query(call.id, "نگهداری شد")
+        bot.send_message(user_id, "با تشکر از شما")
+        bot.answer_callback_query(call.id, "آرزویه موفقیت برای شما")
 @app.route('/')
 def home():
     return "Bot is running!"
