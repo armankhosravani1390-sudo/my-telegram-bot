@@ -40,8 +40,8 @@ def start(msg):
 @bot.message_handler(commands=['info'])
 def info(msg):
     bot.reply_to(msg, "/helpme : صحبت با سازنده در پی وی شما ")
-    bot.reply_to(msg, "/close : خروج از helpme")
-    bot.reply_to(msg, "/soal : ارسال سوال")
+    bot.reply_to(msg, "/close : خروج از حالت صحبت یا همان بستن حالت دستور بالایی")
+    bot.reply_to(msg, "/soal : ارسال سوال و صحبت درون بات با ادمین")
 @bot.message_handler(commands=['helpme'])
 def helpme(msg):
     user_id = msg.from_user.id
@@ -71,7 +71,7 @@ def soal(msg):
         bot.reply_to(msg, "لطفا بعد از /soal پیام خود را بنویسید")
         bot.reply_to(msg, "Like This : /soal سوال دارم")
         bot.reply_to(msg, "شما می توانید متن پایین را کپی کرده و برای بات ارسال کنید که این یک راه ساده تر و سریع تر است ")
-        bot.reply_to(msg, "Tips : /soal سلام سوال دارم")
+        bot.reply_to(msg, "/soal سلام سوال دارم")
         return
     
     soal_text = parts[1]
