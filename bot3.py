@@ -69,7 +69,9 @@ def soal(msg):
     
     if len(parts) < 2:
         bot.reply_to(msg, "لطفا بعد از /soal پیام خود را بنویسید")
-        bot.reply_to(msg, "Tips : /soal Hi")
+        bot.reply_to(msg, "Like This : /soal سوال دارم")
+        bot.reply_to(msg, "شما می توانید متن پایین را کپی کرده و برای بات ارسال کنید که این یک راه ساده تر و سریع تر است ")
+        bot.reply_to(msg, "Tips : /soal سلام سوال دارم")
         return
     
     soal_text = parts[1]
