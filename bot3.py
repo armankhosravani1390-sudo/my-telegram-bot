@@ -39,14 +39,14 @@ def start(msg):
     bot.reply_to(msg, "سلام امیدوارم حالتون خوب باشه لطفا دستور info/ را بزنید")
 @bot.message_handler(commands=['info'])
 def info(msg):
-    bot.reply_to(msg, "/helpme : TimeLess صحبت با")
+    bot.reply_to(msg, "/helpme : صحبت با سازنده در پی وی شما ")
     bot.reply_to(msg, "/close : خروج از helpme")
     bot.reply_to(msg, "/soal : ارسال سوال")
 @bot.message_handler(commands=['helpme'])
 def helpme(msg):
     user_id = msg.from_user.id
     waiting_for_message[user_id] = True
-    bot.reply_to(msg, "شدید TimeLess شما وارد حالت ارسال پیام به ")
+    bot.reply_to(msg, "شما وارد حالت ارسال پیام شدید لطفا بعد از ارسال پیام خود دستور /close را بزنید")
 
 @bot.message_handler(commands=['close'])
 def close(msg):
@@ -156,7 +156,7 @@ def close_chat(msg):
             btn_no = telebot.types.InlineKeyboardButton("خیر", callback_data=f"keep_{user_id}")
             markup.add(btn_yes, btn_no)
             
-            bot.send_message(user_id, "یا از این گفت و گو راضی بودید ؟", reply_markup=markup)
+            bot.send_message(user_id, "آیا از این گفت و گو راضی بودید ؟", reply_markup=markup)
             bot.reply_to(msg, f"چت پایان یافت")
             
             if user_id in user_ticket_status:
