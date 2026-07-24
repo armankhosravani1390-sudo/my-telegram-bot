@@ -11,7 +11,7 @@ TOKEN = "8299446091:AAG3rkzDotNZ4KLObMy_BJ4Lm_sCBs-DHKE"
 OWNER_ID = 6703121829
 
 bot = telebot.TeleBot(TOKEN)
-app = Flask(name)
+app = Flask(__name__)
 
 # دیکشنری‌ها
 waiting_for_message = {}
@@ -272,7 +272,7 @@ def run_bot():
             print(f"Error: {e}")
             time.sleep(5)
 
-if name == "main":
+if __name__ == "__main__":
     bot_thread = threading.Thread(target=run_bot)
     bot_thread.start()
     app.run(host='0.0.0.0', port=8080)
