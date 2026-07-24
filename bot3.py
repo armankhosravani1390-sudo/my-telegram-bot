@@ -2,7 +2,6 @@ import telebot
 import time
 import threading
 from flask import Flask
-from datetime import datetime
 import json
 import os
 
@@ -48,7 +47,6 @@ def start(msg):
 def info(msg):
     bot.reply_to(msg, ":pushpin: /helpme : صحبت با ادمین")
     bot.reply_to(msg, ":pushpin: /Info : لیست دستورات")
-    bot.reply_to(msg, ":pushpin: /DateTime : تاریخ و ساعت")
     bot.reply_to(msg, ":pushpin: /Close : خروج از helpme")
     bot.reply_to(msg, ":pushpin: /Soal : ارسال سوال")
     bot.reply_to(msg, ":pushpin: /Open : باز کردن چت")
@@ -67,11 +65,6 @@ def close(msg):
         bot.reply_to(msg, "🧑🏻:computer: : از حالت ارسال خارج شدید :rose:")
     else:
         bot.reply_to(msg, "🧑🏻:computer: : در حالت ارسال نیستید :x:")
-
-@bot.message_handler(commands=['datetime'])
-def datetime_cmd(msg):
-    now = datetime.now()
-    bot.reply_to(msg, f"🧑🏻:computer: : امروز : {now.strftime('%Y/%m/%d')} ساعت {now.strftime('%H:%M')} :coffee:")
 
 @bot.message_handler(commands=['soal'])
 def soal(msg):
@@ -94,14 +87,11 @@ def soal(msg):
     ticket_counter += 1
     ticket_number = ticket_counter
     
-    now = datetime.now()
     tickets[ticket_number] = {
         'user_id': user_id,
         'username': user.username or 'بدون یوزرنیم',
         'first_name': user.first_name or 'ناشناس',
-        'question': soal_text,
-        'time': now.strftime("%H:%M"),
-        'date': now.strftime("%Y/%m/%d")
+        'question': soal_text
     }
     user_ticket_status[user_id] = ticket_number
     save_data()
@@ -117,7 +107,7 @@ def open_chat(msg):
     
     parts = msg.text.split()
     if len(parts) < 2:
-bot.reply_to(msg, "🧑🏻:computer: : /open 5")
+        bot.reply_to(msg, "🧑🏻:computer: : /open 5")
         return
     
     try:
@@ -135,7 +125,6 @@ bot.reply_to(msg, "🧑🏻:computer: : /open 5")
     
     bot.send_message(user_id, "🧑🏻:computer: : بلیط شما باز شد :white_check_mark: با /chat شروع کنید")
     bot.reply_to(msg, f"🧑🏻:computer: : چت با بلیط {ticket_number} باز شد :white_check_mark:")
-
 @bot.message_handler(commands=['chat'])
 def chat_with_user(msg):
     user_id = msg.from_user.id
@@ -223,6 +212,7 @@ def handle_callbacks(call):
 @app.route('/')
 def home():
     return "Bot is running!"
+
 def run_bot():
     print(":white_check_mark: Robot is running...")
     while True:
@@ -232,7 +222,7 @@ def run_bot():
             print(f"Error: {e}")
             time.sleep(5)
 
-if __name__ == "__main__":
+if __name__ == "main":
     bot_thread = threading.Thread(target=run_bot)
     bot_thread.start()
     app.run(host='0.0.0.0', port=8080)
