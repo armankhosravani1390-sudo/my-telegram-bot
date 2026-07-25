@@ -88,17 +88,17 @@ def info(msg):
 def helpme(msg):
     user_id = msg.from_user.id
     waiting_for_message[user_id] = True
-    bot.reply_to(msg, "/close : شما وارد حالت ارسال پيام شديد لطفا بعد از فرستادن پيام خود براي بستن حالت از اين دستور استفاده کنيد")
-    bot.reply_to(msg, "بعد از ارسال پيام خود سازنده بات به پي وي شما پيام ارسال مي کند ولي از وايس استفاده نکنيد و به صورت متن پيام خود را بفرستيد")
+    bot.reply_to(msg, "شما وارد حالت ارسال پيام شديد. لطفا پيام خود را بفرستيد.")
+    bot.reply_to(msg, "براي خروج از اين حالت، /close را بزنيد.")
 
 @bot.message_handler(commands=['close'])
 def close(msg):
     user_id = msg.from_user.id
     if user_id in waiting_for_message:
         waiting_for_message[user_id] = False
-        bot.reply_to(msg, "شما از حالت ارسال پيام خارج شديد")
+        bot.reply_to(msg, "شما از حالت ارسال پيام خارج شديد.")
     else:
-        bot.reply_to(msg, "درحالت ارسال پيام نيستيد")
+        bot.reply_to(msg, "شما در حالت ارسال پيام نيستيد.")
 
 @bot.message_handler(commands=['ticket'])
 def soal(msg):
@@ -108,19 +108,18 @@ def soal(msg):
     parts = text.split(maxsplit=1)
     
     if user_id in user_ticket_status and user_ticket_status[user_id] in tickets:
-        bot.reply_to(msg, "شما يک بليط فعال داريد و نمي توانيد بليط جديد بفرستيد")
+        bot.reply_to(msg, "شما يک بليط فعال داريد و نمي توانيد بليط جديد بفرستيد.")
         return
     
     if len(parts) < 2:
-        bot.reply_to(msg, "لطفا بعد از /ticket پيام خود را بنويسيد")
-        bot.reply_to(msg, "مثال : /ticket سوال دارم")
-bot.reply_to(msg, "شما مي توانيد متن پايين را کپي کرده و براي بات ارسال کنيد که اين يک راه ساده تر و سريع تر است")
+        bot.reply_to(msg, "لطفا بعد از /ticket پيام خود را بنويسيد.")
+        bot.reply_to(msg, "مثال: /ticket سلام ميشه من رو راهنمايي کنيد ؟")
         return
     
     soal_text = parts[1]
     user = msg.from_user
     ticket_counter += 1
-    ticket_number = ticket_counter
+ticket_number = ticket_counter
     
     tickets[ticket_number] = {
         'user_id': user_id,
@@ -132,44 +131,44 @@ bot.reply_to(msg, "شما مي توانيد متن پايين را کپي کرد
     save_data()
     
     bot.send_message(OWNER_ID, f"بليط جديد شماره: {ticket_number}\nنام: {user.first_name} ({user.username}) [آيدي: {user_id}]\nسوال: {soal_text}\n\nبراي باز کردن چت: /open {ticket_number}")
-    bot.reply_to(msg, "پيام شما ارسال شد")
+    bot.reply_to(msg, "پيام شما ارسال شد.")
 
 @bot.message_handler(commands=['open'])
 def open_chat(msg):
     if msg.from_user.id != OWNER_ID:
-        bot.reply_to(msg, "شما دسترسي نداريد")
+        bot.reply_to(msg, "شما دسترسي نداريد.")
         return
     
     parts = msg.text.split()
     if len(parts) < 2:
-        bot.reply_to(msg, "/open 5")
+        bot.reply_to(msg, "لطفا شماره بليط را وارد کنيد: /open 5")
         return
     
     try:
         ticket_number = int(parts[1])
     except:
-        bot.reply_to(msg, "شماره معتبر نيست")
+        bot.reply_to(msg, "شماره معتبر نيست.")
         return
     
     if ticket_number not in tickets:
-        bot.reply_to(msg, f"بليط {ticket_number} وجود ندارد")
+        bot.reply_to(msg, f"بليط {ticket_number} وجود ندارد.")
         return
     
     user_id = tickets[ticket_number]['user_id']
     chat_sessions[user_id] = 'open'
     
-    bot.send_message(user_id, "/chat : بليط شما توسط ادمين بات قبول شد براي چت روي اين دستور کليک کنيد")
-    bot.reply_to(msg, f"چت با بليط {ticket_number} باز شد")
+    bot.send_message(user_id, "بليط شما توسط ادمين بات قبول شد. براي چت، دستور /chat را بزنيد.")
+    bot.reply_to(msg, f"چت با بليط {ticket_number} باز شد.")
 
 @bot.message_handler(commands=['chat'])
 def chat_with_user(msg):
     user_id = msg.from_user.id
     if user_id not in chat_sessions or chat_sessions[user_id] != 'open':
-        bot.reply_to(msg, "چت فعالی نداريد")
+        bot.reply_to(msg, "چت فعالی نداريد.")
         return
     
     waiting_for_message[user_id] = True
-    bot.reply_to(msg, "وارد چت شديد. پيام خود را بفرستيد")
+    bot.reply_to(msg, "وارد چت شديد. پيام خود را بفرستيد.")
 
 @bot.message_handler(commands=['a'])
 def admin_chat(msg):
@@ -178,16 +177,16 @@ def admin_chat(msg):
     
     parts = msg.text.split(maxsplit=1)
     if len(parts) < 2:
-        bot.reply_to(msg, "/a پيام")
+        bot.reply_to(msg, "لطفا پيام خود را بعد از /a بنويسيد.")
         return
     
     for user_id, status in chat_sessions.items():
         if status == 'open':
-            bot.send_message(user_id, f"پاسخ ادمين به شما :\n{parts[1]}")
-            bot.reply_to(msg, f"پيام ارسال شد")
+            bot.send_message(user_id, f"پاسخ ادمين:\n{parts[1]}")
+            bot.reply_to(msg, "پيام ارسال شد.")
             return
     
-    bot.reply_to(msg, "چت فعالی وجود ندارد")
+    bot.reply_to(msg, "چت فعالی وجود ندارد.")
 
 @bot.message_handler(commands=['cc'])
 def close_chat(msg):
@@ -197,15 +196,15 @@ def close_chat(msg):
     for user_id, status in chat_sessions.items():
         if status == 'open':
             chat_sessions[user_id] = 'closed'
-            bot.send_message(user_id, "گفتگو پایان یافت")
+            bot.send_message(user_id, "گفتگو پایان یافت.")
             
             markup = telebot.types.InlineKeyboardMarkup(row_width=2)
             btn_yes = telebot.types.InlineKeyboardButton("بله", callback_data=f"delete_{user_id}")
-            btn_no = telebot.types.InlineKeyboardButton("خیر", callback_data=f"delete_{user_id}")
+            btn_no = telebot.types.InlineKeyboardButton("خیر", callback_data=f"keep_{user_id}")
             markup.add(btn_yes, btn_no)
             
-            bot.send_message(user_id, "آیا از این گفت و گو راضی بودید ؟", reply_markup=markup)
-            bot.reply_to(msg, f"چت پایان یافت")
+            bot.send_message(user_id, "آیا از این گفتگو راضی بودید؟", reply_markup=markup)
+            bot.reply_to(msg, "چت پایان یافت.")
             
             if user_id in user_ticket_status:
                 ticket_num = user_ticket_status[user_id]
@@ -215,7 +214,7 @@ def close_chat(msg):
                 save_data()
             return
     
-    bot.reply_to(msg, "چت فعالی وجود ندارد")
+    bot.reply_to(msg, "چت فعالی وجود ندارد.")
 
 @bot.message_handler(func=lambda m: True)
 def forward_all(msg):
@@ -225,33 +224,33 @@ def forward_all(msg):
     if user_id in ai_mode and ai_mode[user_id]:
         if not msg.text.startswith('/'):
             bot.reply_to(msg, "در حال پردازش سوال شما با هوش مصنوعي...")
-answer = ask_deepseek(msg.text)
+            answer = ask_deepseek(msg.text)
             bot.reply_to(msg, f"پاسخ هوش مصنوعي:\n\n{answer}")
             return
     
     if user_id in waiting_for_message and waiting_for_message[user_id]:
-        if user_id != OWNER_ID and user_id in chat_sessions and chat_sessions[user_id] == 'open':
+if user_id != OWNER_ID and user_id in chat_sessions and chat_sessions[user_id] == 'open':
             bot.send_message(OWNER_ID, f"از کاربر:\nنام: {user.first_name} [آيدي: {user.id}]\nپيام: {msg.text}")
-            bot.reply_to(msg, "ارسال شد")
+            bot.reply_to(msg, "پيام ارسال شد.")
         else:
             bot.forward_message(OWNER_ID, user.id, msg.message_id)
             bot.send_message(OWNER_ID, f"نام: {user.first_name} ({user.username}) | آيدي: {user.id}")
-            bot.reply_to(msg, "پيام ارسال شد")
+            bot.reply_to(msg, "پيام ارسال شد.")
             waiting_for_message[user_id] = False
     else:
         if not msg.text.startswith('/'):
-            bot.reply_to(msg, "ابتدا /helpme را بزنيد يا براي هوش مصنوعي /ai را فعال کنيد")
+            bot.reply_to(msg, "ابتدا /helpme را بزنيد يا براي هوش مصنوعي /ai را فعال کنيد.")
 
 @bot.callback_query_handler(func=lambda call: True)
 def handle_callbacks(call):
     if call.data.startswith('delete_'):
         user_id = int(call.data.split('_')[1])
-        bot.send_message(user_id, "با تشکر از شما")
-        bot.answer_callback_query(call.id, "با تشکر از شما")
+        bot.send_message(user_id, "با تشکر از شما.")
+        bot.answer_callback_query(call.id, "با تشکر از شما.")
     elif call.data.startswith('keep_'):
         user_id = int(call.data.split('_')[1])
-        bot.send_message(user_id, "با تشکر از شما")
-        bot.answer_callback_query(call.id, "با تشکر از شما")
+        bot.send_message(user_id, "با تشکر از شما.")
+        bot.answer_callback_query(call.id, "با تشکر از شما.")
 
 @app.route('/')
 def home():
