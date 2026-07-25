@@ -115,7 +115,6 @@ def soal(msg):
         bot.reply_to(msg, "لطفا بعد از /ticket پيام خود را بنويسيد")
         bot.reply_to(msg, "مثال : /ticket سوال دارم")
 bot.reply_to(msg, "شما مي توانيد متن پايين را کپي کرده و براي بات ارسال کنيد که اين يک راه ساده تر و سريع تر است")
-        bot.reply_to(msg, "مثل : /ticket سلام ميشه من رو راهنمايي کنيد ؟")
         return
     
     soal_text = parts[1]
