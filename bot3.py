@@ -115,7 +115,7 @@ def soal(msg):
     user = msg.from_user
     ticket_counter += 1
     ticket_number = ticket_counter
-tickets[ticket_number] = {
+    tickets[ticket_number] = {
         'user_id': user_id,
         'username': user.username or 'بدون يوزرنيم',
         'first_name': user.first_name or 'ناشناس',
@@ -208,7 +208,7 @@ def forward_all(msg):
     if user_id in waiting_for_message and waiting_for_message[user_id]:
         if user_id != OWNER_ID and user_id in chat_sessions and chat_sessions[user_id] == 'open':
             bot.send_message(OWNER_ID, f"از کاربر:\nنام: {user.first_name} [آيدي: {user.id}]\nپيام: {msg.text}")
-bot.reply_to(msg, "پيام ارسال شد.")
+            bot.reply_to(msg, "پيام ارسال شد.")
         else:
             bot.forward_message(OWNER_ID, user.id, msg.message_id)
             bot.send_message(OWNER_ID, f"نام: {user.first_name} ({user.username}) | آيدي: {user.id}")
