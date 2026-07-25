@@ -4,6 +4,8 @@ import threading
 from flask import Flask
 import json
 import os
+from datetime import datetime
+import pytz
 
 TOKEN = "8299446091:AAG3rkzDotNZ4KLObMy_BJ4Lm_sCBs-DHKE"
 OWNER_ID = 6703121829
@@ -34,20 +36,56 @@ def save_data():
         json.dump({'counter': ticket_counter, 'tickets': tickets}, f)
 
 load_data()
+
+def get_persian_date():
+    try:
+        tehran = pytz.timezone('Asia/Tehran')
+        now = datetime.now(tehran)
+        
+        # تاریخ شمسی با استفاده از pytz
+        persian_date = now.strftime("%Y/%m/%d")
+        persian_time = now.strftime("%H:%M:%S")
+        
+        # تبدیل سال میلادی به شمسی (با محاسبه ساده)
+        # توجه: این یک محاسبه تقریبی است، برای دقیق‌تر از کتابخانه استفاده کنید
+        year = now.year - 621
+        month = now.month
+        day = now.day
+        
+        # نام روز هفته
+        weekdays = ["دوشنبه", "سه‌شنبه", "چهارشنبه", "پنج‌شنبه", "جمعه", "شنبه", "یکشنبه"]
+        weekday_name = weekdays[now.weekday()]
+        
+        return f"{year}/{month:02d}/{day:02d}", persian_time, weekday_name
+    except:
+        # اگر pytz نصب نبود، از تاریخ میلادی استفاده کن
+        now = datetime.now()
+        return now.strftime("%Y/%m/%d"), now.strftime("%H:%M:%S"), ""
+
 @bot.message_handler(commands=['start'])
 def start(msg):
     bot.reply_to(msg, "/info : سلام امیدوارم حالتون خوب باشه . لطفا روی این دستور کلیک کنید 🔔")
+
 @bot.message_handler(commands=['info'])
 def info(msg):
     bot.reply_to(msg, "/helpme : صحبت با سازنده در پی وی شما ✨")
     bot.reply_to(msg, "/close : خروج از حالت صحبت یا همان بستن حالت دستور بالایی ✨")
     bot.reply_to(msg, "/ticket : ارسال سوال و صحبت درون بات با ادمین ✨")
+    bot.reply_to(msg, "/timedate : نمایش تاریخ و ساعت ایران ✨")
+
+@bot.message_handler(commands=['timedate'])
+def timedate(msg):
+    persian_date, persian_time, weekday = get_persian_date()
+    response = f"📅 تاریخ امروز: {persian_date}\n🕐 ساعت: {persian_time}\n📆 روز: {weekday}"
+    bot.reply_to(msg, response)
+
 @bot.message_handler(commands=['helpme'])
 def helpme(msg):
     user_id = msg.from_user.id
     waiting_for_message[user_id] = True
-    bot.reply_to(msg, "/close : شما وارد حالت ارسال پیام شدید لطفا بعد از فرستادن پیام خود برای بستن حالت از این دستور استفاده کتید ✅")
+    bot.reply_to(msg, "/close : شما وارد حالت ارسال پیام شدید لطفا بعد از فرستادن پیام خود برای بستن حالت از این دستور استفاده کنید ✅")
     bot.reply_to(msg, "🔮 بعد از ارسال پیام خود سازنده بات به پی وی شما پیام ارسال می کند ولی از ویس استفاده نکنید و به صورت متن پیام خود را بفرستید 🔮")
+
 @bot.message_handler(commands=['close'])
 def close(msg):
     user_id = msg.from_user.id
@@ -56,6 +94,7 @@ def close(msg):
         bot.reply_to(msg, "❌ شما از حالت ارسال پیام خارج شدید ❌")
     else:
         bot.reply_to(msg, "✅ درحالت ارسال پیام نیستید ✅")
+
 @bot.message_handler(commands=['ticket'])
 def soal(msg):
     global ticket_counter
@@ -90,6 +129,7 @@ def soal(msg):
     
     bot.send_message(OWNER_ID, f"بلیط جدید شماره: {ticket_number}\nنام: {user.first_name} ({user.username}) [آیدی: {user_id}]\nسوال: {soal_text}\n\nبرای باز کردن چت: /open {ticket_number}")
     bot.reply_to(msg, "پیام شما ارسال شد")
+
 @bot.message_handler(commands=['open'])
 def open_chat(msg):
     if msg.from_user.id != OWNER_ID:
@@ -104,7 +144,7 @@ def open_chat(msg):
     try:
         ticket_number = int(parts[1])
     except:
-        bot.reply_to(msg, "❌ شماره معتبر نیست ❌")
+        bot.reply_to(msg, ":x: شماره معتبر نیست :x:")
         return
     
     if ticket_number not in tickets:
@@ -114,17 +154,17 @@ def open_chat(msg):
     user_id = tickets[ticket_number]['user_id']
     chat_sessions[user_id] = 'open'
     
-    bot.send_message(user_id, "/chat : بلیط شما توسط ادمین بات قبول شد برای چت روی این دستور کلیک کنید ✅")
+    bot.send_message(user_id, "/chat : بلیط شما توسط ادمین بات قبول شد برای چت روی این دستور کلیک کنید :white_check_mark:")
     bot.reply_to(msg, f"چت با بلیط {ticket_number} باز شد")
+
 @bot.message_handler(commands=['chat'])
 def chat_with_user(msg):
     user_id = msg.from_user.id
     if user_id not in chat_sessions or chat_sessions[user_id] != 'open':
-        bot.reply_to(msg, "❌ چت فعالی ندارید ❌")
+        bot.reply_to(msg, ":x: چت فعالی ندارید :x:")
         return
-    
     waiting_for_message[user_id] = True
-    bot.reply_to(msg, "✅ وارد چت شدید. پیام خود را بفرستید ✅")
+    bot.reply_to(msg, ":white_check_mark: وارد چت شدید. پیام خود را بفرستید :white_check_mark:")
 
 @bot.message_handler(commands=['a'])
 def admin_chat(msg):
@@ -143,6 +183,7 @@ def admin_chat(msg):
             return
     
     bot.reply_to(msg, "چت فعالی وجود ندارد")
+
 @bot.message_handler(commands=['cc'])
 def close_chat(msg):
     if msg.from_user.id != OWNER_ID:
@@ -151,15 +192,15 @@ def close_chat(msg):
     for user_id, status in chat_sessions.items():
         if status == 'open':
             chat_sessions[user_id] = 'closed'
-            bot.send_message(user_id, "💥 گفتگو پایان یافت 💥")
+            bot.send_message(user_id, ":boom: گفتگو پایان یافت :boom:")
             
             markup = telebot.types.InlineKeyboardMarkup(row_width=2)
-            btn_yes = telebot.types.InlineKeyboardButton("✅ بله ✅", callback_data=f"delete_{user_id}")
-            btn_no = telebot.types.InlineKeyboardButton("❌ خیر ❌", callback_data=f"delete_{user_id}")
+            btn_yes = telebot.types.InlineKeyboardButton(":white_check_mark: بله :white_check_mark:", callback_data=f"delete_{user_id}")
+            btn_no = telebot.types.InlineKeyboardButton(":x: خیر :x:", callback_data=f"delete_{user_id}")
             markup.add(btn_yes, btn_no)
             
-            bot.send_message(user_id, "آیا از این گفت و گو راضی بودید ؟ 💠", reply_markup=markup)
-            bot.reply_to(msg, f"💥 چت پایان یافت 💥")
+            bot.send_message(user_id, "آیا از این گفت و گو راضی بودید ؟ :diamond_shape_with_a_dot_inside:", reply_markup=markup)
+            bot.reply_to(msg, f":boom: چت پایان یافت :boom:")
             
             if user_id in user_ticket_status:
                 ticket_num = user_ticket_status[user_id]
@@ -170,6 +211,7 @@ def close_chat(msg):
             return
     
     bot.reply_to(msg, "چت فعالی وجود ندارد")
+
 @bot.message_handler(func=lambda m: True)
 def forward_all(msg):
     user_id = msg.from_user.id
@@ -197,6 +239,7 @@ def handle_callbacks(call):
         user_id = int(call.data.split('_')[1])
         bot.send_message(user_id, "❤ با تشکر از شما ❤")
         bot.answer_callback_query(call.id, "❤ آرزویه موفقیت برای شما ❤")
+
 @app.route('/')
 def home():
     return "Bot is running!"
