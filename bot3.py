@@ -52,7 +52,6 @@ def ask_deepseek(question):
             "stream": False
         }
         response = requests.post(DEEPSEEK_URL, headers=headers, json=data, timeout=30)
-        
         if response.status_code == 200:
             return response.json()['choices'][0]['message']['content']
         else:
@@ -63,7 +62,6 @@ def ask_deepseek(question):
 @bot.message_handler(commands=['ai'])
 def ai_command(msg):
     user_id = msg.from_user.id
-    
     if user_id in ai_mode and ai_mode[user_id]:
         ai_mode[user_id] = False
         bot.reply_to(msg, "حالت هوش مصنوعي غيرفعال شد.")
@@ -106,22 +104,18 @@ def soal(msg):
     user_id = msg.from_user.id
     text = msg.text
     parts = text.split(maxsplit=1)
-    
     if user_id in user_ticket_status and user_ticket_status[user_id] in tickets:
         bot.reply_to(msg, "شما يک بليط فعال داريد و نمي توانيد بليط جديد بفرستيد.")
         return
-    
     if len(parts) < 2:
         bot.reply_to(msg, "لطفا بعد از /ticket پيام خود را بنويسيد.")
         bot.reply_to(msg, "مثال: /ticket سلام ميشه من رو راهنمايي کنيد ؟")
         return
-    
     soal_text = parts[1]
     user = msg.from_user
     ticket_counter += 1
-ticket_number = ticket_counter
-    
-    tickets[ticket_number] = {
+    ticket_number = ticket_counter
+tickets[ticket_number] = {
         'user_id': user_id,
         'username': user.username or 'بدون يوزرنيم',
         'first_name': user.first_name or 'ناشناس',
@@ -129,7 +123,6 @@ ticket_number = ticket_counter
     }
     user_ticket_status[user_id] = ticket_number
     save_data()
-    
     bot.send_message(OWNER_ID, f"بليط جديد شماره: {ticket_number}\nنام: {user.first_name} ({user.username}) [آيدي: {user_id}]\nسوال: {soal_text}\n\nبراي باز کردن چت: /open {ticket_number}")
     bot.reply_to(msg, "پيام شما ارسال شد.")
 
@@ -138,25 +131,20 @@ def open_chat(msg):
     if msg.from_user.id != OWNER_ID:
         bot.reply_to(msg, "شما دسترسي نداريد.")
         return
-    
     parts = msg.text.split()
     if len(parts) < 2:
         bot.reply_to(msg, "لطفا شماره بليط را وارد کنيد: /open 5")
         return
-    
     try:
         ticket_number = int(parts[1])
     except:
         bot.reply_to(msg, "شماره معتبر نيست.")
         return
-    
     if ticket_number not in tickets:
         bot.reply_to(msg, f"بليط {ticket_number} وجود ندارد.")
         return
-    
     user_id = tickets[ticket_number]['user_id']
     chat_sessions[user_id] = 'open'
-    
     bot.send_message(user_id, "بليط شما توسط ادمين بات قبول شد. براي چت، دستور /chat را بزنيد.")
     bot.reply_to(msg, f"چت با بليط {ticket_number} باز شد.")
 
@@ -166,7 +154,6 @@ def chat_with_user(msg):
     if user_id not in chat_sessions or chat_sessions[user_id] != 'open':
         bot.reply_to(msg, "چت فعالی نداريد.")
         return
-    
     waiting_for_message[user_id] = True
     bot.reply_to(msg, "وارد چت شديد. پيام خود را بفرستيد.")
 
@@ -174,38 +161,31 @@ def chat_with_user(msg):
 def admin_chat(msg):
     if msg.from_user.id != OWNER_ID:
         return
-    
     parts = msg.text.split(maxsplit=1)
     if len(parts) < 2:
         bot.reply_to(msg, "لطفا پيام خود را بعد از /a بنويسيد.")
         return
-    
     for user_id, status in chat_sessions.items():
         if status == 'open':
             bot.send_message(user_id, f"پاسخ ادمين:\n{parts[1]}")
             bot.reply_to(msg, "پيام ارسال شد.")
             return
-    
     bot.reply_to(msg, "چت فعالی وجود ندارد.")
 
 @bot.message_handler(commands=['cc'])
 def close_chat(msg):
     if msg.from_user.id != OWNER_ID:
         return
-    
     for user_id, status in chat_sessions.items():
         if status == 'open':
             chat_sessions[user_id] = 'closed'
             bot.send_message(user_id, "گفتگو پایان یافت.")
-            
             markup = telebot.types.InlineKeyboardMarkup(row_width=2)
             btn_yes = telebot.types.InlineKeyboardButton("بله", callback_data=f"delete_{user_id}")
             btn_no = telebot.types.InlineKeyboardButton("خیر", callback_data=f"keep_{user_id}")
             markup.add(btn_yes, btn_no)
-            
             bot.send_message(user_id, "آیا از این گفتگو راضی بودید؟", reply_markup=markup)
             bot.reply_to(msg, "چت پایان یافت.")
-            
             if user_id in user_ticket_status:
                 ticket_num = user_ticket_status[user_id]
                 if ticket_num in tickets:
@@ -213,25 +193,22 @@ def close_chat(msg):
                 del user_ticket_status[user_id]
                 save_data()
             return
-    
     bot.reply_to(msg, "چت فعالی وجود ندارد.")
 
 @bot.message_handler(func=lambda m: True)
 def forward_all(msg):
     user_id = msg.from_user.id
     user = msg.from_user
-    
     if user_id in ai_mode and ai_mode[user_id]:
         if not msg.text.startswith('/'):
             bot.reply_to(msg, "در حال پردازش سوال شما با هوش مصنوعي...")
             answer = ask_deepseek(msg.text)
             bot.reply_to(msg, f"پاسخ هوش مصنوعي:\n\n{answer}")
             return
-    
     if user_id in waiting_for_message and waiting_for_message[user_id]:
-if user_id != OWNER_ID and user_id in chat_sessions and chat_sessions[user_id] == 'open':
+        if user_id != OWNER_ID and user_id in chat_sessions and chat_sessions[user_id] == 'open':
             bot.send_message(OWNER_ID, f"از کاربر:\nنام: {user.first_name} [آيدي: {user.id}]\nپيام: {msg.text}")
-            bot.reply_to(msg, "پيام ارسال شد.")
+bot.reply_to(msg, "پيام ارسال شد.")
         else:
             bot.forward_message(OWNER_ID, user.id, msg.message_id)
             bot.send_message(OWNER_ID, f"نام: {user.first_name} ({user.username}) | آيدي: {user.id}")
