@@ -230,6 +230,7 @@ def close_chat(msg):
             return
     
     bot.reply_to(msg, "چت فعالی وجود ندارد")
+    
     @bot.message_handler(func=lambda m: True)
 def forward_all(msg):
     user_id = msg.from_user.id
