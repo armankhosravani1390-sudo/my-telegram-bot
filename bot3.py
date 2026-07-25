@@ -36,26 +36,26 @@ def save_data():
 load_data()
 @bot.message_handler(commands=['start'])
 def start(msg):
-    bot.reply_to(msg, "/info : سلام امیدوارم حالتون خوب باشه . لطفا روی این دستور کلیک کنید ")
+    bot.reply_to(msg, "/info : سلام امیدوارم حالتون خوب باشه . لطفا روی این دستور کلیک کنید 🔔")
 @bot.message_handler(commands=['info'])
 def info(msg):
-    bot.reply_to(msg, "/helpme : صحبت با سازنده در پی وی شما ")
-    bot.reply_to(msg, "/close : خروج از حالت صحبت یا همان بستن حالت دستور بالایی")
-    bot.reply_to(msg, "/ticket : ارسال سوال و صحبت درون بات با ادمین")
+    bot.reply_to(msg, "/helpme : صحبت با سازنده در پی وی شما ✨")
+    bot.reply_to(msg, "/close : خروج از حالت صحبت یا همان بستن حالت دستور بالایی ✨")
+    bot.reply_to(msg, "/ticket : ارسال سوال و صحبت درون بات با ادمین ✨")
 @bot.message_handler(commands=['helpme'])
 def helpme(msg):
     user_id = msg.from_user.id
     waiting_for_message[user_id] = True
-    bot.reply_to(msg, "/close : شما وارد حالت ارسال پیام شدید لطفا بعد از فرستادن پیام خود برای بستن حالت از این دستور استفاده کتید")
-    bot.reply_to(msg, "! بعد از ارسال پیام خود سازنده بات به پی وی شما پیام ارسال می کند ولی از ویس استفاده نکنید و به صورت متن پیام خود را بفرستید ")
+    bot.reply_to(msg, "/close : شما وارد حالت ارسال پیام شدید لطفا بعد از فرستادن پیام خود برای بستن حالت از این دستور استفاده کتید ✅")
+    bot.reply_to(msg, "🔮 بعد از ارسال پیام خود سازنده بات به پی وی شما پیام ارسال می کند ولی از ویس استفاده نکنید و به صورت متن پیام خود را بفرستید 🔮")
 @bot.message_handler(commands=['close'])
 def close(msg):
     user_id = msg.from_user.id
     if user_id in waiting_for_message:
         waiting_for_message[user_id] = False
-        bot.reply_to(msg, "! شما از حالت ارسال پیام خارج شدید ")
+        bot.reply_to(msg, "❌ شما از حالت ارسال پیام خارج شدید ❌")
     else:
-        bot.reply_to(msg, "درحالت ارسال پیام نیستید")
+        bot.reply_to(msg, "✅ درحالت ارسال پیام نیستید ✅")
 @bot.message_handler(commands=['ticket'])
 def soal(msg):
     global ticket_counter
@@ -64,13 +64,13 @@ def soal(msg):
     parts = text.split(maxsplit=1)
     
     if user_id in user_ticket_status and user_ticket_status[user_id] in tickets:
-        bot.reply_to(msg, "شما یک بلیط فعال دارید و نمی توانید بلیط جدید بفرستید")
+        bot.reply_to(msg, "❌ شما یک بلیط فعال دارید و نمی توانید بلیط جدید بفرستید ❌")
         return
     
     if len(parts) < 2:
-        bot.reply_to(msg, "لطفا بعد از /ticket پیام خود را بنویسید")
-        bot.reply_to(msg, "Like This : /ticket سوال دارم")
-        bot.reply_to(msg, "شما می توانید متن پایین را کپی کرده و برای بات ارسال کنید که این یک راه ساده تر و سریع تر است ")
+        bot.reply_to(msg, "لطفا بعد از /ticket پیام خود را بنویسید ⚠")
+        bot.reply_to(msg, "مثال : /ticket سوال دارم")
+        bot.reply_to(msg, "💠 شما می توانید متن پایین را کپی کرده و برای بات ارسال کنید که این یک راه ساده تر و سریع تر است 💠")
         bot.reply_to(msg, "/ticket سلام میشه من رو راهنمایی کنید ؟")
         return
     
@@ -104,7 +104,7 @@ def open_chat(msg):
     try:
         ticket_number = int(parts[1])
     except:
-        bot.reply_to(msg, "شماره معتبر نیست")
+        bot.reply_to(msg, "❌ شماره معتبر نیست ❌")
         return
     
     if ticket_number not in tickets:
@@ -114,17 +114,17 @@ def open_chat(msg):
     user_id = tickets[ticket_number]['user_id']
     chat_sessions[user_id] = 'open'
     
-    bot.send_message(user_id, "/chat : بلیط شما توسط ادمین بات قبول شد برای چت روی این دستور کلیک کنید ")
+    bot.send_message(user_id, "/chat : بلیط شما توسط ادمین بات قبول شد برای چت روی این دستور کلیک کنید ✅")
     bot.reply_to(msg, f"چت با بلیط {ticket_number} باز شد")
 @bot.message_handler(commands=['chat'])
 def chat_with_user(msg):
     user_id = msg.from_user.id
     if user_id not in chat_sessions or chat_sessions[user_id] != 'open':
-        bot.reply_to(msg, "چت فعالی ندارید")
+        bot.reply_to(msg, "❌ چت فعالی ندارید ❌")
         return
     
     waiting_for_message[user_id] = True
-    bot.reply_to(msg, "وارد چت شدید. پیام خود را بفرستید.")
+    bot.reply_to(msg, "✅ وارد چت شدید. پیام خود را بفرستید ✅")
 
 @bot.message_handler(commands=['a'])
 def admin_chat(msg):
@@ -138,7 +138,7 @@ def admin_chat(msg):
     
     for user_id, status in chat_sessions.items():
         if status == 'open':
-            bot.send_message(user_id, f"پاسخ ادمین به شما :\n{parts[1]}")
+            bot.send_message(user_id, f"⚜ پاسخ ادمین به شما :\n{parts[1]}")
             bot.reply_to(msg, f"پیام ارسال شد")
             return
     
@@ -151,15 +151,15 @@ def close_chat(msg):
     for user_id, status in chat_sessions.items():
         if status == 'open':
             chat_sessions[user_id] = 'closed'
-            bot.send_message(user_id, "گفتگو پایان یافت")
+            bot.send_message(user_id, "💥 گفتگو پایان یافت 💥")
             
             markup = telebot.types.InlineKeyboardMarkup(row_width=2)
-            btn_yes = telebot.types.InlineKeyboardButton("بله", callback_data=f"delete_{user_id}")
-            btn_no = telebot.types.InlineKeyboardButton("خیر", callback_data=f"keep_{user_id}")
+            btn_yes = telebot.types.InlineKeyboardButton("✅ بله ✅", callback_data=f"delete_{user_id}")
+            btn_no = telebot.types.InlineKeyboardButton("❌ خیر ❌", callback_data=f"delete_{user_id}")
             markup.add(btn_yes, btn_no)
             
-            bot.send_message(user_id, "آیا از این گفت و گو راضی بودید ؟", reply_markup=markup)
-            bot.reply_to(msg, f"چت پایان یافت")
+            bot.send_message(user_id, "آیا از این گفت و گو راضی بودید ؟ 💠", reply_markup=markup)
+            bot.reply_to(msg, f"💥 چت پایان یافت 💥")
             
             if user_id in user_ticket_status:
                 ticket_num = user_ticket_status[user_id]
@@ -178,25 +178,25 @@ def forward_all(msg):
     if user_id in waiting_for_message and waiting_for_message[user_id]:
         if user_id != OWNER_ID and user_id in chat_sessions and chat_sessions[user_id] == 'open':
             bot.send_message(OWNER_ID, f"از کاربر:\nنام: {user.first_name} [آیدی: {user.id}]\nپیام: {msg.text}")
-            bot.reply_to(msg, "ارسال شد")
+            bot.reply_to(msg, "✅ ارسال شد ✅")
         else:
             bot.forward_message(OWNER_ID, user.id, msg.message_id)
             bot.send_message(OWNER_ID, f"نام: {user.first_name} ({user.username}) | آیدی: {user.id}")
-            bot.reply_to(msg, "پیام ارسال شد")
+            bot.reply_to(msg, "✅ پیام ارسال شد ✅")
             waiting_for_message[user_id] = False
     else:
-        bot.reply_to(msg, "ابتدا /helpme را بزنید")
+        bot.reply_to(msg, "💢 ابتدا /helpme را بزنید 💢")
 
 @bot.callback_query_handler(func=lambda call: True)
 def handle_callbacks(call):
     if call.data.startswith('delete_'):
         user_id = int(call.data.split('_')[1])
-        bot.send_message(user_id, "با تشکر از شما")
-        bot.answer_callback_query(call.id, "آرزویه موفقیت برای شما")
+        bot.send_message(user_id, "❤ با تشکر از شما ❤")
+        bot.answer_callback_query(call.id, "❤ آرزویه موفقیت برای شما ❤")
     elif call.data.startswith('keep_'):
         user_id = int(call.data.split('_')[1])
-        bot.send_message(user_id, "با تشکر از شما")
-        bot.answer_callback_query(call.id, "آرزویه موفقیت برای شما")
+        bot.send_message(user_id, "❤ با تشکر از شما ❤")
+        bot.answer_callback_query(call.id, "❤ آرزویه موفقیت برای شما ❤")
 @app.route('/')
 def home():
     return "Bot is running!"
