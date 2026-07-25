@@ -36,7 +36,7 @@ def save_data():
 load_data()
 @bot.message_handler(commands=['start'])
 def start(msg):
-    bot.reply_to(msg, "سلام امیدوارم حالتون خوب باشه لطفا دستور info/ را بزنید")
+    bot.reply_to(msg, "/info : سلام امیدوارم حالتون خوب باشه . لطفا روی این دستور کلیک کنید ")
 @bot.message_handler(commands=['info'])
 def info(msg):
     bot.reply_to(msg, "/helpme : صحبت با سازنده در پی وی شما ")
@@ -46,17 +46,17 @@ def info(msg):
 def helpme(msg):
     user_id = msg.from_user.id
     waiting_for_message[user_id] = True
-    bot.reply_to(msg, "شما وارد حالت ارسال پیام شدید لطفا بعد از ارسال پیام خود دستور /close را بزنید")
+    bot.reply_to(msg, "/close : شما وارد حالت ارسال پیام شدید لطفا بعد از فرستادن پیام خود برای بستن حالت از این دستور استفاده کتید")
 
 @bot.message_handler(commands=['close'])
 def close(msg):
     user_id = msg.from_user.id
     if user_id in waiting_for_message:
         waiting_for_message[user_id] = False
-        bot.reply_to(msg, "از حالت helpme/ خارج شدید")
+        bot.reply_to(msg, "! شما از حالت ارسال پیام خارج شدید ")
     else:
         bot.reply_to(msg, "درحالت ارسال پیام نیستید")
-@bot.message_handler(commands=['soal'])
+@bot.message_handler(commands=['ticket'])
 def soal(msg):
     global ticket_counter
     user_id = msg.from_user.id
@@ -68,10 +68,10 @@ def soal(msg):
         return
     
     if len(parts) < 2:
-        bot.reply_to(msg, "لطفا بعد از /soal پیام خود را بنویسید")
-        bot.reply_to(msg, "Like This : /soal سوال دارم")
+        bot.reply_to(msg, "لطفا بعد از /ticket پیام خود را بنویسید")
+        bot.reply_to(msg, "Like This : /ticket سوال دارم")
         bot.reply_to(msg, "شما می توانید متن پایین را کپی کرده و برای بات ارسال کنید که این یک راه ساده تر و سریع تر است ")
-        bot.reply_to(msg, "/soal سلام سوال دارم")
+        bot.reply_to(msg, "/ticket سلام میشه من رو راهنمایی کنید ؟")
         return
     
     soal_text = parts[1]
@@ -89,7 +89,7 @@ def soal(msg):
     save_data()
     
     bot.send_message(OWNER_ID, f"بلیط جدید شماره: {ticket_number}\nنام: {user.first_name} ({user.username}) [آیدی: {user_id}]\nسوال: {soal_text}\n\nبرای باز کردن چت: /open {ticket_number}")
-    bot.reply_to(msg, "سوال شما ارسال شد")
+    bot.reply_to(msg, "پیام شما ارسال شد")
 @bot.message_handler(commands=['open'])
 def open_chat(msg):
     if msg.from_user.id != OWNER_ID:
@@ -114,7 +114,7 @@ def open_chat(msg):
     user_id = tickets[ticket_number]['user_id']
     chat_sessions[user_id] = 'open'
     
-    bot.send_message(user_id, "بلیط شما باز شد با /chat شروع کنید")
+    bot.send_message(user_id, "/chat : بلیط شما توسط ادمین بات قبول شد برای چت روی این دستور کلیک کنید ")
     bot.reply_to(msg, f"چت با بلیط {ticket_number} باز شد")
 @bot.message_handler(commands=['chat'])
 def chat_with_user(msg):
@@ -138,7 +138,7 @@ def admin_chat(msg):
     
     for user_id, status in chat_sessions.items():
         if status == 'open':
-            bot.send_message(user_id, f"پاسخ ادمین:\n\n{parts[1]}")
+            bot.send_message(user_id, f"پاسخ ادمین به شما :\n{parts[1]}")
             bot.reply_to(msg, f"پیام ارسال شد")
             return
     
