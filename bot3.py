@@ -5,6 +5,7 @@ from flask import Flask
 import json
 import os
 from datetime import datetime
+import pytz
 
 TOKEN = "8299446091:AAG3rkzDotNZ4KLObMy_BJ4Lm_sCBs-DHKE"
 OWNER_ID = 6703121829
@@ -38,18 +39,49 @@ load_data()
 
 def get_persian_date():
     try:
-        import pytz
         tehran = pytz.timezone('Asia/Tehran')
         now = datetime.now(tehran)
+        
+        # محاسبه تاریخ شمسی (روش دقیق‌تر)
         year = now.year - 621
         month = now.month
         day = now.day
+        
+        # تنظیم ماه‌های شمسی
+        if month == 1:
+            persian_month = "فروردین"
+        elif month == 2:
+            persian_month = "اردیبهشت"
+        elif month == 3:
+            persian_month = "خرداد"
+        elif month == 4:
+            persian_month = "تیر"
+        elif month == 5:
+            persian_month = "مرداد"
+        elif month == 6:
+            persian_month = "شهریور"
+        elif month == 7:
+            persian_month = "مهر"
+        elif month == 8:
+            persian_month = "آبان"
+        elif month == 9:
+            persian_month = "آذر"
+        elif month == 10:
+            persian_month = "دی"
+        elif month == 11:
+            persian_month = "بهمن"
+        else:
+            persian_month = "اسفند"
+        
+        # نام روز هفته
         weekdays = ["دوشنبه", "سه‌شنبه", "چهارشنبه", "پنج‌شنبه", "جمعه", "شنبه", "یکشنبه"]
         weekday_name = weekdays[now.weekday()]
-        return f"{year}/{month:02d}/{day:02d}", now.strftime("%H:%M:%S"), weekday_name
-    except:
+        
+        return f"{year}/{month}/{day}", now.strftime("%H:%M:%S"), weekday_name, persian_month
+    except Exception as e:
+        # اگر خطا بود، تاریخ میلادی رو نشون بده
         now = datetime.now()
-        return now.strftime("%Y/%m/%d"), now.strftime("%H:%M:%S"), ""
+        return now.strftime("%Y/%m/%d"), now.strftime("%H:%M:%S"), "", ""
 
 @bot.message_handler(commands=['start'])
 def start(msg):
@@ -64,8 +96,11 @@ def info(msg):
 
 @bot.message_handler(commands=['timedate'])
 def timedate(msg):
-    persian_date, persian_time, weekday = get_persian_date()
-    response = f"📅 تاریخ امروز: {persian_date}\n🕐 ساعت: {persian_time}\n📆 روز: {weekday}"
+    persian_date, persian_time, weekday, persian_month = get_persian_date()
+    if weekday:
+        response = f"📅 امروز : {weekday} هست\n🕐 ساعت : {persian_time}\n📆 تاریخ : {persian_date}"
+    else:
+        response = f"📅 تاریخ : {persian_date}\n🕐 ساعت : {persian_time}"
     bot.reply_to(msg, response)
 
 @bot.message_handler(commands=['helpme'])
@@ -83,8 +118,7 @@ def close(msg):
         bot.reply_to(msg, "❌ شما از حالت ارسال پیام خارج شدید ❌")
     else:
         bot.reply_to(msg, "✅ درحالت ارسال پیام نیستید ✅")
-
-@bot.message_handler(commands=['ticket'])
+        @bot.message_handler(commands=['ticket'])
 def soal(msg):
     global ticket_counter
     user_id = msg.from_user.id
@@ -92,13 +126,13 @@ def soal(msg):
     parts = text.split(maxsplit=1)
     
     if user_id in user_ticket_status and user_ticket_status[user_id] in tickets:
-        bot.reply_to(msg, "❌ شما یک بلیط فعال دارید و نمی توانید بلیط جدید بفرستید ❌")
+        bot.reply_to(msg, ":x: شما یک بلیط فعال دارید و نمی توانید بلیط جدید بفرستید :x:")
         return
     
     if len(parts) < 2:
-        bot.reply_to(msg, "لطفا بعد از /ticket پیام خود را بنویسید ⚠")
+        bot.reply_to(msg, "لطفا بعد از /ticket پیام خود را بنویسید :warning:")
         bot.reply_to(msg, "مثال : /ticket سوال دارم")
-        bot.reply_to(msg, "💠 شما می توانید متن پایین را کپی کرده و برای بات ارسال کنید که این یک راه ساده تر و سریع تر است 💠")
+        bot.reply_to(msg, ":diamond_shape_with_a_dot_inside: شما می توانید متن پایین را کپی کرده و برای بات ارسال کنید که این یک راه ساده تر و سریع تر است :diamond_shape_with_a_dot_inside:")
         bot.reply_to(msg, "/ticket سلام میشه من رو راهنمایی کنید ؟")
         return
     
@@ -109,7 +143,8 @@ def soal(msg):
     
     tickets[ticket_number] = {
         'user_id': user_id,
-        'username': user.username or 'بدون یوزرنیم','first_name': user.first_name or 'ناشناس',
+        'username': user.username or 'بدون یوزرنیم',
+        'first_name': user.first_name or 'ناشناس',
         'question': soal_text
     }
     user_ticket_status[user_id] = ticket_number
@@ -190,8 +225,7 @@ def close_chat(msg):
             bot.send_message(user_id, "آیا از این گفت و گو راضی بودید ؟ :diamond_shape_with_a_dot_inside:", reply_markup=markup)
             bot.reply_to(msg, f":boom: چت پایان یافت :boom:")
             
-            if user_id in user_ticket_status:
-                ticket_num = user_ticket_status[user_id]
+            if user_id in user_ticket_status:ticket_num = user_ticket_status[user_id]
                 if ticket_num in tickets:
                     del tickets[ticket_num]
                 del user_ticket_status[user_id]
@@ -208,14 +242,16 @@ def forward_all(msg):
     if user_id in waiting_for_message and waiting_for_message[user_id]:
         if user_id != OWNER_ID and user_id in chat_sessions and chat_sessions[user_id] == 'open':
             bot.send_message(OWNER_ID, f"از کاربر:\nنام: {user.first_name} [آیدی: {user.id}]\nپیام: {msg.text}")
-            bot.reply_to(msg, ":white_check_mark: ارسال شد :white_check_mark:")
+            bot.reply_to(msg, "✅ ارسال شد ✅")
         else:
             bot.forward_message(OWNER_ID, user.id, msg.message_id)
             bot.send_message(OWNER_ID, f"نام: {user.first_name} ({user.username}) | آیدی: {user.id}")
-            bot.reply_to(msg, ":white_check_mark: پیام ارسال شد :white_check_mark:")
+            bot.reply_to(msg, "✅ پیام ارسال شد ✅")
             waiting_for_message[user_id] = False
     else:
-        bot.reply_to(msg, ":anger: ابتدا /helpme را بزنید :anger:")@bot.callback_query_handler(func=lambda call: True)
+        bot.reply_to(msg, "💢 ابتدا /helpme را بزنید 💢")
+
+@bot.callback_query_handler(func=lambda call: True)
 def handle_callbacks(call):
     if call.data.startswith('delete_'):
         user_id = int(call.data.split('_')[1])
