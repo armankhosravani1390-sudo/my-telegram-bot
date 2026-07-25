@@ -138,27 +138,27 @@ def open_chat(msg):
     try:
         ticket_number = int(parts[1])
     except:
-        bot.reply_to(msg, ":x: شماره معتبر نیست :x:")
+        bot.reply_to(msg, " شماره معتبر نیست ")
         return
     
     if ticket_number not in tickets:
-        bot.reply_to(msg, f":x: بلیط {ticket_number} وجود ندارد")
+        bot.reply_to(msg, f"بلیط {ticket_number} وجود ندارد")
         return
     
     user_id = tickets[ticket_number]['user_id']
     chat_sessions[user_id] = 'open'
     
-    bot.send_message(user_id, ":white_check_mark: بلیط شما توسط ادمین باز شد. برای چت دستور /chat را بزنید.")
-    bot.reply_to(msg, f":white_check_mark: چت با بلیط {ticket_number} باز شد")
+    bot.send_message(user_id, " بلیط شما توسط ادمین باز شد. برای چت دستور /chat را بزنید.")
+    bot.reply_to(msg, f"چت با بلیط {ticket_number} باز شد")
 
 @bot.message_handler(commands=['chat'])
 def chat_with_user(msg):
     user_id = msg.from_user.id
     if user_id not in chat_sessions or chat_sessions[user_id] != 'open':
-        bot.reply_to(msg, ":x: چت فعالی ندارید :x:")
+        bot.reply_to(msg, " چت فعالی ندارید ")
         return
     waiting_for_message[user_id] = True
-    bot.reply_to(msg, ":white_check_mark: وارد چت شدید. پیام خود را بفرستید :white_check_mark:")
+    bot.reply_to(msg, " وارد چت شدید. پیام خود را بفرستید ")
 
 @bot.message_handler(commands=['a'])
 def admin_chat(msg):
@@ -173,10 +173,10 @@ def admin_chat(msg):
     for user_id, status in chat_sessions.items():
         if status == 'open':
             bot.send_message(user_id, f"⚜ پاسخ ادمین:\n{parts[1]}")
-            bot.reply_to(msg, f":white_check_mark: پیام ارسال شد")
+            bot.reply_to(msg, f" پیام ارسال شد")
             return
     
-    bot.reply_to(msg, ":x: چت فعالی وجود ندارد")
+    bot.reply_to(msg, " چت فعالی وجود ندارد")
 
 @bot.message_handler(commands=['cc'])
 def close_chat(msg):
@@ -186,15 +186,15 @@ def close_chat(msg):
     for user_id, status in chat_sessions.items():
         if status == 'open':
             chat_sessions[user_id] = 'closed'
-            bot.send_message(user_id, ":boom: گفتگو پایان یافت :boom:")
+            bot.send_message(user_id, " گفتگو پایان یافت ")
             
             markup = telebot.types.InlineKeyboardMarkup(row_width=2)
-            btn_yes = telebot.types.InlineKeyboardButton(":white_check_mark: بله", callback_data=f"delete_{user_id}")
-            btn_no = telebot.types.InlineKeyboardButton(":x: خیر", callback_data=f"keep_{user_id}")
+            btn_yes = telebot.types.InlineKeyboardButton(" بله", callback_data=f"delete_{user_id}")
+            btn_no = telebot.types.InlineKeyboardButton(" خیر", callback_data=f"keep_{user_id}")
             markup.add(btn_yes, btn_no)
             
             bot.send_message(user_id, "آیا از این گفتگو راضی بودید؟", reply_markup=markup)
-            bot.reply_to(msg, f":white_check_mark: چت پایان یافت")
+            bot.reply_to(msg, f" چت پایان یافت")
             
             if user_id in user_ticket_status:
                 ticket_num = user_ticket_status[user_id]
@@ -204,7 +204,7 @@ def close_chat(msg):
                 save_data()
             return
     
-    bot.reply_to(msg, ":x: چت فعالی وجود ندارد")
+    bot.reply_to(msg, " چت فعالی وجود ندارد")
 
 @bot.message_handler(func=lambda m: True)
 def forward_all(msg):
@@ -213,8 +213,8 @@ def forward_all(msg):
     
     if user_id in waiting_for_message and waiting_for_message[user_id]:
         if user_id != OWNER_ID and user_id in chat_sessions and chat_sessions[user_id] == 'open':
-            bot.send_message(OWNER_ID, f":speech_balloon: از کاربر:\n:bust_in_silhouette: نام: {user.first_name} [آیدی: {user.id}]\n:memo: پیام: {msg.text}")
-            bot.reply_to(msg, ":white_check_mark: ارسال شد :white_check_mark:")
+            bot.send_message(OWNER_ID, f" از کاربر:\n:: نام: {user.first_name} [آیدی: {user.id}]\n:memo: پیام: {msg.text}")
+            bot.reply_to(msg, " ارسال شد :")
         else:
             bot.forward_message(OWNER_ID, user.id, msg.message_id)
             bot.send_message(OWNER_ID, f"👤 نام: {user.first_name} (@{user.username}) | آیدی: {user.id}")
