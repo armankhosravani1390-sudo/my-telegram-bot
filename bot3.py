@@ -47,7 +47,7 @@ def helpme(msg):
     user_id = msg.from_user.id
     waiting_for_message[user_id] = True
     bot.reply_to(msg, "/close : شما وارد حالت ارسال پیام شدید لطفا بعد از فرستادن پیام خود برای بستن حالت از این دستور استفاده کتید")
-    bot.reply_to(msg, "! بعد از ارسال پیام خود سازنده بات به پی وی شما پیام ارسال می کند ولی از ویس استفاده نکنید و به صورت متن پیام خود را بفرستید "
+    bot.reply_to(msg, "! بعد از ارسال پیام خود سازنده بات به پی وی شما پیام ارسال می کند ولی از ویس استفاده نکنید و به صورت متن پیام خود را بفرستید ")
 @bot.message_handler(commands=['close'])
 def close(msg):
     user_id = msg.from_user.id
