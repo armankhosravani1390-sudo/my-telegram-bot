@@ -5,7 +5,6 @@ from flask import Flask
 import json
 import os
 from datetime import datetime
-import pytz
 
 TOKEN = "8299446091:AAG3rkzDotNZ4KLObMy_BJ4Lm_sCBs-DHKE"
 OWNER_ID = 6703121829
@@ -39,26 +38,16 @@ load_data()
 
 def get_persian_date():
     try:
+        import pytz
         tehran = pytz.timezone('Asia/Tehran')
         now = datetime.now(tehran)
-        
-        # تاریخ شمسی با استفاده از pytz
-        persian_date = now.strftime("%Y/%m/%d")
-        persian_time = now.strftime("%H:%M:%S")
-        
-        # تبدیل سال میلادی به شمسی (با محاسبه ساده)
-        # توجه: این یک محاسبه تقریبی است، برای دقیق‌تر از کتابخانه استفاده کنید
         year = now.year - 621
         month = now.month
         day = now.day
-        
-        # نام روز هفته
         weekdays = ["دوشنبه", "سه‌شنبه", "چهارشنبه", "پنج‌شنبه", "جمعه", "شنبه", "یکشنبه"]
         weekday_name = weekdays[now.weekday()]
-        
-        return f"{year}/{month:02d}/{day:02d}", persian_time, weekday_name
+        return f"{year}/{month:02d}/{day:02d}", now.strftime("%H:%M:%S"), weekday_name
     except:
-        # اگر pytz نصب نبود، از تاریخ میلادی استفاده کن
         now = datetime.now()
         return now.strftime("%Y/%m/%d"), now.strftime("%H:%M:%S"), ""
 
@@ -120,8 +109,7 @@ def soal(msg):
     
     tickets[ticket_number] = {
         'user_id': user_id,
-        'username': user.username or 'بدون یوزرنیم',
-        'first_name': user.first_name or 'ناشناس',
+        'username': user.username or 'بدون یوزرنیم','first_name': user.first_name or 'ناشناس',
         'question': soal_text
     }
     user_ticket_status[user_id] = ticket_number
@@ -220,16 +208,14 @@ def forward_all(msg):
     if user_id in waiting_for_message and waiting_for_message[user_id]:
         if user_id != OWNER_ID and user_id in chat_sessions and chat_sessions[user_id] == 'open':
             bot.send_message(OWNER_ID, f"از کاربر:\nنام: {user.first_name} [آیدی: {user.id}]\nپیام: {msg.text}")
-            bot.reply_to(msg, "✅ ارسال شد ✅")
+            bot.reply_to(msg, ":white_check_mark: ارسال شد :white_check_mark:")
         else:
             bot.forward_message(OWNER_ID, user.id, msg.message_id)
             bot.send_message(OWNER_ID, f"نام: {user.first_name} ({user.username}) | آیدی: {user.id}")
-            bot.reply_to(msg, "✅ پیام ارسال شد ✅")
+            bot.reply_to(msg, ":white_check_mark: پیام ارسال شد :white_check_mark:")
             waiting_for_message[user_id] = False
     else:
-        bot.reply_to(msg, "💢 ابتدا /helpme را بزنید 💢")
-
-@bot.callback_query_handler(func=lambda call: True)
+        bot.reply_to(msg, ":anger: ابتدا /helpme را بزنید :anger:")@bot.callback_query_handler(func=lambda call: True)
 def handle_callbacks(call):
     if call.data.startswith('delete_'):
         user_id = int(call.data.split('_')[1])
