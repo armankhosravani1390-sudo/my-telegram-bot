@@ -9,7 +9,7 @@ import requests
 TOKEN = "8299446091:AAG3rkzDotNZ4KLObMy_BJ4Lm_sCBs-DHKE"
 OWNER_ID = 6703121829
 
-DEEPSEEK_API_KEY = "sk-0912b2c51bee4c79bac64ed4fd105d99"
+DEEPSEEK_API_KEY = "sk-d5810d1d554e496e95096f9b685c4f25"
 DEEPSEEK_URL = "https://api.deepseek.com/v1/chat/completions"
 
 bot = telebot.TeleBot(TOKEN)
