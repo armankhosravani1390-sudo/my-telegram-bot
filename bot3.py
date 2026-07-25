@@ -4,7 +4,6 @@ import threading
 from flask import Flask
 import json
 import os
-from datetime import datetime, timedelta
 
 TOKEN = "8299446091:AAG3rkzDotNZ4KLObMy_BJ4Lm_sCBs-DHKE"
 OWNER_ID = 6703121829
@@ -35,77 +34,20 @@ def save_data():
         json.dump({'counter': ticket_counter, 'tickets': tickets}, f)
 
 load_data()
-
-# ========== تنظیم تاریخ و ساعت مبنا (بر اساس ۱۲ شب) ==========
-BASE_YEAR = 1405
-BASE_MONTH = 5
-BASE_DAY = 4
-BASE_HOUR = 0
-BASE_MINUTE = 0
-BASE_SECOND = 0
-# ============================================================
-
-def get_persian_datetime():
-    now = datetime.now()
-    
-    # محاسبه اختلاف زمان از ۱۲ شب
-    midnight = now.replace(hour=0, minute=0, second=0, microsecond=0)
-    diff = now - midnight
-    
-    # تاریخ مبنا + اختلاف
-    base = datetime(BASE_YEAR, BASE_MONTH, BASE_DAY, BASE_HOUR, BASE_MINUTE, BASE_SECOND)
-    result = base + diff
-    
-    # اصلاح روز برای ساعت ۱۲ شب
-    if now.hour >= 0 and now.hour < 12:
-        time_period = "صبح"
-    elif now.hour >= 12 and now.hour < 17:
-        time_period = "بعد از ظهر"
-    elif now.hour >= 17 and now.hour < 21:
-        time_period = "عصر"
-    else:
-        time_period = "شب"
-    
-    # نام روز هفته
-    weekdays = ["دوشنبه", "سه‌شنبه", "چهارشنبه", "پنج‌شنبه", "جمعه", "شنبه", "یکشنبه"]
-    weekday_name = weekdays[now.weekday()]
-    
-    # ساعت به صورت ۱۲ ساعته
-    hour_12 = now.hour % 12
-    if hour_12 == 0:
-        hour_12 = 12
-    
-    return {
-        'date': f"{result.year}/{result.month:02d}/{result.day:02d}",
-        'time': f"{hour_12:02d}:{now.minute:02d}",
-        'period': time_period,
-        'weekday': weekday_name
-    }
-
 @bot.message_handler(commands=['start'])
 def start(msg):
     bot.reply_to(msg, "/info : سلام امیدوارم حالتون خوب باشه . لطفا روی این دستور کلیک کنید 🔔")
-
 @bot.message_handler(commands=['info'])
 def info(msg):
     bot.reply_to(msg, "/helpme : صحبت با سازنده در پی وی شما ✨")
     bot.reply_to(msg, "/close : خروج از حالت صحبت یا همان بستن حالت دستور بالایی ✨")
     bot.reply_to(msg, "/ticket : ارسال سوال و صحبت درون بات با ادمین ✨")
-    bot.reply_to(msg, "/timedate : نمایش تاریخ و ساعت ایران ✨")
-
-@bot.message_handler(commands=['timedate'])
-def timedate(msg):
-    data = get_persian_datetime()
-    response = f"📅 تاریخ امروز: {data['date']}\n🕐 ساعت: {data['time']} {data['period']}\n📆 روز: {data['weekday']}"
-    bot.reply_to(msg, response)
-
 @bot.message_handler(commands=['helpme'])
 def helpme(msg):
     user_id = msg.from_user.id
     waiting_for_message[user_id] = True
-    bot.reply_to(msg, "/close : شما وارد حالت ارسال پیام شدید لطفا بعد از فرستادن پیام خود برای بستن حالت از این دستور استفاده کنید ✅")
+    bot.reply_to(msg, "/close : شما وارد حالت ارسال پیام شدید لطفا بعد از فرستادن پیام خود برای بستن حالت از این دستور استفاده کتید ✅")
     bot.reply_to(msg, "🔮 بعد از ارسال پیام خود سازنده بات به پی وی شما پیام ارسال می کند ولی از ویس استفاده نکنید و به صورت متن پیام خود را بفرستید 🔮")
-
 @bot.message_handler(commands=['close'])
 def close(msg):
     user_id = msg.from_user.id
@@ -114,21 +56,21 @@ def close(msg):
         bot.reply_to(msg, "❌ شما از حالت ارسال پیام خارج شدید ❌")
     else:
         bot.reply_to(msg, "✅ درحالت ارسال پیام نیستید ✅")
-
 @bot.message_handler(commands=['ticket'])
 def soal(msg):
     global ticket_counter
     user_id = msg.from_user.id
     text = msg.text
     parts = text.split(maxsplit=1)
+    
     if user_id in user_ticket_status and user_ticket_status[user_id] in tickets:
-        bot.reply_to(msg, ":x: شما یک بلیط فعال دارید و نمی توانید بلیط جدید بفرستید :x:")
+        bot.reply_to(msg, "❌ شما یک بلیط فعال دارید و نمی توانید بلیط جدید بفرستید ❌")
         return
     
     if len(parts) < 2:
-        bot.reply_to(msg, "لطفا بعد از /ticket پیام خود را بنویسید :warning:")
+        bot.reply_to(msg, "لطفا بعد از /ticket پیام خود را بنویسید ⚠")
         bot.reply_to(msg, "مثال : /ticket سوال دارم")
-        bot.reply_to(msg, ":diamond_shape_with_a_dot_inside: شما می توانید متن پایین را کپی کرده و برای بات ارسال کنید که این یک راه ساده تر و سریع تر است :diamond_shape_with_a_dot_inside:")
+        bot.reply_to(msg, "💠 شما می توانید متن پایین را کپی کرده و برای بات ارسال کنید که این یک راه ساده تر و سریع تر است 💠")
         bot.reply_to(msg, "/ticket سلام میشه من رو راهنمایی کنید ؟")
         return
     
@@ -148,7 +90,6 @@ def soal(msg):
     
     bot.send_message(OWNER_ID, f"بلیط جدید شماره: {ticket_number}\nنام: {user.first_name} ({user.username}) [آیدی: {user_id}]\nسوال: {soal_text}\n\nبرای باز کردن چت: /open {ticket_number}")
     bot.reply_to(msg, "پیام شما ارسال شد")
-
 @bot.message_handler(commands=['open'])
 def open_chat(msg):
     if msg.from_user.id != OWNER_ID:
@@ -163,7 +104,7 @@ def open_chat(msg):
     try:
         ticket_number = int(parts[1])
     except:
-        bot.reply_to(msg, ":x: شماره معتبر نیست :x:")
+        bot.reply_to(msg, "❌ شماره معتبر نیست ❌")
         return
     
     if ticket_number not in tickets:
@@ -173,17 +114,17 @@ def open_chat(msg):
     user_id = tickets[ticket_number]['user_id']
     chat_sessions[user_id] = 'open'
     
-    bot.send_message(user_id, "/chat : بلیط شما توسط ادمین بات قبول شد برای چت روی این دستور کلیک کنید :white_check_mark:")
+    bot.send_message(user_id, "/chat : بلیط شما توسط ادمین بات قبول شد برای چت روی این دستور کلیک کنید ✅")
     bot.reply_to(msg, f"چت با بلیط {ticket_number} باز شد")
-
 @bot.message_handler(commands=['chat'])
 def chat_with_user(msg):
     user_id = msg.from_user.id
     if user_id not in chat_sessions or chat_sessions[user_id] != 'open':
-        bot.reply_to(msg, ":x: چت فعالی ندارید :x:")
+        bot.reply_to(msg, "❌ چت فعالی ندارید ❌")
         return
+    
     waiting_for_message[user_id] = True
-    bot.reply_to(msg, ":white_check_mark: وارد چت شدید. پیام خود را بفرستید :white_check_mark:")
+    bot.reply_to(msg, "✅ وارد چت شدید. پیام خود را بفرستید ✅")
 
 @bot.message_handler(commands=['a'])
 def admin_chat(msg):
@@ -202,7 +143,6 @@ def admin_chat(msg):
             return
     
     bot.reply_to(msg, "چت فعالی وجود ندارد")
-
 @bot.message_handler(commands=['cc'])
 def close_chat(msg):
     if msg.from_user.id != OWNER_ID:
@@ -211,15 +151,15 @@ def close_chat(msg):
     for user_id, status in chat_sessions.items():
         if status == 'open':
             chat_sessions[user_id] = 'closed'
-            bot.send_message(user_id, ":boom: گفتگو پایان یافت :boom:")
+            bot.send_message(user_id, "💥 گفتگو پایان یافت 💥")
             
             markup = telebot.types.InlineKeyboardMarkup(row_width=2)
-            btn_yes = telebot.types.InlineKeyboardButton(":white_check_mark: بله :white_check_mark:", callback_data=f"delete_{user_id}")
-            btn_no = telebot.types.InlineKeyboardButton(":x: خیر :x:", callback_data=f"delete_{user_id}")
+            btn_yes = telebot.types.InlineKeyboardButton("✅ بله ✅", callback_data=f"delete_{user_id}")
+            btn_no = telebot.types.InlineKeyboardButton("❌ خیر ❌", callback_data=f"delete_{user_id}")
             markup.add(btn_yes, btn_no)
             
-            bot.send_message(user_id, "آیا از این گفت و گو راضی بودید ؟ :diamond_shape_with_a_dot_inside:", reply_markup=markup)
-            bot.reply_to(msg, f":boom: چت پایان یافت :boom:")
+            bot.send_message(user_id, "آیا از این گفت و گو راضی بودید ؟ 💠", reply_markup=markup)
+            bot.reply_to(msg, f"💥 چت پایان یافت 💥")
             
             if user_id in user_ticket_status:
                 ticket_num = user_ticket_status[user_id]
@@ -230,8 +170,7 @@ def close_chat(msg):
             return
     
     bot.reply_to(msg, "چت فعالی وجود ندارد")
-    
-    @bot.message_handler(func=lambda m: True)
+@bot.message_handler(func=lambda m: True)
 def forward_all(msg):
     user_id = msg.from_user.id
     user = msg.from_user
@@ -258,7 +197,6 @@ def handle_callbacks(call):
         user_id = int(call.data.split('_')[1])
         bot.send_message(user_id, "❤ با تشکر از شما ❤")
         bot.answer_callback_query(call.id, "❤ آرزویه موفقیت برای شما ❤")
-
 @app.route('/')
 def home():
     return "Bot is running!"
