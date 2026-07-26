@@ -100,8 +100,7 @@ def get_user_link(user):
         return user.first_name or user.last_name or "کاربر"
         @bot.message_handler(commands=['start'])
 def start(msg):
-    bot.reply_to(msg, "/info : سلام امیدوارم حالتون خوب باشه . لطفا روی این دستور کلیک کنید :bell:")
-
+    bot.reply_to(msg, " /info : سلام امیدوارم حالتون خوب باشه . لطفا روی این دستور کلیک کنید ")
 @bot.message_handler(commands=['info'])
 def info(msg):
     user_id = msg.from_user.id
