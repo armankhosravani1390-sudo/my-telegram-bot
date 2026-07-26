@@ -18,31 +18,57 @@ user_ticket_status = {}
 admins = {}
 admin_chat_mode = {}
 admin_numbers = {}
+amin_list = {}
+professor_list = {}
 
 DATA_FILE = 'data.json'
 ADMINS_FILE = 'admins.json'
 ADMIN_NUMBERS_FILE = 'admin_numbers.json'
+AMIN_FILE = 'amin.json'
+PROFESSOR_FILE = 'professor.json'
 
-# ========== آماده‌سازی AmiN از قبل ==========
-def init_amin():
-    global admins, admin_numbers
+# ========== آماده‌سازی ==========
+def init_roles():
+    global admins, admin_numbers, amin_list, professor_list
     if not os.path.exists(ADMINS_FILE):
-        admins = {"7307951847": "admin"}
+        admins = {"7307951847": "admin", "6328427378": "admin"}
         save_admins()
     else:
         load_admins()
         if "7307951847" not in admins:
             admins["7307951847"] = "admin"
-            save_admins()
+        if "6328427378" not in admins:
+            admins["6328427378"] = "admin"
+        save_admins()
     
     if not os.path.exists(ADMIN_NUMBERS_FILE):
-        admin_numbers = {"7307951847": "AmiN"}
+        admin_numbers = {"7307951847": "AmiN", "6328427378": "Professor"}
         save_admin_numbers()
     else:
         load_admin_numbers()
         if "7307951847" not in admin_numbers:
             admin_numbers["7307951847"] = "AmiN"
-            save_admin_numbers()
+        if "6328427378" not in admin_numbers:
+            admin_numbers["6328427378"] = "Professor"
+        save_admin_numbers()
+    
+    if not os.path.exists(AMIN_FILE):
+        amin_list = {"7307951847": "AmiN"}
+        save_amin()
+    else:
+        load_amin()
+        if "7307951847" not in amin_list:
+            amin_list["7307951847"] = "AmiN"
+            save_amin()
+    
+    if not os.path.exists(PROFESSOR_FILE):
+        professor_list = {"6328427378": "Professor"}
+        save_professor()
+    else:
+        load_professor()
+        if "6328427378" not in professor_list:
+            professor_list["6328427378"] = "Professor"
+            save_professor()
 # ===========================================
 
 def load_data():
@@ -84,16 +110,45 @@ def save_admin_numbers():
     with open(ADMIN_NUMBERS_FILE, 'w') as f:
         json.dump(admin_numbers, f)
 
+def load_amin():
+    global amin_list
+    if os.path.exists(AMIN_FILE):
+        with open(AMIN_FILE, 'r') as f:
+            amin_list = json.load(f)
+    else:
+        amin_list = {}
+
+def save_amin():
+    with open(AMIN_FILE, 'w') as f:
+        json.dump(amin_list, f)
+
+def load_professor():
+    global professor_list
+    if os.path.exists(PROFESSOR_FILE):
+        with open(PROFESSOR_FILE, 'r') as f:
+            professor_list = json.load(f)
+    else:
+        professor_list = {}
+
+def save_professor():
+    with open(PROFESSOR_FILE, 'w') as f:
+        json.dump(professor_list, f)
+
 load_data()
 load_admins()
 load_admin_numbers()
-init_amin()
+load_amin()
+load_professor()
+init_roles()
 
 def is_admin(user_id):
     return user_id == OWNER_ID or str(user_id) in admins
 
 def is_amin(user_id):
-    return str(user_id) in admins
+    return str(user_id) in amin_list
+
+def is_professor(user_id):
+    return str(user_id) in professor_list
 
 def get_admin_number(user_id):
     if str(user_id) in admin_numbers:
@@ -138,7 +193,7 @@ def info(msg):
         bot.reply_to(msg, "/tickets : لیست بلیط های باز نشده")
         bot.reply_to(msg, "/cmds : لیست دستورات ادمین")
         bot.reply_to(msg, "/ac : ورود/خروج از چت ادمین ها")
-        if user_id == OWNER_ID or is_amin(user_id):
+        if user_id == OWNER_ID or is_amin(user_id) or is_professor(user_id):
             bot.reply_to(msg, "/perms : نمایش دسترسی ها")
     if user_id == OWNER_ID:
         bot.reply_to(msg, "/admins : لیست ادمین ها")
@@ -146,13 +201,23 @@ def info(msg):
 @bot.message_handler(commands=['perms'])
 def show_perms(msg):
     user_id = msg.from_user.id
-    if user_id != OWNER_ID and not is_amin(user_id):
+    if user_id != OWNER_ID and not is_amin(user_id) and not is_professor(user_id):
         return
     response = "جدول دسترسي ها:\n\n"
     response += "OWNER (سازنده):\n"
     response += "  - همه دستورات\n"
     response += "  - بدون نياز به تاييد\n\n"
     response += "AmiN (ادمین کامل):\n"
+    response += "  - /ma (نياز به تاييد OWNER)\n"
+    response += "  - /kickadmin (نياز به تاييد OWNER)\n"
+    response += "  - /tickets\n"
+    response += "  - /open\n"
+    response += "  - /a\n"
+    response += "  - /cc\n"
+    response += "  - /ac\n"
+    response += "  - /cmds\n"
+    response += "  - /perms\n\n"
+    response += "Professor (استاد):\n"
     response += "  - /ma (نياز به تاييد OWNER)\n"
     response += "  - /kickadmin (نياز به تاييد OWNER)\n"
     response += "  - /tickets\n"
@@ -181,7 +246,7 @@ def show_perms(msg):
 @bot.message_handler(commands=['admins'])
 def show_admins(msg):
     user_id = msg.from_user.id
-    if user_id != OWNER_ID:
+    if user_id != OWNER_ID and not is_amin(user_id) and not is_professor(user_id):
         return
     response = "ليست ادمين ها:\n\n"
     response += "سازنده: OWNER\n"
@@ -190,6 +255,8 @@ def show_admins(msg):
             admin_num = get_admin_number(admin_id) or "بدون شماره"
             if admin_num == "AmiN":
                 response += f"کاپیتان : AmiN\n"
+            elif admin_num == "Professor":
+                response += f"آقای : Professor\n"
             else:
                 try:
                     user_info = bot.get_chat(admin_id)
@@ -211,20 +278,20 @@ def cmds(msg):
     response += "/open [شماره] : باز کردن بليط\n"
     response += "/a [پيام] : ارسال پاسخ به کاربر\n"
     response += "/cc : پايان چت با کاربر\n"
-    if user_id == OWNER_ID or is_amin(user_id):
-        response += "/ma [آيدي] : اضافه کردن ادمين جديد\n"
-        response += "/kickadmin [آيدي] : حذف ادمين\n"
+    if user_id == OWNER_ID or is_amin(user_id) or is_professor(user_id):
+        response += "/ma [آيدي] : اضافه کردن ادمين جديد (نياز به تاييد)\n"
+        response += "/kickadmin [آيدي] : حذف ادمين (نياز به تاييد)\n"
     response += "/ac : ورود/خروج از چت ادمين ها\n"
-    if user_id == OWNER_ID or is_amin(user_id):
+    if user_id == OWNER_ID or is_amin(user_id) or is_professor(user_id):
         response += "/perms : نمايش دسترسي ها\n"
     bot.reply_to(msg, response)
 
 @bot.message_handler(commands=['ma'])
 def add_admin(msg):
     user_id = msg.from_user.id
-    if user_id != OWNER_ID and not is_amin(user_id):
+    if user_id != OWNER_ID and not is_amin(user_id) and not is_professor(user_id):
         return
-    if user_id != OWNER_ID and is_amin(user_id):
+    if user_id != OWNER_ID and (is_amin(user_id) or is_professor(user_id)):
         parts = msg.text.split()
         if len(parts) < 2:
             bot.reply_to(msg, "لطفا آيدي عددي کاربر را وارد کنيد: /ma 123456789")
@@ -241,7 +308,10 @@ def add_admin(msg):
         btn_accept = telebot.types.InlineKeyboardButton("قبول", callback_data=f"accept_ma_{new_admin_id}_{user_id}")
         btn_reject = telebot.types.InlineKeyboardButton("رد", callback_data=f"reject_{user_id}")
         markup.add(btn_accept, btn_reject)
-        bot.send_message(OWNER_ID, f"Rank : AmiN Mikhahad Az Dastoor : /ma {new_admin_id} Estefadeh Konad !", reply_markup=markup)
+        if is_amin(user_id):
+            bot.send_message(OWNER_ID, f"Rank : AmiN Mikhahad Az Dastoor : /ma {new_admin_id} Estefadeh Konad !", reply_markup=markup)
+        elif is_professor(user_id):
+            bot.send_message(OWNER_ID, f"Rank : Professor Mikhahad Az Dastoor : /ma {new_admin_id} Estefadeh Konad !", reply_markup=markup)
         bot.reply_to(msg, "درخواست شما به سازنده ارسال شد. منتظر تاييد باشيد.")
         return
     parts = msg.text.split()
@@ -267,9 +337,9 @@ def add_admin(msg):
 @bot.message_handler(commands=['kickadmin'])
 def kick_admin(msg):
     user_id = msg.from_user.id
-    if user_id != OWNER_ID and not is_amin(user_id):
+    if user_id != OWNER_ID and not is_amin(user_id) and not is_professor(user_id):
         return
-    if user_id != OWNER_ID and is_amin(user_id):
+    if user_id != OWNER_ID and (is_amin(user_id) or is_professor(user_id)):
         parts = msg.text.split()
         if len(parts) < 2:
             bot.reply_to(msg, "لطفا آيدي عددي کاربر را وارد کنيد: /kickadmin 123456789")
@@ -289,7 +359,10 @@ def kick_admin(msg):
         btn_accept = telebot.types.InlineKeyboardButton("قبول", callback_data=f"accept_kick_{target_id}_{user_id}")
         btn_reject = telebot.types.InlineKeyboardButton("رد", callback_data=f"reject_{user_id}")
         markup.add(btn_accept, btn_reject)
-        bot.send_message(OWNER_ID, f"Rank : AmiN Mikhahad Az Dastoor : /kickadmin {target_id} Estefadeh Konad !", reply_markup=markup)
+        if is_amin(user_id):
+            bot.send_message(OWNER_ID, f"Rank : AmiN Mikhahad Az Dastoor : /kickadmin {target_id} Estefadeh Konad !", reply_markup=markup)
+        elif is_professor(user_id):
+            bot.send_message(OWNER_ID, f"Rank : Professor Mikhahad Az Dastoor : /kickadmin {target_id} Estefadeh Konad !", reply_markup=markup)
         bot.reply_to(msg, "درخواست شما به سازنده ارسال شد. منتظر تاييد باشيد.")
         return
     parts = msg.text.split()
@@ -514,6 +587,9 @@ def forward_all(msg):
             elif is_amin(user_id):
                 display_name = "AmiN"
                 user_link = ""
+            elif is_professor(user_id):
+                display_name = "Professor"
+                user_link = ""
             else:
                 admin_num = get_admin_number(user_id) or "Admin"
                 display_name = f"{admin_num}"
@@ -521,7 +597,7 @@ def forward_all(msg):
             for admin_id in admins:
                 if int(admin_id) != user_id:
                     try:
-                        if user_id == OWNER_ID or is_amin(user_id):
+                        if user_id == OWNER_ID or is_amin(user_id) or is_professor(user_id):
                             bot.send_message(int(admin_id), f"[ Admin.Chat ] ( {display_name} ) : {msg.text}")
                         else:
                             bot.send_message(int(admin_id), f"[ Admin.Chat ] ( {display_name} ) ( {user_link} ) : {msg.text}", parse_mode='HTML')
@@ -531,6 +607,8 @@ def forward_all(msg):
                 try:
                     if is_amin(user_id):
                         bot.send_message(OWNER_ID, f"[ Admin.Chat ] ( AmiN ) : {msg.text}")
+                    elif is_professor(user_id):
+                        bot.send_message(OWNER_ID, f"[ Admin.Chat ] ( Professor ) : {msg.text}")
                     else:
                         bot.send_message(OWNER_ID, f"[ Admin.Chat ] ( {display_name} ) ( {user_link} ) : {msg.text}", parse_mode='HTML')
                 except:
