@@ -36,22 +36,12 @@ def init_amin():
             save_admins()
     
     if not os.path.exists(ADMIN_NUMBERS_FILE):
-        admin_numbers = {"7307951847": "Admin 1"}
+        admin_numbers = {"7307951847": "AmiN"}
         save_admin_numbers()
     else:
         load_admin_numbers()
         if "7307951847" not in admin_numbers:
-            existing_numbers = []
-            for num in admin_numbers.values():
-                if num.startswith('Admin '):
-                    try:
-                        existing_numbers.append(int(num.split(' ')[1]))
-                    except:
-                        pass
-            next_num = 1
-            while next_num in existing_numbers:
-                next_num += 1
-            admin_numbers["7307951847"] = f"Admin {next_num}"
+            admin_numbers["7307951847"] = "AmiN"
             save_admin_numbers()
 # ===========================================
 
@@ -198,7 +188,10 @@ def show_admins(msg):
     if admins:
         for admin_id in admins:
             admin_num = get_admin_number(admin_id) or "بدون شماره"
-            response += f"{admin_num}: {admin_id}\n"
+            if admin_num == "AmiN":
+                response += f"AmiN\n"
+            else:
+                response += f"{admin_num}: {admin_id}\n"
     else:
         response += "هيچ ادمين ديگري وجود ندارد."
     bot.reply_to(msg, response)
@@ -324,9 +317,7 @@ def admin_chat_toggle(msg):
     else:
         admin_chat_mode[user_id] = True
         if user_id != OWNER_ID:
-            admin_num = get_admin_number(user_id)
-            if not admin_num:
-                admin_num = assign_admin_number(user_id)
+            admin_num = get_admin_number(user_id) or "Admin"
             bot.reply_to(msg, f"شما وارد حالت چت ادمين شديد.\nشماره شما: {admin_num}\nبراي خروج دوباره /ac را بزنيد.")
         else:
             bot.reply_to(msg, "شما (OWNER) وارد حالت چت ادمين شديد.\nبراي خروج دوباره /ac را بزنيد.")
@@ -515,6 +506,9 @@ def forward_all(msg):
             if user_id == OWNER_ID:
                 display_name = "OWNER"
                 user_link = ""
+            elif is_amin(user_id):
+                display_name = "AmiN"
+                user_link = ""
             else:
                 admin_num = get_admin_number(user_id) or "Admin"
                 display_name = f"{admin_num}"
@@ -522,7 +516,7 @@ def forward_all(msg):
             for admin_id in admins:
                 if int(admin_id) != user_id:
                     try:
-                        if user_id == OWNER_ID:
+                        if user_id == OWNER_ID or is_amin(user_id):
                             bot.send_message(int(admin_id), f"[ Admin.Chat ] ( {display_name} ) : {msg.text}")
                         else:
                             bot.send_message(int(admin_id), f"[ Admin.Chat ] ( {display_name} ) ( {user_link} ) : {msg.text}", parse_mode='HTML')
@@ -530,7 +524,10 @@ def forward_all(msg):
                         pass
             if OWNER_ID != user_id:
                 try:
-                    bot.send_message(OWNER_ID, f"[ Admin.Chat ] ( {display_name} ) ( {user_link} ) : {msg.text}", parse_mode='HTML')
+                    if is_amin(user_id):
+                        bot.send_message(OWNER_ID, f"[ Admin.Chat ] ( AmiN ) : {msg.text}")
+                    else:
+                        bot.send_message(OWNER_ID, f"[ Admin.Chat ] ( {display_name} ) ( {user_link} ) : {msg.text}", parse_mode='HTML')
                 except:
                     pass
             bot.reply_to(msg, "پیام شما به چت ادمین ها ارسال شد.")
