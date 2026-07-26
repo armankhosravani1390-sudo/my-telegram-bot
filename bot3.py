@@ -97,7 +97,8 @@ def get_user_link(user):
         return f"@{user.username}"
     else:
         return user.first_name or user.last_name or "کاربر"
-        @bot.message_handler(commands=['start'])
+
+@bot.message_handler(commands=['start'])
 def start(msg):
     bot.reply_to(msg, "/info : سلام امیدوارم حالتون خوب باشه . لطفا روی این دستور کلیک کنید")
 
@@ -185,7 +186,8 @@ def admin_chat_toggle(msg):
             bot.reply_to(msg, f"شما وارد حالت چت ادمین شدید.\nشماره شما: {admin_num}\nبرای خروج دوباره /ac را بزنید.")
         else:
             bot.reply_to(msg, "شما (OWNER) وارد حالت چت ادمین شدید.\nبرای خروج دوباره /ac را بزنید.")
-            @bot.message_handler(commands=['tickets'])
+
+@bot.message_handler(commands=['tickets'])
 def show_tickets(msg):
     user_id = msg.from_user.id
     if not is_admin(user_id):
@@ -371,7 +373,8 @@ def forward_all(msg):
             waiting_for_message[user_id] = False
     else:
         bot.reply_to(msg, "ابتدا /helpme را بزنید یا برای چت ادمین ها /ac را فعال کنید")
-        @bot.callback_query_handler(func=lambda call: True)
+
+@bot.callback_query_handler(func=lambda call: True)
 def handle_callbacks(call):
     if call.data.startswith('delete_'):
         user_id = int(call.data.split('_')[1])
