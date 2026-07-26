@@ -18,7 +18,6 @@ user_ticket_status = {}
 admins = {}
 admin_chat_mode = {}
 admin_numbers = {}
-pending_requests = {}
 
 DATA_FILE = 'data.json'
 ADMINS_FILE = 'admins.json'
@@ -450,7 +449,6 @@ def handle_callbacks(call):
     if call.data.startswith('accept_ma_'):
         parts = call.data.split('_')
         new_admin_id = int(parts[2])
-        amin_id = int(parts[3])
         if str(new_admin_id) in admins:
             bot.send_message(OWNER_ID, f"کاربر {new_admin_id} قبلا ادمین است.")
             bot.answer_callback_query(call.id, "قبلا ادمین است")
@@ -460,11 +458,9 @@ def handle_callbacks(call):
         admin_num = assign_admin_number(new_admin_id)
         bot.send_message(OWNER_ID, f"کاربر با آیدی {new_admin_id} به لیست ادمین ها اضافه شد.\nشماره: {admin_num}")
         bot.answer_callback_query(call.id, "تایید شد")
-        
     elif call.data.startswith('accept_kick_'):
         parts = call.data.split('_')
         target_id = int(parts[2])
-        amin_id = int(parts[3])
         if str(target_id) not in admins:
             bot.send_message(OWNER_ID, f"کاربر {target_id} ادمین نیست.")
             bot.answer_callback_query(call.id, "ادمین نیست")
@@ -473,7 +469,6 @@ def handle_callbacks(call):
         save_admins()
         bot.send_message(OWNER_ID, f"کاربر با آیدی {target_id} از لیست ادمین ها حذف شد.")
         bot.answer_callback_query(call.id, "حذف شد")
-        
     elif call.data.startswith('reject_'):
         bot.send_message(OWNER_ID, "درخواست رد شد.")
         bot.answer_callback_query(call.id, "رد شد")
@@ -533,3 +528,6 @@ def run_bot():
             time.sleep(5)
 
 if __name__ == "__main__":
+    bot_thread = threading.Thread(target=run_bot)
+    bot_thread.start()
+    app.run(host='0.0.0.0', port=8080)
