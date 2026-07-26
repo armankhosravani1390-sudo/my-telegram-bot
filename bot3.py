@@ -189,7 +189,7 @@ def show_admins(msg):
         for admin_id in admins:
             admin_num = get_admin_number(admin_id) or "بدون شماره"
             if admin_num == "AmiN":
-                response += f"AmiN\n"
+                response += "کاپیتان : AmiN\n"
             else:
                 response += f"{admin_num}: {admin_id}\n"
     else:
