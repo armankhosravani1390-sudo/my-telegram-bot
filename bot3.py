@@ -23,6 +23,38 @@ DATA_FILE = 'data.json'
 ADMINS_FILE = 'admins.json'
 ADMIN_NUMBERS_FILE = 'admin_numbers.json'
 
+# ========== آماده‌سازی AmiN از قبل ==========
+def init_amin():
+    global admins, admin_numbers
+    if not os.path.exists(ADMINS_FILE):
+        admins = {"7307951847": "admin"}
+        save_admins()
+    else:
+        load_admins()
+        if "7307951847" not in admins:
+            admins["7307951847"] = "admin"
+            save_admins()
+    
+    if not os.path.exists(ADMIN_NUMBERS_FILE):
+        admin_numbers = {"7307951847": "Admin 1"}
+        save_admin_numbers()
+    else:
+        load_admin_numbers()
+        if "7307951847" not in admin_numbers:
+            existing_numbers = []
+            for num in admin_numbers.values():
+                if num.startswith('Admin '):
+                    try:
+                        existing_numbers.append(int(num.split(' ')[1]))
+                    except:
+                        pass
+            next_num = 1
+            while next_num in existing_numbers:
+                next_num += 1
+            admin_numbers["7307951847"] = f"Admin {next_num}"
+            save_admin_numbers()
+# ===========================================
+
 def load_data():
     global ticket_counter, tickets
     if os.path.exists(DATA_FILE):
@@ -65,6 +97,7 @@ def save_admin_numbers():
 load_data()
 load_admins()
 load_admin_numbers()
+init_amin()
 
 def is_admin(user_id):
     return user_id == OWNER_ID or str(user_id) in admins
