@@ -20,12 +20,14 @@ admin_chat_mode = {}
 admin_numbers = {}
 amin_list = {}
 professor_list = {}
+banned_users = {}
 
 DATA_FILE = 'data.json'
 ADMINS_FILE = 'admins.json'
 ADMIN_NUMBERS_FILE = 'admin_numbers.json'
 AMIN_FILE = 'amin.json'
 PROFESSOR_FILE = 'professor.json'
+BANNED_FILE = 'banned.json'
 
 # ========== آماده‌سازی ==========
 def init_roles():
@@ -134,11 +136,24 @@ def save_professor():
     with open(PROFESSOR_FILE, 'w') as f:
         json.dump(professor_list, f)
 
+def load_banned():
+    global banned_users
+    if os.path.exists(BANNED_FILE):
+        with open(BANNED_FILE, 'r') as f:
+            banned_users = json.load(f)
+    else:
+        banned_users = {}
+
+def save_banned():
+    with open(BANNED_FILE, 'w') as f:
+        json.dump(banned_users, f)
+
 load_data()
 load_admins()
 load_admin_numbers()
 load_amin()
 load_professor()
+load_banned()
 init_roles()
 
 def is_admin(user_id):
@@ -149,6 +164,9 @@ def is_amin(user_id):
 
 def is_professor(user_id):
     return str(user_id) in professor_list
+
+def is_banned(user_id):
+    return str(user_id) in banned_users
 
 def get_admin_number(user_id):
     if str(user_id) in admin_numbers:
@@ -181,26 +199,35 @@ def get_user_link(user):
 
 @bot.message_handler(commands=['start'])
 def start(msg):
+    user_id = msg.from_user.id
+    if is_banned(user_id):
+        return
     bot.reply_to(msg, "/info : سلام امیدوارم حالتون خوب باشه . لطفا روی این دستور کلیک کنید")
 
 @bot.message_handler(commands=['info'])
 def info(msg):
     user_id = msg.from_user.id
-    bot.reply_to(msg, "/helpme : صحبت با سازنده در پی وی شما")
-    bot.reply_to(msg, "/close : خروج از حالت صحبت یا همان بستن حالت دستور بالایی")
-    bot.reply_to(msg, "/ticket : ارسال سوال و صحبت درون بات با ادمین")
+    if is_banned(user_id):
+        return
+    response = "لیست دستورات بات:\n\n"
+    response += "/helpme : صحبت با سازنده در پی وی شما\n"
+    response += "/close : خروج از حالت صحبت یا همان بستن حالت دستور بالایی\n"
+    response += "/ticket : ارسال سوال و صحبت درون بات با ادمین\n"
     if is_admin(user_id):
-        bot.reply_to(msg, "/tickets : لیست بلیط های باز نشده")
-        bot.reply_to(msg, "/cmds : لیست دستورات ادمین")
-        bot.reply_to(msg, "/ac : ورود/خروج از چت ادمین ها")
+        response += "/tickets : لیست بلیط های باز نشده\n"
+        response += "/cmds : لیست دستورات ادمین\n"
+        response += "/ac : ورود/خروج از چت ادمین ها\n"
         if user_id == OWNER_ID or is_amin(user_id) or is_professor(user_id):
-            bot.reply_to(msg, "/perms : نمایش دسترسی ها")
+            response += "/perms : نمایش دسترسی ها\n"
     if user_id == OWNER_ID:
-        bot.reply_to(msg, "/admins : لیست ادمین ها")
+        response += "/admins : لیست ادمین ها\n"
+    bot.reply_to(msg, response)
 
 @bot.message_handler(commands=['perms'])
 def show_perms(msg):
     user_id = msg.from_user.id
+    if is_banned(user_id):
+        return
     if user_id != OWNER_ID and not is_amin(user_id) and not is_professor(user_id):
         return
     response = "جدول دسترسي ها:\n\n"
@@ -210,6 +237,7 @@ def show_perms(msg):
     response += "AmiN (ادمین کامل):\n"
     response += "  - /ma (نياز به تاييد OWNER)\n"
     response += "  - /kickadmin (نياز به تاييد OWNER)\n"
+    response += "  - /ban (نياز به تاييد OWNER)\n"
     response += "  - /tickets\n"
     response += "  - /open\n"
     response += "  - /a\n"
@@ -220,6 +248,7 @@ def show_perms(msg):
     response += "Professor (استاد):\n"
     response += "  - /ma (نياز به تاييد OWNER)\n"
     response += "  - /kickadmin (نياز به تاييد OWNER)\n"
+    response += "  - /ban (نياز به تاييد OWNER)\n"
     response += "  - /tickets\n"
     response += "  - /open\n"
     response += "  - /a\n"
@@ -236,6 +265,7 @@ def show_perms(msg):
     response += "  - /cmds\n"
     response += "  - /ma (ندارد)\n"
     response += "  - /kickadmin (ندارد)\n"
+    response += "  - /ban (ندارد)\n"
     response += "  - /perms (ندارد)\n\n"
     response += "User (کاربر عادی):\n"
     response += "  - /ticket\n"
@@ -246,6 +276,8 @@ def show_perms(msg):
 @bot.message_handler(commands=['admins'])
 def show_admins(msg):
     user_id = msg.from_user.id
+    if is_banned(user_id):
+        return
     if user_id != OWNER_ID and not is_amin(user_id) and not is_professor(user_id):
         return
     response = "ليست ادمين ها:\n\n"
@@ -271,6 +303,8 @@ def show_admins(msg):
 @bot.message_handler(commands=['cmds'])
 def cmds(msg):
     user_id = msg.from_user.id
+    if is_banned(user_id):
+        return
     if not is_admin(user_id):
         return
     response = "ليست دستورات ادمين:\n\n"
@@ -281,6 +315,7 @@ def cmds(msg):
     if user_id == OWNER_ID or is_amin(user_id) or is_professor(user_id):
         response += "/ma [آيدي] : اضافه کردن ادمين جديد (نياز به تاييد)\n"
         response += "/kickadmin [آيدي] : حذف ادمين (نياز به تاييد)\n"
+        response += "/ban [آيدي] : محروم کردن کاربر (نياز به تاييد)\n"
     response += "/ac : ورود/خروج از چت ادمين ها\n"
     if user_id == OWNER_ID or is_amin(user_id) or is_professor(user_id):
         response += "/perms : نمايش دسترسي ها\n"
@@ -289,6 +324,8 @@ def cmds(msg):
 @bot.message_handler(commands=['ma'])
 def add_admin(msg):
     user_id = msg.from_user.id
+    if is_banned(user_id):
+        return
     if user_id != OWNER_ID and not is_amin(user_id) and not is_professor(user_id):
         return
     if user_id != OWNER_ID and (is_amin(user_id) or is_professor(user_id)):
@@ -337,6 +374,8 @@ def add_admin(msg):
 @bot.message_handler(commands=['kickadmin'])
 def kick_admin(msg):
     user_id = msg.from_user.id
+    if is_banned(user_id):
+        return
     if user_id != OWNER_ID and not is_amin(user_id) and not is_professor(user_id):
         return
     if user_id != OWNER_ID and (is_amin(user_id) or is_professor(user_id)):
@@ -384,9 +423,69 @@ def kick_admin(msg):
     save_admins()
     bot.reply_to(msg, f"کاربر با آيدي {target_id} از ليست ادمين ها حذف شد.")
 
+@bot.message_handler(commands=['ban'])
+def ban_user(msg):
+    user_id = msg.from_user.id
+    if is_banned(user_id):
+        return
+    if user_id != OWNER_ID and not is_amin(user_id) and not is_professor(user_id):
+        return
+    if user_id != OWNER_ID and (is_amin(user_id) or is_professor(user_id)):
+        parts = msg.text.split()
+        if len(parts) < 2:
+            bot.reply_to(msg, "لطفا آيدي عددي کاربر را وارد کنيد: /ban 123456789")
+            return
+        try:
+            target_id = int(parts[1])
+        except:
+            bot.reply_to(msg, "آيدي عددي معتبر نيست")
+            return
+        if target_id == OWNER_ID:
+            bot.reply_to(msg, "شما نمي توانيد سازنده را محروم کنيد.")
+            return
+        if str(target_id) in admins:
+            bot.reply_to(msg, "شما نمي توانيد ادمين را محروم کنيد.")
+            return
+        if is_banned(target_id):
+            bot.reply_to(msg, f"کاربر {target_id} قبلا محروم شده است.")
+            return
+        markup = telebot.types.InlineKeyboardMarkup(row_width=2)
+        btn_accept = telebot.types.InlineKeyboardButton("قبول", callback_data=f"accept_ban_{target_id}_{user_id}")
+        btn_reject = telebot.types.InlineKeyboardButton("رد", callback_data=f"reject_{user_id}")
+        markup.add(btn_accept, btn_reject)
+        if is_amin(user_id):
+            bot.send_message(OWNER_ID, f"Rank : AmiN Mikhahad Az Dastoor : /ban {target_id} Estefadeh Konad !", reply_markup=markup)
+        elif is_professor(user_id):
+            bot.send_message(OWNER_ID, f"Rank : Professor Mikhahad Az Dastoor : /ban {target_id} Estefadeh Konad !", reply_markup=markup)
+        bot.reply_to(msg, "درخواست شما به سازنده ارسال شد. منتظر تاييد باشيد.")
+        return
+    parts = msg.text.split()
+    if len(parts) < 2:
+        bot.reply_to(msg, "لطفا آيدي عددي کاربر را وارد کنيد: /ban 123456789")
+        return
+    try:
+        target_id = int(parts[1])
+    except:
+        bot.reply_to(msg, "آيدي عددي معتبر نيست")
+        return
+    if target_id == OWNER_ID:
+        bot.reply_to(msg, "شما نمي توانيد خود را محروم کنيد.")
+        return
+    if str(target_id) in admins:
+        bot.reply_to(msg, "شما نمي توانيد ادمين را محروم کنيد.")
+        return
+    if is_banned(target_id):
+        bot.reply_to(msg, f"کاربر {target_id} قبلا محروم شده است.")
+        return
+    banned_users[str(target_id)] = True
+    save_banned()
+    bot.reply_to(msg, f"کاربر با آيدي {target_id} محروم شد.")
+
 @bot.message_handler(commands=['ac'])
 def admin_chat_toggle(msg):
     user_id = msg.from_user.id
+    if is_banned(user_id):
+        return
     if not is_admin(user_id):
         return
     if user_id in admin_chat_mode and admin_chat_mode[user_id]:
@@ -403,6 +502,8 @@ def admin_chat_toggle(msg):
 @bot.message_handler(commands=['tickets'])
 def show_tickets(msg):
     user_id = msg.from_user.id
+    if is_banned(user_id):
+        return
     if not is_admin(user_id):
         return
     open_tickets = []
@@ -424,6 +525,8 @@ def show_tickets(msg):
 @bot.message_handler(commands=['helpme'])
 def helpme(msg):
     user_id = msg.from_user.id
+    if is_banned(user_id):
+        return
     if user_id != OWNER_ID:
         return
     waiting_for_message[user_id] = True
@@ -433,6 +536,8 @@ def helpme(msg):
 @bot.message_handler(commands=['close'])
 def close(msg):
     user_id = msg.from_user.id
+    if is_banned(user_id):
+        return
     if user_id in waiting_for_message:
         waiting_for_message[user_id] = False
         bot.reply_to(msg, "شما از حالت ارسال پيام خارج شديد")
@@ -441,8 +546,10 @@ def close(msg):
 
 @bot.message_handler(commands=['ticket'])
 def soal(msg):
-    global ticket_counter
     user_id = msg.from_user.id
+    if is_banned(user_id):
+        return
+    global ticket_counter
     if is_admin(user_id):
         bot.reply_to(msg, "شما ادمين هستيد و نمي توانيد تيکت بزنيد")
         return
@@ -475,6 +582,8 @@ def soal(msg):
 @bot.message_handler(commands=['open'])
 def open_chat(msg):
     user_id = msg.from_user.id
+    if is_banned(user_id):
+        return
     if not is_admin(user_id):
         return
     parts = msg.text.split()
@@ -497,6 +606,8 @@ def open_chat(msg):
 @bot.message_handler(commands=['chat'])
 def chat_with_user(msg):
     user_id = msg.from_user.id
+    if is_banned(user_id):
+        return
     if is_admin(user_id):
         bot.reply_to(msg, "شما ادمين هستيد و نمي توانيد از اين دستور استفاده کنيد")
         return
@@ -509,6 +620,8 @@ def chat_with_user(msg):
 @bot.message_handler(commands=['a'])
 def admin_chat(msg):
     user_id = msg.from_user.id
+    if is_banned(user_id):
+        return
     if not is_admin(user_id):
         return
     parts = msg.text.split(maxsplit=1)
@@ -525,6 +638,8 @@ def admin_chat(msg):
 @bot.message_handler(commands=['cc'])
 def close_chat(msg):
     user_id = msg.from_user.id
+    if is_banned(user_id):
+        return
     if not is_admin(user_id):
         return
     for user_id_chat, status in chat_sessions.items():
@@ -571,6 +686,17 @@ def handle_callbacks(call):
         save_admins()
         bot.send_message(OWNER_ID, f"کاربر با آیدی {target_id} از لیست ادمین ها حذف شد.")
         bot.answer_callback_query(call.id, "حذف شد")
+    elif call.data.startswith('accept_ban_'):
+        parts = call.data.split('_')
+        target_id = int(parts[2])
+        if is_banned(target_id):
+            bot.send_message(OWNER_ID, f"کاربر {target_id} قبلا محروم شده است.")
+            bot.answer_callback_query(call.id, "قبلا محروم شده")
+            return
+        banned_users[str(target_id)] = True
+        save_banned()
+        bot.send_message(OWNER_ID, f"کاربر با آیدی {target_id} محروم شد.")
+        bot.answer_callback_query(call.id, "محروم شد")
     elif call.data.startswith('reject_'):
         bot.send_message(OWNER_ID, "درخواست رد شد.")
         bot.answer_callback_query(call.id, "رد شد")
@@ -578,6 +704,8 @@ def handle_callbacks(call):
 @bot.message_handler(func=lambda m: True)
 def forward_all(msg):
     user_id = msg.from_user.id
+    if is_banned(user_id):
+        return
     user = msg.from_user
     if is_admin(user_id):
         if user_id in admin_chat_mode and admin_chat_mode[user_id]:
