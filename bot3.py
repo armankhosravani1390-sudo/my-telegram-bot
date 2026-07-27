@@ -201,6 +201,7 @@ def get_user_link(user):
 def start(msg):
     user_id = msg.from_user.id
     if is_banned(user_id):
+        bot.reply_to(msg, "*** [ Ban.System ] : شما از بات محروم شدید ***")
         return
     bot.reply_to(msg, "/info : سلام امیدوارم حالتون خوب باشه . لطفا روی این دستور کلیک کنید")
 
@@ -208,6 +209,7 @@ def start(msg):
 def info(msg):
     user_id = msg.from_user.id
     if is_banned(user_id):
+        bot.reply_to(msg, "*** [ Ban.System ] : شما از بات محروم شدید ***")
         return
     response = "لیست دستورات بات:\n\n"
     response += "/helpme : صحبت با سازنده در پی وی شما\n"
@@ -227,6 +229,7 @@ def info(msg):
 def show_perms(msg):
     user_id = msg.from_user.id
     if is_banned(user_id):
+        bot.reply_to(msg, "*** [ Ban.System ] : شما از بات محروم شدید ***")
         return
     if user_id != OWNER_ID and not is_amin(user_id) and not is_professor(user_id):
         return
@@ -277,6 +280,7 @@ def show_perms(msg):
 def show_admins(msg):
     user_id = msg.from_user.id
     if is_banned(user_id):
+        bot.reply_to(msg, "*** [ Ban.System ] : شما از بات محروم شدید ***")
         return
     if user_id != OWNER_ID and not is_amin(user_id) and not is_professor(user_id):
         return
@@ -304,6 +308,7 @@ def show_admins(msg):
 def cmds(msg):
     user_id = msg.from_user.id
     if is_banned(user_id):
+        bot.reply_to(msg, "*** [ Ban.System ] : شما از بات محروم شدید ***")
         return
     if not is_admin(user_id):
         return
@@ -325,6 +330,7 @@ def cmds(msg):
 def add_admin(msg):
     user_id = msg.from_user.id
     if is_banned(user_id):
+        bot.reply_to(msg, "*** [ Ban.System ] : شما از بات محروم شدید ***")
         return
     if user_id != OWNER_ID and not is_amin(user_id) and not is_professor(user_id):
         return
@@ -375,6 +381,7 @@ def add_admin(msg):
 def kick_admin(msg):
     user_id = msg.from_user.id
     if is_banned(user_id):
+        bot.reply_to(msg, "*** [ Ban.System ] : شما از بات محروم شدید ***")
         return
     if user_id != OWNER_ID and not is_amin(user_id) and not is_professor(user_id):
         return
@@ -427,6 +434,7 @@ def kick_admin(msg):
 def ban_user(msg):
     user_id = msg.from_user.id
     if is_banned(user_id):
+        bot.reply_to(msg, "*** [ Ban.System ] : شما از بات محروم شدید ***")
         return
     if user_id != OWNER_ID and not is_amin(user_id) and not is_professor(user_id):
         return
@@ -479,12 +487,14 @@ def ban_user(msg):
         return
     banned_users[str(target_id)] = True
     save_banned()
-    bot.reply_to(msg, f"کاربر با آيدي {target_id} محروم شد.")
+    bot.send_message(target_id, "*** [ Ban.System ] : شما از بات محروم شدید ***")
+    bot.reply_to(msg, f"کاربر با آیدی {target_id} محروم شد.")
 
 @bot.message_handler(commands=['ac'])
 def admin_chat_toggle(msg):
     user_id = msg.from_user.id
     if is_banned(user_id):
+        bot.reply_to(msg, "*** [ Ban.System ] : شما از بات محروم شدید ***")
         return
     if not is_admin(user_id):
         return
@@ -503,6 +513,7 @@ def admin_chat_toggle(msg):
 def show_tickets(msg):
     user_id = msg.from_user.id
     if is_banned(user_id):
+        bot.reply_to(msg, "*** [ Ban.System ] : شما از بات محروم شدید ***")
         return
     if not is_admin(user_id):
         return
@@ -526,6 +537,7 @@ def show_tickets(msg):
 def helpme(msg):
     user_id = msg.from_user.id
     if is_banned(user_id):
+        bot.reply_to(msg, "*** [ Ban.System ] : شما از بات محروم شدید ***")
         return
     if user_id != OWNER_ID:
         return
@@ -537,6 +549,7 @@ def helpme(msg):
 def close(msg):
     user_id = msg.from_user.id
     if is_banned(user_id):
+        bot.reply_to(msg, "*** [ Ban.System ] : شما از بات محروم شدید ***")
         return
     if user_id in waiting_for_message:
         waiting_for_message[user_id] = False
@@ -548,6 +561,7 @@ def close(msg):
 def soal(msg):
     user_id = msg.from_user.id
     if is_banned(user_id):
+        bot.reply_to(msg, "*** [ Ban.System ] : شما از بات محروم شدید ***")
         return
     global ticket_counter
     if is_admin(user_id):
@@ -583,6 +597,7 @@ def soal(msg):
 def open_chat(msg):
     user_id = msg.from_user.id
     if is_banned(user_id):
+        bot.reply_to(msg, "*** [ Ban.System ] : شما از بات محروم شدید ***")
         return
     if not is_admin(user_id):
         return
@@ -607,6 +622,7 @@ def open_chat(msg):
 def chat_with_user(msg):
     user_id = msg.from_user.id
     if is_banned(user_id):
+        bot.reply_to(msg, "*** [ Ban.System ] : شما از بات محروم شدید ***")
         return
     if is_admin(user_id):
         bot.reply_to(msg, "شما ادمين هستيد و نمي توانيد از اين دستور استفاده کنيد")
@@ -621,6 +637,7 @@ def chat_with_user(msg):
 def admin_chat(msg):
     user_id = msg.from_user.id
     if is_banned(user_id):
+        bot.reply_to(msg, "*** [ Ban.System ] : شما از بات محروم شدید ***")
         return
     if not is_admin(user_id):
         return
@@ -639,6 +656,7 @@ def admin_chat(msg):
 def close_chat(msg):
     user_id = msg.from_user.id
     if is_banned(user_id):
+        bot.reply_to(msg, "*** [ Ban.System ] : شما از بات محروم شدید ***")
         return
     if not is_admin(user_id):
         return
@@ -696,6 +714,7 @@ def handle_callbacks(call):
         banned_users[str(target_id)] = True
         save_banned()
         bot.send_message(OWNER_ID, f"کاربر با آیدی {target_id} محروم شد.")
+        bot.send_message(target_id, "*** [ Ban.System ] : شما از بات محروم شدید ***")
         bot.answer_callback_query(call.id, "محروم شد")
     elif call.data.startswith('reject_'):
         bot.send_message(OWNER_ID, "درخواست رد شد.")
@@ -705,6 +724,7 @@ def handle_callbacks(call):
 def forward_all(msg):
     user_id = msg.from_user.id
     if is_banned(user_id):
+        bot.reply_to(msg, "*** [ Ban.System ] : شما از بات محروم شدید ***")
         return
     user = msg.from_user
     if is_admin(user_id):
