@@ -197,6 +197,59 @@ def get_user_link(user):
     else:
         return user.first_name or user.last_name or "کاربر"
 
+# ========== دستور /update (فقط OWNER) ==========
+@bot.message_handler(commands=['update'])
+def update_bot(msg):
+    user_id = msg.from_user.id
+    if user_id != OWNER_ID:
+        return
+    
+    bot.reply_to(msg, "✅ پیام آپدیت به همه کاربران ارسال شد.")
+    
+    # جمع‌آوری کاربران
+    all_users = set()
+    for user_id in waiting_for_message.keys():
+        all_users.add(user_id)
+    for user_id in tickets.keys():
+        all_users.add(user_id)
+    for user_id in chat_sessions.keys():
+        all_users.add(user_id)
+    for user_id in user_ticket_status.keys():
+        all_users.add(user_id)
+    for user_id in admins.keys():
+        try:
+            all_users.add(int(user_id))
+        except:
+            pass
+    for user_id in amin_list.keys():
+        try:
+            all_users.add(int(user_id))
+        except:
+            pass
+    for user_id in professor_list.keys():
+        try:
+            all_users.add(int(user_id))
+        except:
+            pass
+    for user_id in banned_users.keys():
+        try:
+            all_users.add(int(user_id))
+        except:
+            pass
+    
+    # ارسال پیام به همه
+    for user_id in all_users:
+        try:
+            bot.send_message(user_id, "*** [ Bot.DataBase ] : بات درحال اجرا یک آپدیت بزرگ است ***")
+        except:
+            pass
+    
+    try:
+        bot.send_message(OWNER_ID, "*** [ Bot.DataBase ] : بات درحال اجرا یک آپدیت بزرگ است ***")
+    except:
+        pass
+# ===========================================
+
 @bot.message_handler(commands=['start'])
 def start(msg):
     user_id = msg.from_user.id
