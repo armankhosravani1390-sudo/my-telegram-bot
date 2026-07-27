@@ -241,6 +241,7 @@ def show_perms(msg):
     response += "  - /ma (نياز به تاييد OWNER)\n"
     response += "  - /kickadmin (نياز به تاييد OWNER)\n"
     response += "  - /ban (نياز به تاييد OWNER)\n"
+    response += "  - /unban (نياز به تاييد OWNER)\n"
     response += "  - /tickets\n"
     response += "  - /open\n"
     response += "  - /a\n"
@@ -252,6 +253,7 @@ def show_perms(msg):
     response += "  - /ma (نياز به تاييد OWNER)\n"
     response += "  - /kickadmin (نياز به تاييد OWNER)\n"
     response += "  - /ban (نياز به تاييد OWNER)\n"
+    response += "  - /unban (نياز به تاييد OWNER)\n"
     response += "  - /tickets\n"
     response += "  - /open\n"
     response += "  - /a\n"
@@ -269,6 +271,7 @@ def show_perms(msg):
     response += "  - /ma (ندارد)\n"
     response += "  - /kickadmin (ندارد)\n"
     response += "  - /ban (ندارد)\n"
+    response += "  - /unban (ندارد)\n"
     response += "  - /perms (ندارد)\n\n"
     response += "User (کاربر عادی):\n"
     response += "  - /ticket\n"
@@ -321,6 +324,7 @@ def cmds(msg):
         response += "/ma [آيدي] : اضافه کردن ادمين جديد (نياز به تاييد)\n"
         response += "/kickadmin [آيدي] : حذف ادمين (نياز به تاييد)\n"
         response += "/ban [آيدي] : محروم کردن کاربر (نياز به تاييد)\n"
+        response += "/unban [آيدي] : رفع محروميت کاربر (نياز به تاييد)\n"
     response += "/ac : ورود/خروج از چت ادمين ها\n"
     if user_id == OWNER_ID or is_amin(user_id) or is_professor(user_id):
         response += "/perms : نمايش دسترسي ها\n"
@@ -489,6 +493,54 @@ def ban_user(msg):
     save_banned()
     bot.send_message(target_id, "*** [ Ban.System ] : شما از بات محروم شدید ***")
     bot.reply_to(msg, f"کاربر با آیدی {target_id} محروم شد.")
+
+@bot.message_handler(commands=['unban'])
+def unban_user(msg):
+    user_id = msg.from_user.id
+    if is_banned(user_id):
+        bot.reply_to(msg, "*** [ Ban.System ] : شما از بات محروم شدید ***")
+        return
+    if user_id != OWNER_ID and not is_amin(user_id) and not is_professor(user_id):
+        return
+    if user_id != OWNER_ID and (is_amin(user_id) or is_professor(user_id)):
+        parts = msg.text.split()
+        if len(parts) < 2:
+            bot.reply_to(msg, "لطفا آيدي عددي کاربر را وارد کنيد: /unban 123456789")
+            return
+        try:
+            target_id = int(parts[1])
+        except:
+            bot.reply_to(msg, "آيدي عددي معتبر نيست")
+            return
+        if not is_banned(target_id):
+            bot.reply_to(msg, f"کاربر {target_id} محروم نیست.")
+            return
+        markup = telebot.types.InlineKeyboardMarkup(row_width=2)
+        btn_accept = telebot.types.InlineKeyboardButton("قبول", callback_data=f"accept_unban_{target_id}_{user_id}")
+        btn_reject = telebot.types.InlineKeyboardButton("رد", callback_data=f"reject_{user_id}")
+        markup.add(btn_accept, btn_reject)
+        if is_amin(user_id):
+            bot.send_message(OWNER_ID, f"Rank : AmiN Mikhahad Az Dastoor : /unban {target_id} Estefadeh Konad !", reply_markup=markup)
+        elif is_professor(user_id):
+            bot.send_message(OWNER_ID, f"Rank : Professor Mikhahad Az Dastoor : /unban {target_id} Estefadeh Konad !", reply_markup=markup)
+        bot.reply_to(msg, "درخواست شما به سازنده ارسال شد. منتظر تاييد باشيد.")
+        return
+    parts = msg.text.split()
+    if len(parts) < 2:
+        bot.reply_to(msg, "لطفا آيدي عددي کاربر را وارد کنيد: /unban 123456789")
+        return
+    try:
+        target_id = int(parts[1])
+    except:
+        bot.reply_to(msg, "آيدي عددي معتبر نيست")
+        return
+    if not is_banned(target_id):
+        bot.reply_to(msg, f"کاربر {target_id} محروم نیست.")
+        return
+    del banned_users[str(target_id)]
+    save_banned()
+    bot.send_message(target_id, "*** [ Ban.System ] : محرومیت شما برداشته شد ***")
+    bot.reply_to(msg, f"کاربر با آیدی {target_id} از محرومیت خارج شد.")
 
 @bot.message_handler(commands=['ac'])
 def admin_chat_toggle(msg):
@@ -716,6 +768,18 @@ def handle_callbacks(call):
         bot.send_message(OWNER_ID, f"کاربر با آیدی {target_id} محروم شد.")
         bot.send_message(target_id, "*** [ Ban.System ] : شما از بات محروم شدید ***")
         bot.answer_callback_query(call.id, "محروم شد")
+    elif call.data.startswith('accept_unban_'):
+        parts = call.data.split('_')
+        target_id = int(parts[2])
+        if not is_banned(target_id):
+            bot.send_message(OWNER_ID, f"کاربر {target_id} محروم نیست.")
+            bot.answer_callback_query(call.id, "محروم نیست")
+            return
+        del banned_users[str(target_id)]
+        save_banned()
+        bot.send_message(OWNER_ID, f"کاربر با آیدی {target_id} از محرومیت خارج شد.")
+        bot.send_message(target_id, "*** [ Ban.System ] : محرومیت شما برداشته شد ***")
+        bot.answer_callback_query(call.id, "رفع محرومیت شد")
     elif call.data.startswith('reject_'):
         bot.send_message(OWNER_ID, "درخواست رد شد.")
         bot.answer_callback_query(call.id, "رد شد")
