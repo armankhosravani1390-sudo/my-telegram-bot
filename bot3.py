@@ -24,13 +24,13 @@ professor_list = {}
 banned_users = {}
 
 # ========== دیتاهای جدید ==========
-news_data = {}  # {'1': 'text'}
-ad_data = {}    # {'1': 'text'}
-donate_data = []  # [{'name': 'Ali', 'amount': 1500000, 'rank': 1}]
+news_data = {}
+ad_data = {}
+donate_data = []
 news_counter = 0
 ad_counter = 0
-news_mode = {}  # {'user_id': True/False}
-ad_mode = {}    # {'user_id': True/False}
+news_mode = {}
+ad_mode = {}
 # ===================================
 
 DATA_FILE = 'data.json'
@@ -162,7 +162,6 @@ def save_banned():
     with open(BANNED_FILE, 'w') as f:
         json.dump(banned_users, f)
 
-# ========== توابع جدید ==========
 def load_news():
     global news_data, news_counter
     if os.path.exists(NEWS_FILE):
@@ -204,7 +203,6 @@ def load_donate():
 def save_donate():
     with open(DONATE_FILE, 'w') as f:
         json.dump(donate_data, f)
-# ===================================
 
 load_data()
 load_admins()
@@ -258,12 +256,64 @@ def get_user_link(user):
     else:
         return user.first_name or user.last_name or "کاربر"
 
+# ========== دستور /update ==========
+@bot.message_handler(commands=['update'])
+def update_bot(msg):
+    user_id = msg.from_user.id
+    if user_id != OWNER_ID:
+        return
+    
+    bot.reply_to(msg, "✅ پیام آپدیت به همه کاربران ارسال شد.")
+    
+    all_users = set()
+    for user_id in waiting_for_message.keys():
+        all_users.add(user_id)
+    for user_id in tickets.keys():
+        all_users.add(user_id)
+    for user_id in chat_sessions.keys():
+        all_users.add(user_id)
+    for user_id in user_ticket_status.keys():
+        all_users.add(user_id)
+    for user_id in admins.keys():
+        try:
+            all_users.add(int(user_id))
+        except:
+            pass
+    for user_id in amin_list.keys():
+        try:
+            all_users.add(int(user_id))
+        except:
+            pass
+    for user_id in professor_list.keys():
+        try:
+            all_users.add(int(user_id))
+        except:
+            pass
+    for user_id in banned_users.keys():
+        try:
+            all_users.add(int(user_id))
+        except:
+            pass
+    
+    for user_id in all_users:
+        try:
+            bot.send_message(user_id, "*** [ Bot.DataBase ] : بات درحال اجرا یک آپدیت بزرگ است ***")
+        except:
+            pass
+    
+    try:
+        bot.send_message(OWNER_ID, "*** [ Bot.DataBase ] : بات درحال اجرا یک آپدیت بزرگ است ***")
+    except:
+        pass
+
 # ========== پنل اصلی ==========
 @bot.message_handler(commands=['panel'])
 def panel(msg):
     user_id = msg.from_user.id
     if is_banned(user_id):
         bot.reply_to(msg, "*** [ Ban.System ] : شما از بات محروم شدید ***")
+        return
+    if user_id != OWNER_ID:
         return
     
     markup = telebot.types.InlineKeyboardMarkup(row_width=2)
@@ -438,13 +488,8 @@ def donate_command(msg):
         bot.reply_to(msg, "❌ مبلغ معتبر نیست.")
         return
     
-    # اضافه کردن به لیست
     donate_data.append({'name': name, 'amount': amount})
-    
-    # مرتب سازی بر اساس مبلغ (بیشترین به کمترین)
     donate_data.sort(key=lambda x: x['amount'], reverse=True)
-    
-    # به‌روزرسانی رتبه‌ها
     for idx, item in enumerate(donate_data):
         item['rank'] = idx + 1
     
@@ -553,7 +598,7 @@ def handle_messages(msg):
         if not msg.text.startswith('/'):
             bot.reply_to(msg, "ابتدا دستور /info را بزنید تا دستورات بات را ببینید")
 
-# ========== ادامه دستورات قبلی ==========
+# ========== دستورات قبلی ==========
 @bot.message_handler(commands=['start'])
 def start(msg):
     user_id = msg.from_user.id
@@ -583,10 +628,567 @@ def info(msg):
         response += "/panel : پنل اصلی بات\n"
     bot.reply_to(msg, response)
 
-# ========== ادامه دستورات قبلی (فقط برای فضا) ==========
-# (دستورات قبلی مانند perms, admins, cmds, ma, kickadmin, ban, unban, ac, tickets, helpme, close, ticket, open, chat, a, cc, update با همان کد قبلی)
+@bot.message_handler(commands=['perms'])
+def show_perms(msg):
+    user_id = msg.from_user.id
+    if is_banned(user_id):
+        bot.reply_to(msg, "*** [ Ban.System ] : شما از بات محروم شدید ***")
+        return
+    if user_id != OWNER_ID and not is_amin(user_id) and not is_professor(user_id):
+        return
+    response = "جدول دسترسي ها:\n\n"
+    response += "OWNER (سازنده):\n"
+    response += "  - همه دستورات\n"
+    response += "  - بدون نياز به تاييد\n\n"
+    response += "AmiN (ادمین کامل):\n"
+    response += "  - /ma (نياز به تاييد OWNER)\n"
+    response += "  - /kickadmin (نياز به تاييد OWNER)\n"
+    response += "  - /ban (نياز به تاييد OWNER)\n"
+    response += "  - /unban (نياز به تاييد OWNER)\n"
+    response += "  - /tickets\n"
+    response += "  - /open\n"
+    response += "  - /a\n"
+    response += "  - /cc\n"
+    response += "  - /ac\n"
+    response += "  - /cmds\n"
+    response += "  - /perms\n\n"
+    response += "Professor (استاد):\n"
+    response += "  - /ma (نياز به تاييد OWNER)\n"
+    response += "  - /kickadmin (نياز به تاييد OWNER)\n"
+    response += "  - /ban (نياز به تاييد OWNER)\n"
+    response += "  - /unban (نياز به تاييد OWNER)\n"
+    response += "  - /tickets\n"
+    response += "  - /open\n"
+    response += "  - /a\n"
+    response += "  - /cc\n"
+    response += "  - /ac\n"
+    response += "  - /cmds\n"
+    response += "  - /perms\n\n"
+    response += "Admin (ادمین معمولی):\n"
+    response += "  - /tickets\n"
+    response += "  - /open\n"
+    response += "  - /a\n"
+    response += "  - /cc\n"
+    response += "  - /ac\n"
+    response += "  - /cmds\n"
+    response += "  - /ma (ندارد)\n"
+    response += "  - /kickadmin (ندارد)\n"
+    response += "  - /ban (ندارد)\n"
+    response += "  - /unban (ندارد)\n"
+    response += "  - /perms (ندارد)\n\n"
+    response += "User (کاربر عادی):\n"
+    response += "  - /ticket\n"
+    response += "  - /chat\n"
+    response += "  - ساير دستورات را ندارد"
+    bot.reply_to(msg, response)
 
-# ========== اجرا ==========
+@bot.message_handler(commands=['admins'])
+def show_admins(msg):
+    user_id = msg.from_user.id
+    if is_banned(user_id):
+        bot.reply_to(msg, "*** [ Ban.System ] : شما از بات محروم شدید ***")
+        return
+    if user_id != OWNER_ID and not is_amin(user_id) and not is_professor(user_id):
+        return
+    response = "ليست ادمين ها:\n\n"
+    response += "سازنده: OWNER\n"
+    if admins:
+        for admin_id in admins:
+            admin_num = get_admin_number(admin_id) or "بدون شماره"
+            if admin_num == "AmiN":
+                response += f"کاپیتان : AmiN\n"
+            elif admin_num == "Professor":
+                response += f"آقای : Professor\n"
+            else:
+                try:
+                    user_info = bot.get_chat(admin_id)
+                    username = user_info.username or "بدون یوزرنیم"
+                    response += f"{admin_num}: {admin_id} (@{username})\n"
+                except:
+                    response += f"{admin_num}: {admin_id}\n"
+    else:
+        response += "هيچ ادمين ديگري وجود ندارد."
+    bot.reply_to(msg, response)
+
+@bot.message_handler(commands=['cmds'])
+def cmds(msg):
+    user_id = msg.from_user.id
+    if is_banned(user_id):
+        bot.reply_to(msg, "*** [ Ban.System ] : شما از بات محروم شدید ***")
+        return
+    if not is_admin(user_id):
+        return
+    response = "ليست دستورات ادمين:\n\n"
+    response += "/tickets : ليست بليط هاي باز نشده\n"
+    response += "/open [شماره] : باز کردن بليط\n"
+    response += "/a [پيام] : ارسال پاسخ به کاربر\n"
+    response += "/cc : پايان چت با کاربر\n"
+    if user_id == OWNER_ID or is_amin(user_id) or is_professor(user_id):
+        response += "/ma [آيدي] : اضافه کردن ادمين جديد (نياز به تاييد)\n"
+        response += "/kickadmin [آيدي] : حذف ادمين (نياز به تاييد)\n"
+        response += "/ban [آيدي] : محروم کردن کاربر (نياز به تاييد)\n"
+        response += "/unban [آيدي] : رفع محروميت کاربر (نياز به تاييد)\n"
+    response += "/ac : ورود/خروج از چت ادمين ها\n"
+    if user_id == OWNER_ID or is_amin(user_id) or is_professor(user_id):
+        response += "/perms : نمايش دسترسي ها\n"
+    bot.reply_to(msg, response)
+
+@bot.message_handler(commands=['ma'])
+def add_admin(msg):
+    user_id = msg.from_user.id
+    if is_banned(user_id):
+        bot.reply_to(msg, "*** [ Ban.System ] : شما از بات محروم شدید ***")
+        return
+    if user_id != OWNER_ID and not is_amin(user_id) and not is_professor(user_id):
+        return
+    if user_id != OWNER_ID and (is_amin(user_id) or is_professor(user_id)):
+        parts = msg.text.split()
+        if len(parts) < 2:
+            bot.reply_to(msg, "لطفا آيدي عددي کاربر را وارد کنيد: /ma 123456789")
+            return
+        try:
+            new_admin_id = int(parts[1])
+        except:
+            bot.reply_to(msg, "آيدي عددي معتبر نيست")
+            return
+        if str(new_admin_id) in admins:
+            bot.reply_to(msg, f"کاربر {new_admin_id} قبلا ادمين است.")
+            return
+        markup = telebot.types.InlineKeyboardMarkup(row_width=2)
+        btn_accept = telebot.types.InlineKeyboardButton("قبول", callback_data=f"accept_ma_{new_admin_id}_{user_id}")
+        btn_reject = telebot.types.InlineKeyboardButton("رد", callback_data=f"reject_{user_id}")
+        markup.add(btn_accept, btn_reject)
+        if is_amin(user_id):
+            bot.send_message(OWNER_ID, f"Rank : AmiN Mikhahad Az Dastoor : /ma {new_admin_id} Estefadeh Konad !", reply_markup=markup)
+        elif is_professor(user_id):
+            bot.send_message(OWNER_ID, f"Rank : Professor Mikhahad Az Dastoor : /ma {new_admin_id} Estefadeh Konad !", reply_markup=markup)
+        bot.reply_to(msg, "درخواست شما به سازنده ارسال شد. منتظر تاييد باشيد.")
+        return
+    parts = msg.text.split()
+    if len(parts) < 2:
+        bot.reply_to(msg, "لطفا آيدي عددي کاربر را وارد کنيد: /ma 123456789")
+        return
+    try:
+        new_admin_id = int(parts[1])
+    except:
+        bot.reply_to(msg, "آيدي عددي معتبر نيست")
+        return
+    if new_admin_id == OWNER_ID:
+        bot.reply_to(msg, "کاربر مورد نظر خود سازنده بات است.")
+        return
+    if str(new_admin_id) in admins:
+        bot.reply_to(msg, f"کاربر {new_admin_id} قبلا ادمين است.")
+        return
+    admins[str(new_admin_id)] = 'admin'
+    save_admins()
+    admin_num = assign_admin_number(new_admin_id)
+    bot.reply_to(msg, f"کاربر با آيدي {new_admin_id} به ليست ادمين ها اضافه شد.\nشماره: {admin_num}")
+
+@bot.message_handler(commands=['kickadmin'])
+def kick_admin(msg):
+    user_id = msg.from_user.id
+    if is_banned(user_id):
+        bot.reply_to(msg, "*** [ Ban.System ] : شما از بات محروم شدید ***")
+        return
+    if user_id != OWNER_ID and not is_amin(user_id) and not is_professor(user_id):
+        return
+    if user_id != OWNER_ID and (is_amin(user_id) or is_professor(user_id)):
+        parts = msg.text.split()
+        if len(parts) < 2:
+            bot.reply_to(msg, "لطفا آيدي عددي کاربر را وارد کنيد: /kickadmin 123456789")
+            return
+        try:
+            target_id = int(parts[1])
+        except:
+            bot.reply_to(msg, "آيدي عددي معتبر نيست")
+            return
+        if target_id == OWNER_ID:
+            bot.reply_to(msg, "شما نمي توانيد سازنده را حذف کنيد.")
+            return
+        if str(target_id) not in admins:
+            bot.reply_to(msg, f"کاربر {target_id} ادمين نيست.")
+            return
+        markup = telebot.types.InlineKeyboardMarkup(row_width=2)
+        btn_accept = telebot.types.InlineKeyboardButton("قبول", callback_data=f"accept_kick_{target_id}_{user_id}")
+        btn_reject = telebot.types.InlineKeyboardButton("رد", callback_data=f"reject_{user_id}")
+        markup.add(btn_accept, btn_reject)
+        if is_amin(user_id):
+            bot.send_message(OWNER_ID, f"Rank : AmiN Mikhahad Az Dastoor : /kickadmin {target_id} Estefadeh Konad !", reply_markup=markup)
+        elif is_professor(user_id):
+            bot.send_message(OWNER_ID, f"Rank : Professor Mikhahad Az Dastoor : /kickadmin {target_id} Estefadeh Konad !", reply_markup=markup)
+        bot.reply_to(msg, "درخواست شما به سازنده ارسال شد. منتظر تاييد باشيد.")
+        return
+    parts = msg.text.split()
+    if len(parts) < 2:
+        bot.reply_to(msg, "لطفا آيدي عددي کاربر را وارد کنيد: /kickadmin 123456789")
+        return
+    try:
+        target_id = int(parts[1])
+    except:
+        bot.reply_to(msg, "آيدي عددي معتبر نيست")
+        return
+    if target_id == OWNER_ID:
+        bot.reply_to(msg, "شما نمي توانيد سازنده را حذف کنيد.")
+        return
+    if str(target_id) not in admins:
+        bot.reply_to(msg, f"کاربر {target_id} ادمين نيست.")
+        return
+    del admins[str(target_id)]
+    save_admins()
+    bot.reply_to(msg, f"کاربر با آيدي {target_id} از ليست ادمين ها حذف شد.")
+
+@bot.message_handler(commands=['ban'])
+def ban_user(msg):
+    user_id = msg.from_user.id
+    if is_banned(user_id):
+        bot.reply_to(msg, "*** [ Ban.System ] : شما از بات محروم شدید ***")
+        return
+    if user_id != OWNER_ID and not is_amin(user_id) and not is_professor(user_id):
+        return
+    if user_id != OWNER_ID and (is_amin(user_id) or is_professor(user_id)):
+        parts = msg.text.split()
+        if len(parts) < 2:
+            bot.reply_to(msg, "لطفا آيدي عددي کاربر را وارد کنيد: /ban 123456789")
+            return
+        try:
+            target_id = int(parts[1])
+        except:
+            bot.reply_to(msg, "آيدي عددي معتبر نيست")
+            return
+        if target_id == OWNER_ID:
+            bot.reply_to(msg, "شما نمي توانيد سازنده را محروم کنيد.")
+            return
+        if str(target_id) in admins:
+            bot.reply_to(msg, "شما نمي توانيد ادمين را محروم کنيد.")
+            return
+        if is_banned(target_id):
+            bot.reply_to(msg, f"کاربر {target_id} قبلا محروم شده است.")
+            return
+        markup = telebot.types.InlineKeyboardMarkup(row_width=2)
+        btn_accept = telebot.types.InlineKeyboardButton("قبول", callback_data=f"accept_ban_{target_id}_{user_id}")
+        btn_reject = telebot.types.InlineKeyboardButton("رد", callback_data=f"reject_{user_id}")
+        markup.add(btn_accept, btn_reject)
+        if is_amin(user_id):
+            bot.send_message(OWNER_ID, f"Rank : AmiN Mikhahad Az Dastoor : /ban {target_id} Estefadeh Konad !", reply_markup=markup)
+        elif is_professor(user_id):
+            bot.send_message(OWNER_ID, f"Rank : Professor Mikhahad Az Dastoor : /ban {target_id} Estefadeh Konad !", reply_markup=markup)
+        bot.reply_to(msg, "درخواست شما به سازنده ارسال شد. منتظر تاييد باشيد.")
+        return
+    parts = msg.text.split()
+    if len(parts) < 2:
+        bot.reply_to(msg, "لطفا آيدي عددي کاربر را وارد کنيد: /ban 123456789")
+        return
+    try:
+        target_id = int(parts[1])
+    except:
+        bot.reply_to(msg, "آيدي عددي معتبر نيست")
+        return
+    if target_id == OWNER_ID:
+        bot.reply_to(msg, "شما نمي توانيد خود را محروم کنيد.")
+        return
+    if str(target_id) in admins:
+        bot.reply_to(msg, "شما نمي توانيد ادمين را محروم کنيد.")
+        return
+    if is_banned(target_id):
+        bot.reply_to(msg, f"کاربر {target_id} قبلا محروم شده است.")
+        return
+    banned_users[str(target_id)] = True
+    save_banned()
+    bot.send_message(target_id, "*** [ Ban.System ] : شما از بات محروم شدید ***")
+    bot.reply_to(msg, f"کاربر با آیدی {target_id} محروم شد.")
+
+@bot.message_handler(commands=['unban'])
+def unban_user(msg):
+    user_id = msg.from_user.id
+    if is_banned(user_id):
+        bot.reply_to(msg, "*** [ Ban.System ] : شما از بات محروم شدید ***")
+        return
+    if user_id != OWNER_ID and not is_amin(user_id) and not is_professor(user_id):
+        return
+    if user_id != OWNER_ID and (is_amin(user_id) or is_professor(user_id)):
+        parts = msg.text.split()
+        if len(parts) < 2:
+            bot.reply_to(msg, "لطفا آيدي عددي کاربر را وارد کنيد: /unban 123456789")
+            return
+        try:
+            target_id = int(parts[1])
+        except:
+            bot.reply_to(msg, "آيدي عددي معتبر نيست")
+            return
+        if not is_banned(target_id):
+            bot.reply_to(msg, f"کاربر {target_id} محروم نیست.")
+            return
+        markup = telebot.types.InlineKeyboardMarkup(row_width=2)
+        btn_accept = telebot.types.InlineKeyboardButton("قبول", callback_data=f"accept_unban_{target_id}_{user_id}")
+        btn_reject = telebot.types.InlineKeyboardButton("رد", callback_data=f"reject_{user_id}")
+        markup.add(btn_accept, btn_reject)
+        if is_amin(user_id):
+            bot.send_message(OWNER_ID, f"Rank : AmiN Mikhahad Az Dastoor : /unban {target_id} Estefadeh Konad !", reply_markup=markup)
+        elif is_professor(user_id):
+            bot.send_message(OWNER_ID, f"Rank : Professor Mikhahad Az Dastoor : /unban {target_id} Estefadeh Konad !", reply_markup=markup)
+        bot.reply_to(msg, "درخواست شما به سازنده ارسال شد. منتظر تاييد باشيد.")
+        return
+    parts = msg.text.split()
+    if len(parts) < 2:
+        bot.reply_to(msg, "لطفا آيدي عددي کاربر را وارد کنيد: /unban 123456789")
+        return
+    try:
+        target_id = int(parts[1])
+    except:
+        bot.reply_to(msg, "آيدي عددي معتبر نيست")
+        return
+    if not is_banned(target_id):
+        bot.reply_to(msg, f"کاربر {target_id} محروم نیست.")
+        return
+    del banned_users[str(target_id)]
+    save_banned()
+    bot.send_message(target_id, "*** [ Ban.System ] : شما از حالت محرومیت خارج شدید ***\n\n✅ اکنون میتوانید از تمام دستورات بات استفاده کنید.\n📌 برای مشاهده دستورات، دستور /info را بزنید.")
+    bot.reply_to(msg, f"کاربر با آیدی {target_id} از محرومیت خارج شد.")
+
+@bot.message_handler(commands=['ac'])
+def admin_chat_toggle(msg):
+    user_id = msg.from_user.id
+    if is_banned(user_id):
+        bot.reply_to(msg, "*** [ Ban.System ] : شما از بات محروم شدید ***")
+        return
+    if not is_admin(user_id):
+        return
+    if user_id in admin_chat_mode and admin_chat_mode[user_id]:
+        admin_chat_mode[user_id] = False
+        bot.reply_to(msg, "شما از حالت چت ادمين خارج شديد.")
+    else:
+        admin_chat_mode[user_id] = True
+        if user_id != OWNER_ID:
+            admin_num = get_admin_number(user_id) or "Admin"
+            bot.reply_to(msg, f"شما وارد حالت چت ادمين شديد.\nشماره شما: {admin_num}\nبراي خروج دوباره /ac را بزنيد.")
+        else:
+            bot.reply_to(msg, "شما (OWNER) وارد حالت چت ادمين شديد.\nبراي خروج دوباره /ac را بزنيد.")
+
+@bot.message_handler(commands=['tickets'])
+def show_tickets(msg):
+    user_id = msg.from_user.id
+    if is_banned(user_id):
+        bot.reply_to(msg, "*** [ Ban.System ] : شما از بات محروم شدید ***")
+        return
+    if not is_admin(user_id):
+        return
+    open_tickets = []
+    for ticket_num, ticket_data in tickets.items():
+        user_id_ticket = ticket_data['user_id']
+        if user_id_ticket not in chat_sessions or chat_sessions[user_id_ticket] != 'open':
+            open_tickets.append((ticket_num, ticket_data))
+    if not open_tickets:
+        bot.reply_to(msg, "هيچ بليط باز نشده اي وجود ندارد.")
+        return
+    response = "ليست بليط هاي باز نشده:\n\n"
+    for ticket_num, data in open_tickets:
+        response += f"شماره: {ticket_num}\n"
+        response += f"نام: {data['first_name']} (@{data['username']})\n"
+        response += f"سوال: {data['question'][:50]}...\n"
+        response += f"براي باز کردن: /open {ticket_num}\n\n"
+    bot.reply_to(msg, response)
+
+@bot.message_handler(commands=['helpme'])
+def helpme(msg):
+    user_id = msg.from_user.id
+    if is_banned(user_id):
+        bot.reply_to(msg, "*** [ Ban.System ] : شما از بات محروم شدید ***")
+        return
+    if user_id != OWNER_ID:
+        return
+    waiting_for_message[user_id] = True
+    bot.reply_to(msg, "/close : شما وارد حالت ارسال پيام شديد لطفا بعد از فرستادن پيام خود براي بستن حالت از اين دستور استفاده کنيد")
+    bot.reply_to(msg, "بعد از ارسال پيام خود سازنده بات به پي وي شما پيام ارسال مي کند ولي از وايس استفاده نکنيد و به صورت متن پيام خود را بفرستيد")
+
+@bot.message_handler(commands=['close'])
+def close(msg):
+    user_id = msg.from_user.id
+    if is_banned(user_id):
+        bot.reply_to(msg, "*** [ Ban.System ] : شما از بات محروم شدید ***")
+        return
+    if user_id in waiting_for_message:
+        waiting_for_message[user_id] = False
+        bot.reply_to(msg, "شما از حالت ارسال پيام خارج شديد")
+    else:
+        bot.reply_to(msg, "درحالت ارسال پيام نيستيد")
+
+@bot.message_handler(commands=['ticket'])
+def soal(msg):
+    user_id = msg.from_user.id
+    if is_banned(user_id):
+        bot.reply_to(msg, "*** [ Ban.System ] : شما از بات محروم شدید ***")
+        return
+    global ticket_counter
+    if is_admin(user_id):
+        bot.reply_to(msg, "شما ادمين هستيد و نمي توانيد تيکت بزنيد")
+        return
+    text = msg.text
+    parts = text.split(maxsplit=1)
+    if user_id in user_ticket_status and user_ticket_status[user_id] in tickets:
+        bot.reply_to(msg, "شما يک بليط فعال داريد و نمي توانيد بليط جديد بفرستيد")
+        return
+    if len(parts) < 2:
+        bot.reply_to(msg, "لطفا بعد از /ticket پيام خود را بنويسيد")
+        bot.reply_to(msg, "مثال : /ticket سوال دارم")
+        bot.reply_to(msg, "شما مي توانيد متن پايين را کپي کرده و براي بات ارسال کنيد که اين يک راه ساده تر و سريع تر است")
+        bot.reply_to(msg, "/ticket سلام ميشه من رو راهنمايي کنيد ؟")
+        return
+    soal_text = parts[1]
+    user = msg.from_user
+    ticket_counter += 1
+    ticket_number = ticket_counter
+    tickets[ticket_number] = {
+        'user_id': user_id,
+        'username': user.username or 'بدون يوزرنيم',
+        'first_name': user.first_name or 'ناشناس',
+        'question': soal_text
+    }
+    user_ticket_status[user_id] = ticket_number
+    save_data()
+    bot.send_message(OWNER_ID, f"بليط جديد شماره: {ticket_number}\nنام: {user.first_name} (@{user.username}) [آيدي: {user_id}]\nسوال: {soal_text}\n\nبراي باز کردن: /open {ticket_number}")
+    bot.reply_to(msg, "پيام شما ارسال شد")
+
+@bot.message_handler(commands=['open'])
+def open_chat(msg):
+    user_id = msg.from_user.id
+    if is_banned(user_id):
+        bot.reply_to(msg, "*** [ Ban.System ] : شما از بات محروم شدید ***")
+        return
+    if not is_admin(user_id):
+        return
+    parts = msg.text.split()
+    if len(parts) < 2:
+        bot.reply_to(msg, "/open 5")
+        return
+    try:
+        ticket_number = int(parts[1])
+    except:
+        bot.reply_to(msg, "شماره معتبر نيست")
+        return
+    if ticket_number not in tickets:
+        bot.reply_to(msg, f"بليط {ticket_number} وجود ندارد")
+        return
+    user_id_ticket = tickets[ticket_number]['user_id']
+    chat_sessions[user_id_ticket] = 'open'
+    bot.send_message(user_id_ticket, "بليط شما توسط ادمين باز شد. براي چت دستور /chat را بزنيد.")
+    bot.reply_to(msg, f"چت با بليط {ticket_number} باز شد")
+
+@bot.message_handler(commands=['chat'])
+def chat_with_user(msg):
+    user_id = msg.from_user.id
+    if is_banned(user_id):
+        bot.reply_to(msg, "*** [ Ban.System ] : شما از بات محروم شدید ***")
+        return
+    if is_admin(user_id):
+        bot.reply_to(msg, "شما ادمين هستيد و نمي توانيد از اين دستور استفاده کنيد")
+        return
+    if user_id not in chat_sessions or chat_sessions[user_id] != 'open':
+        bot.reply_to(msg, "چت فعالی نداريد")
+        return
+    waiting_for_message[user_id] = True
+    bot.reply_to(msg, "وارد چت شديد. پيام خود را بفرستيد")
+
+@bot.message_handler(commands=['a'])
+def admin_chat(msg):
+    user_id = msg.from_user.id
+    if is_banned(user_id):
+        bot.reply_to(msg, "*** [ Ban.System ] : شما از بات محروم شدید ***")
+        return
+    if not is_admin(user_id):
+        return
+    parts = msg.text.split(maxsplit=1)
+    if len(parts) < 2:
+        bot.reply_to(msg, "/a پيام")
+        return
+    for user_id_chat, status in chat_sessions.items():
+        if status == 'open':
+            bot.send_message(user_id_chat, f"پاسخ ادمين:\n{parts[1]}")
+            bot.reply_to(msg, f"پيام ارسال شد")
+            return
+    bot.reply_to(msg, "چت فعالی وجود ندارد")
+
+@bot.message_handler(commands=['cc'])
+def close_chat(msg):
+    user_id = msg.from_user.id
+    if is_banned(user_id):
+        bot.reply_to(msg, "*** [ Ban.System ] : شما از بات محروم شدید ***")
+        return
+    if not is_admin(user_id):
+        return
+    for user_id_chat, status in chat_sessions.items():
+        if status == 'open':
+            chat_sessions[user_id_chat] = 'closed'
+            bot.send_message(user_id_chat, "گفتگو پایان یافت")
+            markup = telebot.types.InlineKeyboardMarkup(row_width=2)
+            btn_yes = telebot.types.InlineKeyboardButton("بله", callback_data=f"delete_{user_id_chat}")
+            btn_no = telebot.types.InlineKeyboardButton("خیر", callback_data=f"keep_{user_id_chat}")
+            markup.add(btn_yes, btn_no)
+            bot.send_message(user_id_chat, "آیا از این گفتگو راضی بودید؟", reply_markup=markup)
+            bot.reply_to(msg, f"چت پایان یافت")
+            if user_id_chat in user_ticket_status:
+                ticket_num = user_ticket_status[user_id_chat]
+                if ticket_num in tickets:
+                    del tickets[ticket_num]
+                del user_ticket_status[user_id_chat]
+                save_data()
+            return
+    bot.reply_to(msg, "چت فعالی وجود ندارد")
+
+@bot.callback_query_handler(func=lambda call: True)
+def handle_callbacks(call):
+    if call.data.startswith('accept_ma_'):
+        parts = call.data.split('_')
+        new_admin_id = int(parts[2])
+        if str(new_admin_id) in admins:
+            bot.send_message(OWNER_ID, f"کاربر {new_admin_id} قبلا ادمین است.")
+            bot.answer_callback_query(call.id, "قبلا ادمین است")
+            return
+        admins[str(new_admin_id)] = 'admin'
+        save_admins()
+        admin_num = assign_admin_number(new_admin_id)
+        bot.send_message(OWNER_ID, f"کاربر با آیدی {new_admin_id} به لیست ادمین ها اضافه شد.\nشماره: {admin_num}")
+        bot.answer_callback_query(call.id, "تایید شد")
+    elif call.data.startswith('accept_kick_'):
+        parts = call.data.split('_')
+        target_id = int(parts[2])
+        if str(target_id) not in admins:
+            bot.send_message(OWNER_ID, f"کاربر {target_id} ادمین نیست.")
+            bot.answer_callback_query(call.id, "ادمین نیست")
+            return
+        del admins[str(target_id)]
+        save_admins()
+        bot.send_message(OWNER_ID, f"کاربر با آیدی {target_id} از لیست ادمین ها حذف شد.")
+        bot.answer_callback_query(call.id, "حذف شد")
+    elif call.data.startswith('accept_ban_'):
+        parts = call.data.split('_')
+        target_id = int(parts[2])
+        if is_banned(target_id):
+            bot.send_message(OWNER_ID, f"کاربر {target_id} قبلا محروم شده است.")
+            bot.answer_callback_query(call.id, "قبلا محروم شده")
+            return
+        banned_users[str(target_id)] = True
+        save_banned()
+        bot.send_message(OWNER_ID, f"کاربر با آیدی {target_id} محروم شد.")
+        bot.send_message(target_id, "*** [ Ban.System ] : شما از بات محروم شدید ***")
+        bot.answer_callback_query(call.id, "محروم شد")
+    elif call.data.startswith('accept_unban_'):
+        parts = call.data.split('_')
+        target_id = int(parts[2])
+        if not is_banned(target_id):
+            bot.send_message(OWNER_ID, f"کاربر {target_id} محروم نیست.")
+            bot.answer_callback_query(call.id, "محروم نیست")
+            return
+        del banned_users[str(target_id)]
+        save_banned()
+        bot.send_message(OWNER_ID, f"کاربر با آیدی {target_id} از محرومیت خارج شد.")
+        bot.send_message(target_id, "*** [ Ban.System ] : شما از حالت محرومیت خارج شدید ***\n\n✅ اکنون میتوانید از تمام دستورات بات استفاده کنید.\n📌 برای مشاهده دستورات، دستور /info را بزنید.")
+        bot.answer_callback_query(call.id, "رفع محرومیت شد")
+    elif call.data.startswith('reject_'):
+        bot.send_message(OWNER_ID, "درخواست رد شد.")
+        bot.answer_callback_query(call.id, "رد شد")
+    elif call.data.startswith('panel_'):
+        handle_panel(call)
+
 @app.route('/')
 def home():
     return "Bot is running!"
