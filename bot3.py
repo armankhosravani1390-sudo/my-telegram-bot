@@ -306,14 +306,12 @@ def update_bot(msg):
     except:
         pass
 
-# ========== پنل اصلی ==========
+# ========== پنل اصلی (برای همه) ==========
 @bot.message_handler(commands=['panel'])
 def panel(msg):
     user_id = msg.from_user.id
     if is_banned(user_id):
         bot.reply_to(msg, "*** [ Ban.System ] : شما از بات محروم شدید ***")
-        return
-    if user_id != OWNER_ID:
         return
     
     markup = telebot.types.InlineKeyboardMarkup(row_width=2)
@@ -517,88 +515,7 @@ def owner_cmds(msg):
     response += "/kickadmin [ایدی] : حذف ادمین\n"
     bot.reply_to(msg, response)
 
-# ========== مدیریت پیام‌ها ==========
-@bot.message_handler(func=lambda m: True)
-def handle_messages(msg):
-    user_id = msg.from_user.id
-    if is_banned(user_id):
-        return
-    
-    # حالت خبر
-    if user_id in news_mode and news_mode[user_id]:
-        global news_counter
-        news_counter += 1
-        news_data[str(news_counter)] = msg.text
-        save_news()
-        bot.reply_to(msg, f"✅ خبر {news_counter} با موفقیت ثبت شد.")
-        news_mode[user_id] = False
-        return
-    
-    # حالت تبلیغ
-    if user_id in ad_mode and ad_mode[user_id]:
-        global ad_counter
-        ad_counter += 1
-        ad_data[str(ad_counter)] = msg.text
-        save_ad()
-        bot.reply_to(msg, f"✅ تبلیغ {ad_counter} با موفقیت ثبت شد.")
-        ad_mode[user_id] = False
-        return
-    
-    # بقیه پیام‌ها
-    if is_admin(user_id):
-        if user_id in admin_chat_mode and admin_chat_mode[user_id]:
-            if user_id == OWNER_ID:
-                display_name = "OWNER"
-                user_link = ""
-            elif is_amin(user_id):
-                display_name = "AmiN"
-                user_link = ""
-            elif is_professor(user_id):
-                display_name = "Professor"
-                user_link = ""
-            else:
-                admin_num = get_admin_number(user_id) or "Admin"
-                display_name = f"{admin_num}"
-                user_link = get_user_link(msg.from_user)
-            for admin_id in admins:
-                if int(admin_id) != user_id:
-                    try:
-                        if user_id == OWNER_ID or is_amin(user_id) or is_professor(user_id):
-                            bot.send_message(int(admin_id), f"[ Admin.Chat ] ( {display_name} ) : {msg.text}")
-                        else:
-                            bot.send_message(int(admin_id), f"[ Admin.Chat ] ( {display_name} ) ( {user_link} ) : {msg.text}", parse_mode='HTML')
-                    except:
-                        pass
-            if OWNER_ID != user_id:
-                try:
-                    if is_amin(user_id):
-                        bot.send_message(OWNER_ID, f"[ Admin.Chat ] ( AmiN ) : {msg.text}")
-                    elif is_professor(user_id):
-                        bot.send_message(OWNER_ID, f"[ Admin.Chat ] ( Professor ) : {msg.text}")
-                    else:
-                        bot.send_message(OWNER_ID, f"[ Admin.Chat ] ( {display_name} ) ( {user_link} ) : {msg.text}", parse_mode='HTML')
-                except:
-                    pass
-            bot.reply_to(msg, "پیام شما به چت ادمین ها ارسال شد.")
-            return
-        else:
-            bot.reply_to(msg, "برای دیدن دستورات ادمینی ابتدا دستور /cmds را بزنید.")
-            return
-    
-    if user_id in waiting_for_message and waiting_for_message[user_id]:
-        if user_id != OWNER_ID and user_id in chat_sessions and chat_sessions[user_id] == 'open':
-            bot.send_message(OWNER_ID, f"از کاربر:\nنام: {msg.from_user.first_name} [آیدی: {user_id}]\nپیام: {msg.text}")
-            bot.reply_to(msg, "ارسال شد")
-        else:
-            bot.forward_message(OWNER_ID, user_id, msg.message_id)
-            bot.send_message(OWNER_ID, f"نام: {msg.from_user.first_name} (@{msg.from_user.username}) | آیدی: {user_id}")
-            bot.reply_to(msg, "پیام ارسال شد")
-            waiting_for_message[user_id] = False
-    else:
-        if not msg.text.startswith('/'):
-            bot.reply_to(msg, "ابتدا دستور /info را بزنید تا دستورات بات را ببینید")
-
-# ========== دستورات قبلی ==========
+# ========== دستورات اصلی بات ==========
 @bot.message_handler(commands=['start'])
 def start(msg):
     user_id = msg.from_user.id
@@ -613,7 +530,7 @@ def info(msg):
     if is_banned(user_id):
         bot.reply_to(msg, "*** [ Ban.System ] : شما از بات محروم شدید ***")
         return
-    response = "لیست دستورات بات:\n\n"
+    response = "📋 لیست دستورات بات:\n\n"
     response += "/helpme : صحبت با سازنده در پی وی شما\n"
     response += "/close : خروج از حالت صحبت یا همان بستن حالت دستور بالایی\n"
     response += "/ticket : ارسال سوال و صحبت درون بات با ادمین\n"
@@ -625,7 +542,7 @@ def info(msg):
             response += "/perms : نمایش دسترسی ها\n"
     if user_id == OWNER_ID:
         response += "/admins : لیست ادمین ها\n"
-        response += "/panel : پنل اصلی بات\n"
+    response += "/panel : پنل اصلی بات\n"
     bot.reply_to(msg, response)
 
 @bot.message_handler(commands=['perms'])
@@ -636,11 +553,11 @@ def show_perms(msg):
         return
     if user_id != OWNER_ID and not is_amin(user_id) and not is_professor(user_id):
         return
-    response = "جدول دسترسي ها:\n\n"
-    response += "OWNER (سازنده):\n"
+    response = "📋 جدول دسترسي ها:\n\n"
+    response += "👑 OWNER (سازنده):\n"
     response += "  - همه دستورات\n"
     response += "  - بدون نياز به تاييد\n\n"
-    response += "AmiN (ادمین کامل):\n"
+    response += "⭐ AmiN (ادمین کامل):\n"
     response += "  - /ma (نياز به تاييد OWNER)\n"
     response += "  - /kickadmin (نياز به تاييد OWNER)\n"
     response += "  - /ban (نياز به تاييد OWNER)\n"
@@ -652,7 +569,7 @@ def show_perms(msg):
     response += "  - /ac\n"
     response += "  - /cmds\n"
     response += "  - /perms\n\n"
-    response += "Professor (استاد):\n"
+    response += "🎓 Professor (استاد):\n"
     response += "  - /ma (نياز به تاييد OWNER)\n"
     response += "  - /kickadmin (نياز به تاييد OWNER)\n"
     response += "  - /ban (نياز به تاييد OWNER)\n"
@@ -664,7 +581,7 @@ def show_perms(msg):
     response += "  - /ac\n"
     response += "  - /cmds\n"
     response += "  - /perms\n\n"
-    response += "Admin (ادمین معمولی):\n"
+    response += "🛡️ Admin (ادمین معمولی):\n"
     response += "  - /tickets\n"
     response += "  - /open\n"
     response += "  - /a\n"
@@ -676,7 +593,7 @@ def show_perms(msg):
     response += "  - /ban (ندارد)\n"
     response += "  - /unban (ندارد)\n"
     response += "  - /perms (ندارد)\n\n"
-    response += "User (کاربر عادی):\n"
+    response += "👤 User (کاربر عادی):\n"
     response += "  - /ticket\n"
     response += "  - /chat\n"
     response += "  - ساير دستورات را ندارد"
@@ -690,15 +607,15 @@ def show_admins(msg):
         return
     if user_id != OWNER_ID and not is_amin(user_id) and not is_professor(user_id):
         return
-    response = "ليست ادمين ها:\n\n"
-    response += "سازنده: OWNER\n"
+    response = "📋 ليست ادمين ها:\n\n"
+    response += "👑 سازنده: OWNER\n"
     if admins:
         for admin_id in admins:
             admin_num = get_admin_number(admin_id) or "بدون شماره"
             if admin_num == "AmiN":
-                response += f"کاپیتان : AmiN\n"
+                response += f"⭐ کاپیتان : AmiN\n"
             elif admin_num == "Professor":
-                response += f"آقای : Professor\n"
+                response += f"🎓 آقای : Professor\n"
             else:
                 try:
                     user_info = bot.get_chat(admin_id)
@@ -718,7 +635,7 @@ def cmds(msg):
         return
     if not is_admin(user_id):
         return
-    response = "ليست دستورات ادمين:\n\n"
+    response = "📋 ليست دستورات ادمين:\n\n"
     response += "/tickets : ليست بليط هاي باز نشده\n"
     response += "/open [شماره] : باز کردن بليط\n"
     response += "/a [پيام] : ارسال پاسخ به کاربر\n"
@@ -1133,6 +1050,87 @@ def close_chat(msg):
                 save_data()
             return
     bot.reply_to(msg, "چت فعالی وجود ندارد")
+
+@bot.message_handler(func=lambda m: True)
+def handle_messages(msg):
+    user_id = msg.from_user.id
+    if is_banned(user_id):
+        return
+    
+    # حالت خبر
+    if user_id in news_mode and news_mode[user_id]:
+        global news_counter
+        news_counter += 1
+        news_data[str(news_counter)] = msg.text
+        save_news()
+        bot.reply_to(msg, f"✅ خبر {news_counter} با موفقیت ثبت شد.")
+        news_mode[user_id] = False
+        return
+    
+    # حالت تبلیغ
+    if user_id in ad_mode and ad_mode[user_id]:
+        global ad_counter
+        ad_counter += 1
+        ad_data[str(ad_counter)] = msg.text
+        save_ad()
+        bot.reply_to(msg, f"✅ تبلیغ {ad_counter} با موفقیت ثبت شد.")
+        ad_mode[user_id] = False
+        return
+    
+    # ادمین‌ها
+    if is_admin(user_id):
+        if user_id in admin_chat_mode and admin_chat_mode[user_id]:
+            if user_id == OWNER_ID:
+                display_name = "OWNER"
+                user_link = ""
+            elif is_amin(user_id):
+                display_name = "AmiN"
+                user_link = ""
+            elif is_professor(user_id):
+                display_name = "Professor"
+                user_link = ""
+            else:
+                admin_num = get_admin_number(user_id) or "Admin"
+                display_name = f"{admin_num}"
+                user_link = get_user_link(msg.from_user)
+            for admin_id in admins:
+                if int(admin_id) != user_id:
+                    try:
+                        if user_id == OWNER_ID or is_amin(user_id) or is_professor(user_id):
+                            bot.send_message(int(admin_id), f"[ Admin.Chat ] ( {display_name} ) : {msg.text}")
+                        else:
+                            bot.send_message(int(admin_id), f"[ Admin.Chat ] ( {display_name} ) ( {user_link} ) : {msg.text}", parse_mode='HTML')
+                    except:
+                        pass
+            if OWNER_ID != user_id:
+                try:
+                    if is_amin(user_id):
+                        bot.send_message(OWNER_ID, f"[ Admin.Chat ] ( AmiN ) : {msg.text}")
+                    elif is_professor(user_id):
+                        bot.send_message(OWNER_ID, f"[ Admin.Chat ] ( Professor ) : {msg.text}")
+                    else:
+                        bot.send_message(OWNER_ID, f"[ Admin.Chat ] ( {display_name} ) ( {user_link} ) : {msg.text}", parse_mode='HTML')
+                except:
+                    pass
+            bot.reply_to(msg, "پیام شما به چت ادمین ها ارسال شد.")
+            return
+        else:
+            bot.reply_to(msg, "برای دیدن دستورات ادمینی ابتدا دستور /cmds را بزنید.")
+            return
+    
+    # کاربران عادی
+    if user_id in waiting_for_message and waiting_for_message[user_id]:
+        if user_id != OWNER_ID and user_id in chat_sessions and chat_sessions[user_id] == 'open':
+            bot.send_message(OWNER_ID, f"از کاربر:\nنام: {msg.from_user.first_name} [آیدی: {user_id}]\nپیام: {msg.text}")
+            bot.reply_to(msg, "ارسال شد")
+        else:
+            bot.forward_message(OWNER_ID, user_id, msg.message_id)
+            bot.send_message(OWNER_ID, f"نام: {msg.from_user.first_name} (@{msg.from_user.username}) | آیدی: {user_id}")
+            bot.reply_to(msg, "پیام ارسال شد")
+            waiting_for_message[user_id] = False
+    else:
+        if not msg.text.startswith('/'):
+            bot.reply_to(msg, "ابتدا دستور /info را بزنید تا دستورات بات را ببینید")
 
 @bot.callback_query_handler(func=lambda call: True)
 def handle_callbacks(call):
