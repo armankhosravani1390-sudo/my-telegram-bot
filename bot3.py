@@ -539,7 +539,7 @@ def unban_user(msg):
         return
     del banned_users[str(target_id)]
     save_banned()
-    bot.send_message(target_id, "*** [ Ban.System ] : محرومیت شما برداشته شد ***")
+    bot.send_message(target_id, "*** [ Ban.System ] : شما از حالت محرومیت خارج شدید ***\n\n✅ اکنون میتوانید از تمام دستورات بات استفاده کنید.\n📌 برای مشاهده دستورات، دستور /info را بزنید.")
     bot.reply_to(msg, f"کاربر با آیدی {target_id} از محرومیت خارج شد.")
 
 @bot.message_handler(commands=['ac'])
@@ -778,7 +778,7 @@ def handle_callbacks(call):
         del banned_users[str(target_id)]
         save_banned()
         bot.send_message(OWNER_ID, f"کاربر با آیدی {target_id} از محرومیت خارج شد.")
-        bot.send_message(target_id, "*** [ Ban.System ] : محرومیت شما برداشته شد ***")
+        bot.send_message(target_id, "*** [ Ban.System ] : شما از حالت محرومیت خارج شدید ***\n\n✅ اکنون میتوانید از تمام دستورات بات استفاده کنید.\n📌 برای مشاهده دستورات، دستور /info را بزنید.")
         bot.answer_callback_query(call.id, "رفع محرومیت شد")
     elif call.data.startswith('reject_'):
         bot.send_message(OWNER_ID, "درخواست رد شد.")
@@ -788,7 +788,6 @@ def handle_callbacks(call):
 def forward_all(msg):
     user_id = msg.from_user.id
     if is_banned(user_id):
-        bot.reply_to(msg, "*** [ Ban.System ] : شما از بات محروم شدید ***")
         return
     user = msg.from_user
     if is_admin(user_id):
@@ -827,6 +826,9 @@ def forward_all(msg):
                     pass
             bot.reply_to(msg, "پیام شما به چت ادمین ها ارسال شد.")
             return
+        else:
+            bot.reply_to(msg, "برای دیدن دستورات ادمینی ابتدا دستور /cmds را بزنید.")
+            return
     if user_id in waiting_for_message and waiting_for_message[user_id]:
         if user_id != OWNER_ID and user_id in chat_sessions and chat_sessions[user_id] == 'open':
             bot.send_message(OWNER_ID, f"از کاربر:\nنام: {user.first_name} [آیدی: {user.id}]\nپیام: {msg.text}")
@@ -837,7 +839,8 @@ def forward_all(msg):
             bot.reply_to(msg, "پیام ارسال شد")
             waiting_for_message[user_id] = False
     else:
-        bot.reply_to(msg, "ابتدا /helpme را بزنید یا برای چت ادمین ها /ac را فعال کنید")
+        if not msg.text.startswith('/'):
+            bot.reply_to(msg, "ابتدا دستور /info را بزنید تا دستورات بات را ببینید")
 
 @app.route('/')
 def home():
