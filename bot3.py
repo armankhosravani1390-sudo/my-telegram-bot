@@ -13,7 +13,6 @@ OWNER_ID = 6703121829
 bot = telebot.TeleBot(TOKEN)
 app = Flask(__name__)
 
-# ========== دیتاهای اصلی ==========
 waiting_for_message = {}
 tickets = {}
 ticket_counter = 0
@@ -36,7 +35,6 @@ ad_counter = 0
 news_mode = {}
 ad_mode = {}
 
-# ========== دیتاهای بازی ==========
 games = {}
 game_players = {}
 game_scores = {}
@@ -44,7 +42,6 @@ waiting_games = []
 choice_timers = {}
 rps_password_temp = {}
 rps_join_temp = {}
-# ===================================
 
 DATA_FILE = 'data.json'
 ADMINS_FILE = 'admins.json'
@@ -311,7 +308,6 @@ def get_user_link(user):
     else:
         return user.first_name or user.last_name or "کاربر"
 
-# ========== توابع بازی ==========
 def get_winner(choice1, choice2):
     if choice1 == choice2:
         return 'draw'
@@ -407,7 +403,6 @@ def check_rps_round(game_id):
         bot.send_message(player1, f"🎮 دور {game_scores[str(player1)]['round'] + 1} - انتخاب خود را بکنید:", reply_markup=markup)
         bot.send_message(player2, f"🎮 دور {game_scores[str(player2)]['round'] + 1} - انتخاب خود را بکنید:", reply_markup=markup)
 
-# ========== دستور /skg (فقط OWNER) ==========
 @bot.message_handler(commands=['skg'])
 def skg_command(msg):
     user_id = msg.from_user.id
@@ -441,7 +436,6 @@ def skg_command(msg):
     bot.reply_to(msg, f"✅ حرکت شما به صورت خودکار ثبت شد: {winning_choice}")
     check_rps_round(owner_game_id)
 
-# ========== دستور /botup ==========
 @bot.message_handler(commands=['botup'])
 def botup(msg):
     user_id = msg.from_user.id
@@ -519,7 +513,6 @@ def botup(msg):
     bot.send_message(user_id, response)
     bot.reply_to(msg, "✅ اطلاعات کامل بات برای شما ارسال شد.")
 
-# ========== دستور /update ==========
 @bot.message_handler(commands=['update'])
 def update_bot(msg):
     user_id = msg.from_user.id
@@ -565,7 +558,6 @@ def update_bot(msg):
     except:
         pass
 
-# ========== دستور /bakhshersalfilmsuper ==========
 @bot.message_handler(commands=['bakhshersalfilmsuper'])
 def private_chat_toggle(msg):
     user_id = msg.from_user.id
@@ -606,7 +598,6 @@ def private_chat_toggle(msg):
     except:
         pass
 
-# ========== دستور /createclan ==========
 @bot.message_handler(commands=['createclan'])
 def create_clan(msg):
     user_id = msg.from_user.id
@@ -623,7 +614,6 @@ def create_clan(msg):
     creating_clan[user_id] = {'clan_name': clan_name}
     bot.reply_to(msg, f"✅ کلن «{clan_name}» در حال ایجاد است.\n📝 لطفا متن توضیحات این کلن را ارسال کنید.")
 
-# ========== دستور /deleteclan ==========
 @bot.message_handler(commands=['deleteclan'])
 def delete_clan(msg):
     user_id = msg.from_user.id
@@ -641,7 +631,6 @@ def delete_clan(msg):
     save_clans()
     bot.reply_to(msg, f"✅ کلن «{clan_name}» با موفقیت حذف شد.")
 
-# ========== دستور /owner ==========
 @bot.message_handler(commands=['owner'])
 def owner_cmds(msg):
     user_id = msg.from_user.id
@@ -667,7 +656,6 @@ def owner_cmds(msg):
     response += "🔐 /bakhshersalfilmsuper : چت خصوصی با Professor\n"
     bot.reply_to(msg, response)
 
-# ========== دستور /panel ==========
 @bot.message_handler(commands=['panel'])
 def panel(msg):
     user_id = msg.from_user.id
@@ -685,7 +673,6 @@ def panel(msg):
     markup.add(btn1, btn2, btn3, btn4, btn5, btn6, btn7)
     bot.reply_to(msg, "🔰 شما وارد پنل اصلی بات شدید برای استفاده از بات روی گزینه ها کلیک کنید تا از ویژگی های پنل استفاده کنید !", reply_markup=markup)
 
-# ========== دستور /news ==========
 @bot.message_handler(commands=['news'])
 def news_command(msg):
     user_id = msg.from_user.id
@@ -698,7 +685,6 @@ def news_command(msg):
         news_mode[user_id] = True
         bot.reply_to(msg, "✅ شما وارد حالت خبر شدید. پیام خود را بفرستید تا به لیست اخبار اضافه شود.\n🔄 برای خروج دوباره /news را بزنید.")
 
-# ========== دستور /ad ==========
 @bot.message_handler(commands=['ad'])
 def ad_command(msg):
     user_id = msg.from_user.id
@@ -711,7 +697,6 @@ def ad_command(msg):
         ad_mode[user_id] = True
         bot.reply_to(msg, "✅ شما وارد حالت تبلیغ شدید. پیام خود را بفرستید تا به لیست تبلیغات اضافه شود.\n🔄 برای خروج دوباره /ad را بزنید.")
 
-# ========== دستور /hazfnews ==========
 @bot.message_handler(commands=['hazfnews'])
 def hazfnews(msg):
     user_id = msg.from_user.id
@@ -732,7 +717,6 @@ def hazfnews(msg):
     except:
         bot.reply_to(msg, "❌ شماره معتبر نیست.")
 
-# ========== دستور /hazfad ==========
 @bot.message_handler(commands=['hazfad'])
 def hazfad(msg):
     user_id = msg.from_user.id
@@ -753,7 +737,6 @@ def hazfad(msg):
     except:
         bot.reply_to(msg, "❌ شماره معتبر نیست.")
 
-# ========== دستور /donate ==========
 @bot.message_handler(commands=['donate'])
 def donate_command(msg):
     user_id = msg.from_user.id
@@ -762,7 +745,8 @@ def donate_command(msg):
     parts = msg.text.split()
     if len(parts) < 3:
         bot.reply_to(msg, "⚠️ لطفا نام و مبلغ را وارد کنید: /donate Ali 1500000")
-        return    name = parts[1]
+        return
+    name = parts[1]
     try:
         amount = int(parts[2])
     except:
@@ -779,7 +763,6 @@ def donate_command(msg):
     save_donate()
     bot.reply_to(msg, f"✅ {name} با مبلغ {amount} T به لیست حمایت‌ها اضافه شد.")
 
-# ========== دستور /removedonate ==========
 @bot.message_handler(commands=['removedonate'])
 def remove_donate(msg):
     user_id = msg.from_user.id
@@ -805,7 +788,6 @@ def remove_donate(msg):
     save_donate()
     bot.reply_to(msg, f"✅ {name} از لیست حمایت‌ها حذف شد.")
 
-# ========== دستور /start ==========
 @bot.message_handler(commands=['start'])
 def start(msg):
     user_id = msg.from_user.id
@@ -814,7 +796,6 @@ def start(msg):
         return
     bot.reply_to(msg, "🔰 /info : سلام امیدوارم حالتون خوب باشه . لطفا روی این دستور کلیک کنید")
 
-# ========== دستور /info ==========
 @bot.message_handler(commands=['info'])
 def info(msg):
     user_id = msg.from_user.id
@@ -836,7 +817,6 @@ def info(msg):
     response += "📌 /panel : پنل اصلی بات\n"
     bot.reply_to(msg, response)
 
-# ========== دستور /perms ==========
 @bot.message_handler(commands=['perms'])
 def show_perms(msg):
     user_id = msg.from_user.id
@@ -891,7 +871,6 @@ def show_perms(msg):
     response += "  ❌ ساير دستورات را ندارد"
     bot.reply_to(msg, response)
 
-# ========== دستور /admins ==========
 @bot.message_handler(commands=['admins'])
 def show_admins(msg):
     user_id = msg.from_user.id
@@ -920,7 +899,6 @@ def show_admins(msg):
         response += "❌ هيچ ادمين ديگري وجود ندارد."
     bot.reply_to(msg, response)
 
-# ========== دستور /cmds ==========
 @bot.message_handler(commands=['cmds'])
 def cmds(msg):
     user_id = msg.from_user.id
@@ -944,7 +922,6 @@ def cmds(msg):
         response += "📌 /perms : نمايش دسترسي ها\n"
     bot.reply_to(msg, response)
 
-# ========== دستور /ma ==========
 @bot.message_handler(commands=['ma'])
 def add_admin(msg):
     user_id = msg.from_user.id
@@ -996,7 +973,6 @@ def add_admin(msg):
     admin_num = assign_admin_number(new_admin_id)
     bot.reply_to(msg, f"✅ کاربر با آيدي {new_admin_id} به ليست ادمين ها اضافه شد.\n📌 شماره: {admin_num}")
 
-# ========== دستور /kickadmin ==========
 @bot.message_handler(commands=['kickadmin'])
 def kick_admin(msg):
     user_id = msg.from_user.id
@@ -1050,7 +1026,6 @@ def kick_admin(msg):
     save_admins()
     bot.reply_to(msg, f"✅ کاربر با آيدي {target_id} از ليست ادمين ها حذف شد.")
 
-# ========== دستور /ban ==========
 @bot.message_handler(commands=['ban'])
 def ban_user(msg):
     user_id = msg.from_user.id
@@ -1111,7 +1086,6 @@ def ban_user(msg):
     bot.send_message(target_id, "⛔ *** [ Ban.System ] : شما از بات محروم شدید ***")
     bot.reply_to(msg, f"✅ کاربر با آیدی {target_id} محروم شد.")
 
-# ========== دستور /unban ==========
 @bot.message_handler(commands=['unban'])
 def unban_user(msg):
     user_id = msg.from_user.id
@@ -1160,7 +1134,6 @@ def unban_user(msg):
     bot.send_message(target_id, "✅ *** [ Ban.System ] : شما از حالت محرومیت خارج شدید ***\n\n🔰 اکنون میتوانید از تمام دستورات بات استفاده کنید.\n📌 برای مشاهده دستورات، دستور /info را بزنید.")
     bot.reply_to(msg, f"✅ کاربر با آیدی {target_id} از محرومیت خارج شد.")
 
-# ========== دستور /ac ==========
 @bot.message_handler(commands=['ac'])
 def admin_chat_toggle(msg):
     user_id = msg.from_user.id
@@ -1180,7 +1153,6 @@ def admin_chat_toggle(msg):
         else:
             bot.reply_to(msg, "✅ شما (OWNER) وارد حالت چت ادمين شديد.\n🔄 براي خروج دوباره /ac را بزنيد.")
 
-# ========== دستور /tickets ==========
 @bot.message_handler(commands=['tickets'])
 def show_tickets(msg):
     user_id = msg.from_user.id
@@ -1205,7 +1177,6 @@ def show_tickets(msg):
         response += f"🔓 براي باز کردن: /open {ticket_num}\n\n"
     bot.reply_to(msg, response)
 
-# ========== دستور /helpme ==========
 @bot.message_handler(commands=['helpme'])
 def helpme(msg):
     user_id = msg.from_user.id
@@ -1218,7 +1189,6 @@ def helpme(msg):
     bot.reply_to(msg, "🔰 /close : شما وارد حالت ارسال پيام شديد لطفا بعد از فرستادن پيام خود براي بستن حالت از اين دستور استفاده کنيد")
     bot.reply_to(msg, "🔮 بعد از ارسال پيام خود سازنده بات به پي وي شما پيام ارسال مي کند ولي از وايس استفاده نکنيد و به صورت متن پيام خود را بفرستيد")
 
-# ========== دستور /close ==========
 @bot.message_handler(commands=['close'])
 def close(msg):
     user_id = msg.from_user.id
@@ -1231,7 +1201,6 @@ def close(msg):
     else:
         bot.reply_to(msg, "✅ درحالت ارسال پيام نيستيد")
 
-# ========== دستور /ticket ==========
 @bot.message_handler(commands=['ticket'])
 def soal(msg):
     user_id = msg.from_user.id
@@ -1268,7 +1237,6 @@ def soal(msg):
     bot.send_message(OWNER_ID, f"🎫 بليط جديد شماره: {ticket_number}\n👤 نام: {user.first_name} (@{user.username}) [آيدي: {user_id}]\n📝 سوال: {soal_text}\n\n🔓 براي باز کردن: /open {ticket_number}")
     bot.reply_to(msg, "✅ پيام شما ارسال شد")
 
-# ========== دستور /open ==========
 @bot.message_handler(commands=['open'])
 def open_chat(msg):
     user_id = msg.from_user.id
@@ -1294,7 +1262,6 @@ def open_chat(msg):
     bot.send_message(user_id_ticket, "✅ بليط شما توسط ادمين باز شد. براي چت دستور /chat را بزنيد.")
     bot.reply_to(msg, f"✅ چت با بليط {ticket_number} باز شد")
 
-# ========== دستور /chat ==========
 @bot.message_handler(commands=['chat'])
 def chat_with_user(msg):
     user_id = msg.from_user.id
@@ -1310,7 +1277,6 @@ def chat_with_user(msg):
     waiting_for_message[user_id] = True
     bot.reply_to(msg, "✅ وارد چت شديد. پيام خود را بفرستيد")
 
-# ========== دستور /a ==========
 @bot.message_handler(commands=['a'])
 def admin_chat(msg):
     user_id = msg.from_user.id
@@ -1330,7 +1296,6 @@ def admin_chat(msg):
             return
     bot.reply_to(msg, "❌ چت فعالی وجود ندارد")
 
-# ========== دستور /cc ==========
 @bot.message_handler(commands=['cc'])
 def close_chat(msg):
     user_id = msg.from_user.id
@@ -1358,13 +1323,11 @@ def close_chat(msg):
             return
     bot.reply_to(msg, "❌ چت فعالی وجود ندارد")
 
-# ========== مدیریت پیام‌ها ==========
 @bot.message_handler(func=lambda m: True, content_types=['text', 'voice', 'video', 'photo', 'document', 'animation'])
 def handle_messages(msg):
     user_id = msg.from_user.id
     if is_banned(user_id):
         return
-    
     if user_id in creating_clan:
         clan_name = creating_clan[user_id]['clan_name']
         description = msg.text
@@ -1373,7 +1336,6 @@ def handle_messages(msg):
         del creating_clan[user_id]
         bot.reply_to(msg, f"✅ کلن «{clan_name}» با موفقیت ایجاد شد.\n📋 توضیحات: {description}")
         return
-    
     if user_id in private_chat_mode:
         partner_id = private_chat_mode[user_id]
         try:
@@ -1393,7 +1355,6 @@ def handle_messages(msg):
         except Exception as e:
             bot.reply_to(msg, f"❌ خطا در ارسال پیام: {e}")
         return
-    
     if user_id in news_mode and news_mode[user_id]:
         global news_counter
         news_counter += 1
@@ -1402,7 +1363,6 @@ def handle_messages(msg):
         bot.reply_to(msg, f"✅ خبر {news_counter} با موفقیت ثبت شد.")
         news_mode[user_id] = False
         return
-    
     if user_id in ad_mode and ad_mode[user_id]:
         global ad_counter
         ad_counter += 1
@@ -1411,7 +1371,6 @@ def handle_messages(msg):
         bot.reply_to(msg, f"✅ تبلیغ {ad_counter} با موفقیت ثبت شد.")
         ad_mode[user_id] = False
         return
-    
     if is_admin(user_id):
         if user_id in admin_chat_mode and admin_chat_mode[user_id]:
             if user_id == OWNER_ID:
@@ -1451,7 +1410,6 @@ def handle_messages(msg):
         else:
             bot.reply_to(msg, "ℹ️ برای دیدن دستورات ادمینی ابتدا دستور /cmds را بزنید.")
             return
-    
     if user_id in waiting_for_message and waiting_for_message[user_id]:
         if user_id != OWNER_ID and user_id in chat_sessions and chat_sessions[user_id] == 'open':
             bot.send_message(OWNER_ID, f"💬 از کاربر:\n👤 نام: {msg.from_user.first_name} [آیدی: {user_id}]\n📝 پیام: {msg.text}")
@@ -1465,7 +1423,6 @@ def handle_messages(msg):
         if not msg.text.startswith('/'):
             bot.reply_to(msg, "ℹ️ ابتدا دستور /info را بزنید تا دستورات بات را ببینید")
 
-# ========== کالبک‌ها ==========
 @bot.callback_query_handler(func=lambda call: True)
 def handle_callbacks(call):
     if call.data.startswith('panel_'):
@@ -1556,7 +1513,6 @@ def handle_callbacks(call):
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
             return
-        
         if call.data == "game_rps":
             markup = telebot.types.InlineKeyboardMarkup(row_width=2)
             btn1 = telebot.types.InlineKeyboardButton("➕ ساخت اتاق", callback_data="rps_create")
@@ -1564,7 +1520,6 @@ def handle_callbacks(call):
             markup.add(btn1, btn2)
             bot.send_message(user_id, "🎮 سنگ ، کاغذ ، قیچی\nلطفاً یکی از گزینه‌ها را انتخاب کنید:", reply_markup=markup)
             bot.answer_callback_query(call.id)
-        
         elif call.data == "rps_create":
             if str(user_id) in game_players:
                 bot.send_message(user_id, "❌ شما در حال حاضر در یک بازی هستید.")
@@ -1576,7 +1531,6 @@ def handle_callbacks(call):
             markup.add(btn1, btn2)
             bot.send_message(user_id, "🔐 آیا می‌خواهید برای اتاق خود یک رمز بگذارید؟", reply_markup=markup)
             bot.answer_callback_query(call.id)
-        
         elif call.data.startswith("rps_password_"):
             parts = call.data.split("_")
             choice = parts[2]
@@ -1585,7 +1539,6 @@ def handle_callbacks(call):
                 bot.answer_callback_query(call.id, "❌ خطا")
                 return
             if choice == "yes":
-                # ذخیره اطلاعات برای دریافت رمز
                 rps_password_temp[str(user_id)] = {'game_id': None, 'step': 'waiting_password'}
                 bot.send_message(user_id, "🔑 لطفاً رمز مورد نظر خود را وارد کنید:")
                 bot.answer_callback_query(call.id)
@@ -1593,7 +1546,6 @@ def handle_callbacks(call):
                 game_id = create_game(user_id)
                 bot.send_message(user_id, f"✅ اتاق سنگ ، کاغذ ، قیچی شما ساخته شد !\n🆔 ایدی اتاق : {game_id}\n🔄 منتظر حریف باشید...")
                 bot.answer_callback_query(call.id)
-        
         elif call.data == "rps_join":
             if not waiting_games:
                 bot.send_message(user_id, "❌ هیچ اتاق خالی برای ملحق شدن وجود ندارد.")
@@ -1610,7 +1562,6 @@ def handle_callbacks(call):
             else:
                 bot.send_message(user_id, response, reply_markup=markup)
             bot.answer_callback_query(call.id)
-        
         elif call.data.startswith("rps_enter_"):
             game_id = call.data.replace("rps_enter_", "")
             if game_id not in games:
@@ -1622,12 +1573,10 @@ def handle_callbacks(call):
                 bot.answer_callback_query(call.id)
                 return
             if games[game_id]['password']:
-                # ذخیره اطلاعات برای دریافت رمز
                 rps_join_temp[str(user_id)] = {'game_id': game_id}
                 bot.send_message(user_id, "🔑 این اتاق دارای رمز است. لطفاً رمز را وارد کنید:")
                 bot.answer_callback_query(call.id)
             else:
-                # ورود بدون رمز
                 games[game_id]['player2'] = user_id
                 games[game_id]['status'] = 'playing'
                 game_players[str(user_id)] = game_id
@@ -1638,7 +1587,6 @@ def handle_callbacks(call):
                 bot.send_message(games[game_id]['player1'], f"✅ حریف شما به اتاق {game_id} ملحق شد!")
                 bot.answer_callback_query(call.id)
                 start_rps_game(game_id)
-        
         elif call.data.startswith("rps_move_"):
             parts = call.data.split("_")
             game_id = parts[2]
@@ -1653,7 +1601,6 @@ def handle_callbacks(call):
             game_scores[str(user_id)] = {'choice': choice, 'game_id': game_id}
             bot.answer_callback_query(call.id, f"✅ انتخاب شما ثبت شد: {choice}")
             check_rps_round(game_id)
-        
         elif call.data == "game_soon1" or call.data == "game_soon2" or call.data == "game_soon3":
             bot.send_message(user_id, "🔮 Coming Soon ...")
             bot.answer_callback_query(call.id)
