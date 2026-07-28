@@ -254,7 +254,7 @@ def is_banned(user_id):
 def get_admin_number(user_id):
     if str(user_id) in admin_numbers:
         return admin_numbers[str(user_id)]
-    return None
+    return assign_admin_number(user_id)
 
 def assign_admin_number(user_id):
     if str(user_id) in admin_numbers:
@@ -291,7 +291,12 @@ def botup(msg):
     if admins:
         for admin_id in admins:
             admin_num = get_admin_number(admin_id) or "بدون شماره"
-            response += f"  {admin_num}: {admin_id}\n"
+            if admin_num == "AmiN":
+                response += f"  AmiN: {admin_id}\n"
+            elif admin_num == "Professor":
+                response += f"  Professor: {admin_id}\n"
+            else:
+                response += f"  {admin_num}: {admin_id}\n"
     else:
         response += "  هیچ ادمینی وجود ندارد.\n"
     response += "\n⭐ لیست AmiN ها:\n"
@@ -535,7 +540,8 @@ def ad_command(msg):
     else:
         ad_mode[user_id] = True
         bot.reply_to(msg, "✅ شما وارد حالت تبلیغ شدید. پیام خود را بفرستید تا به لیست تبلیغات اضافه شود.\n🔄 برای خروج دوباره /ad را بزنید.")
-        # ========== دستور /hazfnews ==========
+
+# ========== دستور /hazfnews ==========
 @bot.message_handler(commands=['hazfnews'])
 def hazfnews(msg):
     user_id = msg.from_user.id
@@ -737,8 +743,8 @@ def show_admins(msg):
             else:
                 try:
                     user_info = bot.get_chat(admin_id)
-                    username = user_info.username or "بدون یوزرنیم"
-                    response += f"{admin_num}: {admin_id} (@{username})\n"
+                    name = user_info.first_name or user_info.username or "ناشناس"
+                    response += f"{admin_num} : {name}\n"
                 except:
                     response += f"{admin_num}: {admin_id}\n"
     else:
