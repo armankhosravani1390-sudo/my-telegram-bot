@@ -1379,7 +1379,6 @@ def join_specific_room(msg):
     if games[game_id]['password']:
         bot.reply_to(msg, f"🔑 این اتاق دارای رمز است. لطفاً رمز را با دستور زیر وارد کنید:\n/enterpassword {game_id} [رمز]")
         return
-    # ورود بدون رمز
     games[game_id]['player2'] = user_id
     games[game_id]['status'] = 'playing'
     game_players[str(user_id)] = game_id
@@ -1421,16 +1420,14 @@ def enter_password(msg):
     bot.send_message(games[game_id]['player1'], f"✅ حریف شما به اتاق {game_id} ملحق شد!")
     start_rps_game(game_id)
 
-# ========== مدیریت پیام‌ها ==========
 @bot.message_handler(func=lambda m: True, content_types=['text'])
 def handle_messages(msg):
     user_id = msg.from_user.id
     if is_banned(user_id):
         return
     
-    # ========== پاسخ به سوال رمز برای ساخت اتاق ==========
+    # ========== دریافت رمز برای ساخت اتاق ==========
     if user_id in rps_password_temp and rps_password_temp[user_id].get('step') == 'waiting_password':
-        # اینجا برای دریافت رمز از کاربر
         password = msg.text
         game_id = create_game(user_id)
         games[game_id]['password'] = password
@@ -1439,11 +1436,17 @@ def handle_messages(msg):
         bot.reply_to(msg, f"✅ اتاق سنگ ، کاغذ ، قیچی شما با رمز ساخته شد !\n🆔 ایدی اتاق : {game_id}\n🔑 رمز: {password}\n🔄 منتظر حریف باشید...")
         return
     
-    # ========== دریافت پاسخ بله/خیر برای ساخت اتاق ==========
     if msg.text.lower() in ['بله', 'خیر']:
         if user_id not in rps_password_temp:
-            # چک کردن اینکه کاربر در حال ساخت اتاق هست یا نه
-            pass
+            # برای ساخت اتاق
+            rps_password_temp[user_id] = {'game_id': None, 'step': 'waiting_password'}
+            if msg.text.lower() == 'بله':
+                bot.reply_to(msg, "🔑 لطفاً رمز مورد نظر خود را وارد کنید:")
+            else:
+                game_id = create_game(user_id)
+                bot.reply_to(msg, f"✅ اتاق سنگ ، کاغذ ، قیچی شما ساخته شد !\n🆔 ایدی اتاق : {game_id}\n🔄 منتظر حریف باشید...")
+                del rps_password_temp[user_id]
+            return
     
     if user_id in creating_clan:
         clan_name = creating_clan[user_id]['clan_name']
@@ -1539,40 +1542,6 @@ def handle_messages(msg):
 def handle_callbacks(call):
     user_id = call.from_user.id
     
-    # ========== ساخت اتاق با دکمه‌ها (با پاسخ بله/خیر) ==========
-    if call.data.startswith("room_"):
-        if is_banned(user_id):
-            bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
-            return
-        if call.data == "room_yes":
-            rps_password_temp[str(user_id)] = {'game_id': None, 'step': 'waiting_password'}
-            bot.send_message(user_id, "🔑 لطفاً رمز مورد نظر خود را وارد کنید:")
-            bot.answer_callback_query(call.id)
-        elif call.data == "room_no":
-            game_id = create_game(user_id)
-            bot.send_message(user_id, f"✅ اتاق سنگ ، کاغذ ، قیچی شما ساخته شد !\n🆔 ایدی اتاق : {game_id}\n🔄 منتظر حریف باشید...")
-            bot.answer_callback_query(call.id)
-        return
-    
-    # ========== دکمه‌های حرکت در بازی ==========
-    if call.data.startswith("rps_move_"):
-        parts = call.data.split("_")
-        game_id = parts[2]
-        choice = parts[3]
-        if is_banned(user_id):
-            bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
-            return
-        if game_id not in games:
-            bot.answer_callback_query(call.id, "❌ بازی وجود ندارد")
-            return
-        if user_id not in [games[game_id]['player1'], games[game_id]['player2']]:
-            bot.answer_callback_query(call.id, "❌ شما در این بازی نیستید")
-            return
-        game_scores[str(user_id)] = {'choice': choice, 'game_id': game_id}
-        bot.answer_callback_query(call.id, f"✅ انتخاب شما ثبت شد: {choice}")
-        check_rps_round(game_id)
-        return
-    
     # ========== دکمه‌های پنل ==========
     if call.data.startswith('panel_'):
         if is_banned(user_id):
@@ -1665,18 +1634,14 @@ def handle_callbacks(call):
             btn1 = telebot.types.InlineKeyboardButton("➕ ساخت اتاق", callback_data="create_room")
             btn2 = telebot.types.InlineKeyboardButton("🚪 ملحق شدن", callback_data="join_room")
             markup.add(btn1, btn2)
-            bot.send_message(user_id, "🎮 سنگ ، کاغذ ، قیچی\nلطفاً یکی از گزینه‌ها را انتخاب کنید:", reply_markup=markup)
+            bot.send_message(user_id, "🎮 سنگ ، کاغذ ، قیچی\n\n📌 ابتدا یک اتاق بسازید یا به اتاقی ملحق شوید.", reply_markup=markup)
             bot.answer_callback_query(call.id)
         elif call.data == "create_room":
             if str(user_id) in game_players:
                 bot.send_message(user_id, "❌ شما در حال حاضر در یک بازی هستید.")
                 bot.answer_callback_query(call.id)
                 return
-            markup = telebot.types.InlineKeyboardMarkup(row_width=2)
-            btn1 = telebot.types.InlineKeyboardButton("✅ بله", callback_data="room_yes")
-            btn2 = telebot.types.InlineKeyboardButton("❌ خیر", callback_data="room_no")
-            markup.add(btn1, btn2)
-            bot.send_message(user_id, "🔐 آیا می‌خواهید برای اتاق خود یک رمز بگذارید؟", reply_markup=markup)
+            bot.send_message(user_id, "🔐 آیا می‌خواهید برای اتاق خود یک رمز بگذارید؟\n\n📌 لطفاً پاسخ خود را به صورت زیر بفرستید:\n`بله` یا `خیر`")
             bot.answer_callback_query(call.id)
         elif call.data == "join_room":
             if not waiting_games:
@@ -1697,6 +1662,24 @@ def handle_callbacks(call):
         elif call.data == "game_soon1" or call.data == "game_soon2" or call.data == "game_soon3":
             bot.send_message(user_id, "🔮 Coming Soon ...")
             bot.answer_callback_query(call.id)
+    
+    # ========== دکمه‌های حرکت در بازی ==========
+    elif call.data.startswith("rps_move_"):
+        parts = call.data.split("_")
+        game_id = parts[2]
+        choice = parts[3]
+        if is_banned(user_id):
+            bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
+            return
+        if game_id not in games:
+            bot.answer_callback_query(call.id, "❌ بازی وجود ندارد")
+            return
+        if user_id not in [games[game_id]['player1'], games[game_id]['player2']]:
+            bot.answer_callback_query(call.id, "❌ شما در این بازی نیستید")
+            return
+        game_scores[str(user_id)] = {'choice': choice, 'game_id': game_id}
+        bot.answer_callback_query(call.id, f"✅ انتخاب شما ثبت شد: {choice}")
+        check_rps_round(game_id)
     
     # ========== دکمه‌های قبول/رد ==========
     elif call.data.startswith('accept_ma_'):
