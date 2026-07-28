@@ -428,7 +428,8 @@ def panel(msg):
     btn6 = telebot.types.InlineKeyboardButton("👑 تیم مدیریتی", callback_data="panel_team")
     markup.add(btn1, btn2, btn3, btn4, btn5, btn6)
     bot.reply_to(msg, "🔰 شما وارد پنل اصلی بات شدید برای استفاده از بات روی گزینه ها کلیک کنید تا از ویژگی های پنل استفاده کنید !", reply_markup=markup)
-    # ========== دستور /news ==========
+
+# ========== دستور /news ==========
 @bot.message_handler(commands=['news'])
 def news_command(msg):
     user_id = msg.from_user.id
@@ -903,7 +904,8 @@ def unban_user(msg):
     save_banned()
     bot.send_message(target_id, "✅ *** [ Ban.System ] : شما از حالت محرومیت خارج شدید ***\n\n🔰 اکنون میتوانید از تمام دستورات بات استفاده کنید.\n📌 برای مشاهده دستورات، دستور /info را بزنید.")
     bot.reply_to(msg, f"✅ کاربر با آیدی {target_id} از محرومیت خارج شد.")
-    # ========== دستور /ac ==========
+
+# ========== دستور /ac ==========
 @bot.message_handler(commands=['ac'])
 def admin_chat_toggle(msg):
     user_id = msg.from_user.id
@@ -1291,6 +1293,17 @@ def handle_callbacks(call):
             bot.send_message(user_id, response)
             bot.answer_callback_query(call.id)
     
+    # ========== مدیریت کلیک روی دکمه‌های اتحادها ==========
+    elif call.data.startswith("clan_"):
+        user_id = call.from_user.id
+        clan_name = call.data.replace("clan_", "")
+        if clan_name in clans:
+            bot.send_message(user_id, f"📋 توضیحات اتحاد «{clan_name}»:\n\n{clans[clan_name]['description']}")
+        else:
+            bot.send_message(user_id, "❌ این اتحاد وجود ندارد.")
+        bot.answer_callback_query(call.id)
+    
+    # ========== مدیریت تایید/رد ==========
     elif call.data.startswith('accept_ma_'):
         parts = call.data.split('_')
         new_admin_id = int(parts[2])
