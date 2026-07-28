@@ -11,6 +11,7 @@ OWNER_ID = 6703121829
 
 bot = telebot.TeleBot(TOKEN)
 app = Flask(__name__)
+
 waiting_for_message = {}
 tickets = {}
 ticket_counter = 0
@@ -25,7 +26,6 @@ banned_users = {}
 private_chat_mode = {}
 clans = {}
 creating_clan = {}
-
 news_data = {}
 ad_data = {}
 donate_data = []
@@ -266,6 +266,74 @@ def get_user_link(user):
     else:
         return user.first_name or user.last_name or "کاربر"
 
+# ========== دستور /botup ==========
+@bot.message_handler(commands=['botup'])
+def botup(msg):
+    user_id = msg.from_user.id
+    if user_id != OWNER_ID:
+        return
+    
+    response = "📋 گزارش کامل اطلاعات بات:\n\n"
+    response += "👑 لیست ادمین‌ها:\n"
+    if admins:
+        for admin_id in admins:
+            admin_num = get_admin_number(admin_id) or "بدون شماره"
+            response += f"  {admin_num}: {admin_id}\n"
+    else:
+        response += "  هیچ ادمینی وجود ندارد.\n"
+    response += "\n⭐ لیست AmiN ها:\n"
+    if amin_list:
+        for amin_id in amin_list:
+            response += f"  {amin_id}\n"
+    else:
+        response += "  هیچ AmiN ای وجود ندارد.\n"
+    response += "\n🎓 لیست Professorها:\n"
+    if professor_list:
+        for prof_id in professor_list:
+            response += f"  {prof_id}\n"
+    else:
+        response += "  هیچ Professor ای وجود ندارد.\n"
+    response += "\n⛔ لیست کاربران محروم شده:\n"
+    if banned_users:
+        for banned_id in banned_users:
+            response += f"  {banned_id}\n"
+    else:
+        response += "  هیچ کاربری محروم نشده است.\n"
+    response += "\n💰 لیست حمایت‌ها:\n"
+    if donate_data:
+        for item in donate_data:
+            response += f"  {item['rank']} : {item['name']} - {item['amount']} T\n"
+    else:
+        response += "  هیچ حمایتی ثبت نشده است.\n"
+    response += "\n📰 لیست اخبار:\n"
+    if news_data:
+        for news_id, news_text in news_data.items():
+            response += f"  News {news_id}: {news_text}\n"
+    else:
+        response += "  هیچ خبری ثبت نشده است.\n"
+    response += "\n📢 لیست تبلیغات:\n"
+    if ad_data:
+        for ad_id, ad_text in ad_data.items():
+            response += f"  Ad {ad_id}: {ad_text}\n"
+    else:
+        response += "  هیچ تبلیغی ثبت نشده است.\n"
+    response += "\n🤝 لیست کلن‌ها:\n"
+    if clans:
+        for clan_name, clan_data in clans.items():
+            response += f"  {clan_name}: {clan_data['description']}\n"
+    else:
+        response += "  هیچ کلنی ثبت نشده است.\n"
+    response += "\n🎫 لیست تیکت‌ها:\n"
+    if tickets:
+        for ticket_num, ticket_data in tickets.items():
+            response += f"  Ticket {ticket_num}: {ticket_data['question'][:50]}...\n"
+    else:
+        response += "  هیچ تیکتی ثبت نشده است.\n"
+    response += "\n📌 تمام اطلاعات بالا را کپی کنید و برای من بفرستید تا در کد جدید قرار دهم."
+    
+    bot.send_message(user_id, response)
+    bot.reply_to(msg, "✅ اطلاعات کامل بات برای شما ارسال شد.")
+
 # ========== دستور /bakhshersalfilmsuper ==========
 @bot.message_handler(commands=['bakhshersalfilmsuper'])
 def private_chat_toggle(msg):
@@ -363,6 +431,7 @@ def owner_cmds(msg):
     response += "📌 /kickadmin [ایدی] : حذف ادمین\n"
     response += "📌 /createclan [اسم] : ساخت کلن جدید\n"
     response += "📌 /deleteclan [اسم] : حذف کلن\n"
+    response += "📌 /botup : دریافت گزارش کامل اطلاعات بات\n"
     response += "🔐 /bakhshersalfilmsuper : چت خصوصی با Professor\n"
     bot.reply_to(msg, response)
 
@@ -1110,7 +1179,6 @@ def handle_messages(msg):
     if is_banned(user_id):
         return
     
-    # ========== ساخت کلن (دریافت توضیحات) ==========
     if user_id in creating_clan:
         clan_name = creating_clan[user_id]['clan_name']
         description = msg.text
@@ -1120,7 +1188,6 @@ def handle_messages(msg):
         bot.reply_to(msg, f"✅ کلن «{clan_name}» با موفقیت ایجاد شد.\n📋 توضیحات: {description}")
         return
     
-    # ========== حالت چت خصوصی ==========
     if user_id in private_chat_mode:
         partner_id = private_chat_mode[user_id]
         try:
@@ -1141,7 +1208,6 @@ def handle_messages(msg):
             bot.reply_to(msg, f"❌ خطا در ارسال پیام: {e}")
         return
     
-    # ========== حالت خبر ==========
     if user_id in news_mode and news_mode[user_id]:
         global news_counter
         news_counter += 1
@@ -1151,7 +1217,6 @@ def handle_messages(msg):
         news_mode[user_id] = False
         return
     
-    # ========== حالت تبلیغ ==========
     if user_id in ad_mode and ad_mode[user_id]:
         global ad_counter
         ad_counter += 1
@@ -1161,7 +1226,6 @@ def handle_messages(msg):
         ad_mode[user_id] = False
         return
     
-    # ========== ادمین‌ها ==========
     if is_admin(user_id):
         if user_id in admin_chat_mode and admin_chat_mode[user_id]:
             if user_id == OWNER_ID:
@@ -1202,7 +1266,6 @@ def handle_messages(msg):
             bot.reply_to(msg, "ℹ️ برای دیدن دستورات ادمینی ابتدا دستور /cmds را بزنید.")
             return
     
-    # ========== کاربران عادی ==========
     if user_id in waiting_for_message and waiting_for_message[user_id]:
         if user_id != OWNER_ID and user_id in chat_sessions and chat_sessions[user_id] == 'open':
             bot.send_message(OWNER_ID, f"💬 از کاربر:\n👤 نام: {msg.from_user.first_name} [آیدی: {user_id}]\n📝 پیام: {msg.text}")
@@ -1293,7 +1356,6 @@ def handle_callbacks(call):
             bot.send_message(user_id, response)
             bot.answer_callback_query(call.id)
     
-    # ========== مدیریت کلیک روی دکمه‌های اتحادها ==========
     elif call.data.startswith("clan_"):
         user_id = call.from_user.id
         clan_name = call.data.replace("clan_", "")
@@ -1303,7 +1365,6 @@ def handle_callbacks(call):
             bot.send_message(user_id, "❌ این اتحاد وجود ندارد.")
         bot.answer_callback_query(call.id)
     
-    # ========== مدیریت تایید/رد ==========
     elif call.data.startswith('accept_ma_'):
         parts = call.data.split('_')
         new_admin_id = int(parts[2])
