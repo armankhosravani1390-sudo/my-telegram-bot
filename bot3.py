@@ -334,6 +334,52 @@ def botup(msg):
     bot.send_message(user_id, response)
     bot.reply_to(msg, "✅ اطلاعات کامل بات برای شما ارسال شد.")
 
+# ========== دستور /update (با متن جدید) ==========
+@bot.message_handler(commands=['update'])
+def update_bot(msg):
+    user_id = msg.from_user.id
+    if user_id != OWNER_ID:
+        return
+    bot.reply_to(msg, "✅ پیام آپدیت به همه کاربران ارسال شد.")
+    all_users = set()
+    for user_id in waiting_for_message.keys():
+        all_users.add(user_id)
+    for user_id in tickets.keys():
+        all_users.add(user_id)
+    for user_id in chat_sessions.keys():
+        all_users.add(user_id)
+    for user_id in user_ticket_status.keys():
+        all_users.add(user_id)
+    for user_id in admins.keys():
+        try:
+            all_users.add(int(user_id))
+        except:
+            pass
+    for user_id in amin_list.keys():
+        try:
+            all_users.add(int(user_id))
+        except:
+            pass
+    for user_id in professor_list.keys():
+        try:
+            all_users.add(int(user_id))
+        except:
+            pass
+    for user_id in banned_users.keys():
+        try:
+            all_users.add(int(user_id))
+        except:
+            pass
+    for user_id in all_users:
+        try:
+            bot.send_message(user_id, "*** [ Bot.DataBase ] : بات درحال آپدیت شدن است ***")
+        except:
+            pass
+    try:
+        bot.send_message(OWNER_ID, "*** [ Bot.DataBase ] : بات درحال آپدیت شدن است ***")
+    except:
+        pass
+
 # ========== دستور /bakhshersalfilmsuper ==========
 @bot.message_handler(commands=['bakhshersalfilmsuper'])
 def private_chat_toggle(msg):
@@ -434,52 +480,6 @@ def owner_cmds(msg):
     response += "📌 /botup : دریافت گزارش کامل اطلاعات بات\n"
     response += "🔐 /bakhshersalfilmsuper : چت خصوصی با Professor\n"
     bot.reply_to(msg, response)
-
-# ========== دستور /update ==========
-@bot.message_handler(commands=['update'])
-def update_bot(msg):
-    user_id = msg.from_user.id
-    if user_id != OWNER_ID:
-        return
-    bot.reply_to(msg, "✅ پیام آپدیت به همه کاربران ارسال شد.")
-    all_users = set()
-    for user_id in waiting_for_message.keys():
-        all_users.add(user_id)
-    for user_id in tickets.keys():
-        all_users.add(user_id)
-    for user_id in chat_sessions.keys():
-        all_users.add(user_id)
-    for user_id in user_ticket_status.keys():
-        all_users.add(user_id)
-    for user_id in admins.keys():
-        try:
-            all_users.add(int(user_id))
-        except:
-            pass
-    for user_id in amin_list.keys():
-        try:
-            all_users.add(int(user_id))
-        except:
-            pass
-    for user_id in professor_list.keys():
-        try:
-            all_users.add(int(user_id))
-        except:
-            pass
-    for user_id in banned_users.keys():
-        try:
-            all_users.add(int(user_id))
-        except:
-            pass
-    for user_id in all_users:
-        try:
-            bot.send_message(user_id, "*** [ Bot.DataBase ] : بات درحال اجرا یک آپدیت بزرگ است ***")
-        except:
-            pass
-    try:
-        bot.send_message(OWNER_ID, "*** [ Bot.DataBase ] : بات درحال اجرا یک آپدیت بزرگ است ***")
-    except:
-        pass
 
 # ========== دستور /panel ==========
 @bot.message_handler(commands=['panel'])
