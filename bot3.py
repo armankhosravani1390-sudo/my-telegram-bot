@@ -389,11 +389,11 @@ def update_bot(msg):
             pass
     for user_id in all_users:
         try:
-            bot.send_message(user_id, "*** [ Bot.DataBase ] : بات درحال آپدیت شدن است ***")
+            bot.send_message(user_id, "[ Bot.DataBase ] : بات درحال آپدیت شدن است")
         except:
             pass
     try:
-        bot.send_message(OWNER_ID, "*** [ Bot.DataBase ] : بات درحال آپدیت شدن است ***")
+        bot.send_message(OWNER_ID, "[ Bot.DataBase ] : بات درحال آپدیت شدن است")
     except:
         pass
 
