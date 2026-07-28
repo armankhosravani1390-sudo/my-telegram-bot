@@ -1616,51 +1616,7 @@ def handle_callbacks(call):
             bot.send_message(user_id, response)
             bot.answer_callback_query(call.id)
         elif call.data == "panel_games":
-            markup = telebot.types.InlineKeyboardMarkup(row_width=2)
-            btn1 = telebot.types.InlineKeyboardButton("🪨 سنگ ، کاغذ ، قیچی", callback_data="game_rps")
-            btn2 = telebot.types.InlineKeyboardButton("🔮 Coming Soon ...", callback_data="game_soon1")
-            btn3 = telebot.types.InlineKeyboardButton("🔮 Coming Soon ...", callback_data="game_soon2")
-            btn4 = telebot.types.InlineKeyboardButton("🔮 Coming Soon ...", callback_data="game_soon3")
-            markup.add(btn1, btn2, btn3, btn4)
-            bot.send_message(user_id, "🎮 لیست بازی های بات :", reply_markup=markup)
-            bot.answer_callback_query(call.id)
-    
-    elif call.data.startswith("game_"):
-        if is_banned(user_id):
-            bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
-            return
-        if call.data == "game_rps":
-            markup = telebot.types.InlineKeyboardMarkup(row_width=2)
-            btn1 = telebot.types.InlineKeyboardButton("➕ ساخت اتاق", callback_data="create_room")
-            btn2 = telebot.types.InlineKeyboardButton("🚪 ملحق شدن", callback_data="join_room")
-            markup.add(btn1, btn2)
-            bot.send_message(user_id, "🎮 سنگ ، کاغذ ، قیچی\n\n📌 ابتدا یک اتاق بسازید یا به اتاقی ملحق شوید.", reply_markup=markup)
-            bot.answer_callback_query(call.id)
-        elif call.data == "create_room":
-            if str(user_id) in game_players:
-                bot.send_message(user_id, "❌ شما در حال حاضر در یک بازی هستید.")
-                bot.answer_callback_query(call.id)
-                return
-            bot.send_message(user_id, "🔐 آیا می‌خواهید برای اتاق خود یک رمز بگذارید؟\n\n📌 لطفاً پاسخ خود را به صورت زیر بفرستید:\n`بله` یا `خیر`")
-            bot.answer_callback_query(call.id)
-        elif call.data == "join_room":
-            if not waiting_games:
-                bot.send_message(user_id, "❌ هیچ اتاق خالی برای ملحق شدن وجود ندارد.")
-                bot.answer_callback_query(call.id)
-                return
-            response = "🚪 لیست اتاق‌های خالی:\n\n"
-            for game_id in waiting_games:
-                if game_id in games and games[game_id]['player1'] != user_id:
-                    response += f"🆔 اتاق {game_id}\n"
-                    if games[game_id]['password']:
-                        response += f"🔑 دارای رمز\n"
-                    else:
-                        response += f"🔓 بدون رمز\n"
-                    response += f"📌 برای ورود: /join {game_id}\n\n"
-            bot.send_message(user_id, response)
-            bot.answer_callback_query(call.id)
-        elif call.data == "game_soon1" or call.data == "game_soon2" or call.data == "game_soon3":
-            bot.send_message(user_id, "🔮 Coming Soon ...")
+            bot.send_message(user_id, "🎮 بازی سنگ ، کاغذ ، قیچی\n\n📌 دستورات:\n🪨 برای ساخت اتاق: /createroom\n🚪 برای دیدن لیست اتاق‌ها: /joinroom\n🆔 برای ورود به اتاق: /join [شماره]\n🔑 برای ورود با رمز: /enterpassword [شماره] [رمز]")
             bot.answer_callback_query(call.id)
     
     # ========== دکمه‌های حرکت در بازی ==========
