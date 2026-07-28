@@ -48,7 +48,7 @@ CLANS_FILE = 'clans.json'
 def init_roles():
     global admins, admin_numbers, amin_list, professor_list
     if not os.path.exists(ADMINS_FILE):
-        admins = {"7307951847": "admin", "6328427378": "admin"}
+        admins = {"7307951847": "admin", "6328427378": "admin", "8892499079": "admin"}
         save_admins()
     else:
         load_admins()
@@ -56,6 +56,8 @@ def init_roles():
             admins["7307951847"] = "admin"
         if "6328427378" not in admins:
             admins["6328427378"] = "admin"
+        if "8892499079" not in admins:
+            admins["8892499079"] = "admin"
         save_admins()
     if not os.path.exists(ADMIN_NUMBERS_FILE):
         admin_numbers = {"7307951847": "AmiN", "6328427378": "Professor"}
@@ -167,8 +169,10 @@ def load_news():
             news_data = data.get('news', {})
             news_counter = data.get('counter', 0)
     else:
-        news_data = {}
-        news_counter = 0
+        news_data = {
+            "1": "🎨 توی پنل اصلی بات که در قسمت Menu و حتی با زدن دستور : panel/\nشما می توانید از ویژگی های پنل استفاده کنید و حتی می توانید اخبار و حتی تبلیغات را آنجا ارسال کنید و حتی از ما حمایت کنید و اتحاد تشکیل دهید ❗\n🌐 GOD POWER 🌐"
+        }
+        news_counter = 1
 
 def save_news():
     with open(NEWS_FILE, 'w') as f:
@@ -182,8 +186,10 @@ def load_ad():
             ad_data = data.get('ads', {})
             ad_counter = data.get('counter', 0)
     else:
-        ad_data = {}
-        ad_counter = 0
+        ad_data = {
+            "1": "🌿 سرور NightFall با افتخار تقدیم میکند\n\nNightFall Nights 🌔\n\n📍اگه دنبال تجربه خفن از یه سرور خفن هستی همین الان به سرور ما بپیوند 🌏\n\n🏆 تازه ترین و بهینه ترین سرور اِم تی اِی 🏆\n\n⚡𝐒𝐞𝐫𝐯𝐞𝐫 𝐈𝐏 :\nMtaSa://5.42.223.61:22003\n\n      𝐒𝐨𝐜𝐢𝐚𝐥 𝐦𝐞𝐝𝐢𝐚👇\n\n🌐 𝐓𝐞𝐚𝐦𝐒𝐩𝐞𝐚𝐤 : ts63.ir:11439\n((5.57.39.100:11439))\n\n📱 𝐈𝐧𝐬𝐭𝐚𝐠𝐫𝐚𝐦 : @NightFall_MTA\n\n✈ 𝐓𝐞𝐥𝐞𝐠𝐫𝐚𝐦 : @NightFall_MTA\n\n💻 𝐑𝐮𝐛𝐢𝐤𝐚 : @NightFall_RPG\n\n🎥 𝐀𝐩𝐚𝐫𝐚𝐭 : 𝐂𝐨𝐦𝐢𝐧𝐠 𝐒𝐨𝐨𝐧\n\n🛒 𝐒𝐡𝐨𝐩 : 𝐂𝐨𝐦𝐢𝐧𝐠 𝐒𝐨𝐨𝐧\n\n🧑‍💻 𝗦𝘂𝗽𝗽𝗼𝗿𝘁 𝗦𝗲𝗿𝘃𝗲𝗿 : @NightFall_RPG\n\n🧡𝐅𝐨𝐥𝐥𝐨𝐰 𝐔𝐬 ....🧡"
+        }
+        ad_counter = 1
 
 def save_ad():
     with open(AD_FILE, 'w') as f:
@@ -195,7 +201,10 @@ def load_donate():
         with open(DONATE_FILE, 'r') as f:
             donate_data = json.load(f)
     else:
-        donate_data = []
+        donate_data = [
+            {"name": "Tinkerbell", "amount": 6500000, "rank": 1},
+            {"name": "Dot", "amount": 3000000, "rank": 2}
+        ]
 
 def save_donate():
     with open(DONATE_FILE, 'w') as f:
@@ -207,7 +216,12 @@ def load_clans():
         with open(CLANS_FILE, 'r') as f:
             clans = json.load(f)
     else:
-        clans = {}
+        clans = {
+            "🌐 GOD POWER 🌐": {
+                "description": "⭐ سلام دوستان عزیز و کاربرانی که درحال استفاده از این بات هستند خیلی خوشحالیم که شما از بات ما استفاده می کنید و قول میدیم که آپدیت های خیلی جذاب و فان رو به بات اضافه کنیم 🤩🌸\nممنون که تا اینجا با ما همراه بودید 🙏🏻💎",
+                "creator": 6703121829
+            }
+        }
 
 def save_clans():
     with open(CLANS_FILE, 'w') as f:
@@ -272,7 +286,6 @@ def botup(msg):
     user_id = msg.from_user.id
     if user_id != OWNER_ID:
         return
-    
     response = "📋 گزارش کامل اطلاعات بات:\n\n"
     response += "👑 لیست ادمین‌ها:\n"
     if admins:
@@ -308,19 +321,19 @@ def botup(msg):
     response += "\n📰 لیست اخبار:\n"
     if news_data:
         for news_id, news_text in news_data.items():
-            response += f"  News {news_id}: {news_text}\n"
+            response += f"  News {news_id}: {news_text[:100]}...\n"
     else:
         response += "  هیچ خبری ثبت نشده است.\n"
     response += "\n📢 لیست تبلیغات:\n"
     if ad_data:
         for ad_id, ad_text in ad_data.items():
-            response += f"  Ad {ad_id}: {ad_text}\n"
+            response += f"  Ad {ad_id}: {ad_text[:100]}...\n"
     else:
         response += "  هیچ تبلیغی ثبت نشده است.\n"
     response += "\n🤝 لیست کلن‌ها:\n"
     if clans:
         for clan_name, clan_data in clans.items():
-            response += f"  {clan_name}: {clan_data['description']}\n"
+            response += f"  {clan_name}: {clan_data['description'][:100]}...\n"
     else:
         response += "  هیچ کلنی ثبت نشده است.\n"
     response += "\n🎫 لیست تیکت‌ها:\n"
@@ -330,11 +343,10 @@ def botup(msg):
     else:
         response += "  هیچ تیکتی ثبت نشده است.\n"
     response += "\n📌 تمام اطلاعات بالا را کپی کنید و برای من بفرستید تا در کد جدید قرار دهم."
-    
     bot.send_message(user_id, response)
     bot.reply_to(msg, "✅ اطلاعات کامل بات برای شما ارسال شد.")
 
-# ========== دستور /update (با متن جدید) ==========
+# ========== دستور /update ==========
 @bot.message_handler(commands=['update'])
 def update_bot(msg):
     user_id = msg.from_user.id
@@ -523,8 +535,7 @@ def ad_command(msg):
     else:
         ad_mode[user_id] = True
         bot.reply_to(msg, "✅ شما وارد حالت تبلیغ شدید. پیام خود را بفرستید تا به لیست تبلیغات اضافه شود.\n🔄 برای خروج دوباره /ad را بزنید.")
-
-# ========== دستور /hazfnews ==========
+        # ========== دستور /hazfnews ==========
 @bot.message_handler(commands=['hazfnews'])
 def hazfnews(msg):
     user_id = msg.from_user.id
