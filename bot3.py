@@ -22,9 +22,9 @@ admin_numbers = {}
 amin_list = {}
 professor_list = {}
 banned_users = {}
-
-# حالت چت خصوصی
 private_chat_mode = {}
+clans = {}
+creating_clan = {}
 
 news_data = {}
 ad_data = {}
@@ -43,6 +43,7 @@ BANNED_FILE = 'banned.json'
 NEWS_FILE = 'news.json'
 AD_FILE = 'ad.json'
 DONATE_FILE = 'donate.json'
+CLANS_FILE = 'clans.json'
 
 def init_roles():
     global admins, admin_numbers, amin_list, professor_list
@@ -56,7 +57,6 @@ def init_roles():
         if "6328427378" not in admins:
             admins["6328427378"] = "admin"
         save_admins()
-    
     if not os.path.exists(ADMIN_NUMBERS_FILE):
         admin_numbers = {"7307951847": "AmiN", "6328427378": "Professor"}
         save_admin_numbers()
@@ -67,7 +67,6 @@ def init_roles():
         if "6328427378" not in admin_numbers:
             admin_numbers["6328427378"] = "Professor"
         save_admin_numbers()
-    
     if not os.path.exists(AMIN_FILE):
         amin_list = {"7307951847": "AmiN"}
         save_amin()
@@ -76,7 +75,6 @@ def init_roles():
         if "7307951847" not in amin_list:
             amin_list["7307951847"] = "AmiN"
             save_amin()
-    
     if not os.path.exists(PROFESSOR_FILE):
         professor_list = {"6328427378": "Professor"}
         save_professor()
@@ -203,6 +201,18 @@ def save_donate():
     with open(DONATE_FILE, 'w') as f:
         json.dump(donate_data, f)
 
+def load_clans():
+    global clans
+    if os.path.exists(CLANS_FILE):
+        with open(CLANS_FILE, 'r') as f:
+            clans = json.load(f)
+    else:
+        clans = {}
+
+def save_clans():
+    with open(CLANS_FILE, 'w') as f:
+        json.dump(clans, f)
+
 load_data()
 load_admins()
 load_admin_numbers()
@@ -212,6 +222,7 @@ load_banned()
 load_news()
 load_ad()
 load_donate()
+load_clans()
 init_roles()
 
 def is_admin(user_id):
@@ -255,9 +266,7 @@ def get_user_link(user):
     else:
         return user.first_name or user.last_name or "کاربر"
 
-# ========== دستورات ==========
-
-# دستور /bakhshersalfilmsuper
+# ========== دستور /bakhshersalfilmsuper ==========
 @bot.message_handler(commands=['bakhshersalfilmsuper'])
 def private_chat_toggle(msg):
     user_id = msg.from_user.id
@@ -298,7 +307,42 @@ def private_chat_toggle(msg):
     except:
         pass
 
-# دستور /owner
+# ========== دستور /createclan ==========
+@bot.message_handler(commands=['createclan'])
+def create_clan(msg):
+    user_id = msg.from_user.id
+    if user_id != OWNER_ID:
+        return
+    parts = msg.text.split(maxsplit=1)
+    if len(parts) < 2:
+        bot.reply_to(msg, "⚠️ لطفا نام کلن را وارد کنید: /createclan 🧭 BadBoys 🧭")
+        return
+    clan_name = parts[1].strip()
+    if clan_name in clans:
+        bot.reply_to(msg, f"❌ کلن با نام «{clan_name}» قبلا وجود دارد.")
+        return
+    creating_clan[user_id] = {'clan_name': clan_name}
+    bot.reply_to(msg, f"✅ کلن «{clan_name}» در حال ایجاد است.\n📝 لطفا متن توضیحات این کلن را ارسال کنید.")
+
+# ========== دستور /deleteclan ==========
+@bot.message_handler(commands=['deleteclan'])
+def delete_clan(msg):
+    user_id = msg.from_user.id
+    if user_id != OWNER_ID:
+        return
+    parts = msg.text.split(maxsplit=1)
+    if len(parts) < 2:
+        bot.reply_to(msg, "⚠️ لطفا نام کلن را وارد کنید: /deleteclan BadBoys")
+        return
+    clan_name = parts[1].strip()
+    if clan_name not in clans:
+        bot.reply_to(msg, f"❌ کلن با نام «{clan_name}» وجود ندارد.")
+        return
+    del clans[clan_name]
+    save_clans()
+    bot.reply_to(msg, f"✅ کلن «{clan_name}» با موفقیت حذف شد.")
+
+# ========== دستور /owner ==========
 @bot.message_handler(commands=['owner'])
 def owner_cmds(msg):
     user_id = msg.from_user.id
@@ -317,10 +361,12 @@ def owner_cmds(msg):
     response += "📌 /unban [ایدی] : رفع محرومیت کاربر\n"
     response += "📌 /ma [ایدی] : اضافه کردن ادمین\n"
     response += "📌 /kickadmin [ایدی] : حذف ادمین\n"
+    response += "📌 /createclan [اسم] : ساخت کلن جدید\n"
+    response += "📌 /deleteclan [اسم] : حذف کلن\n"
     response += "🔐 /bakhshersalfilmsuper : چت خصوصی با Professor\n"
     bot.reply_to(msg, response)
 
-# دستور /update
+# ========== دستور /update ==========
 @bot.message_handler(commands=['update'])
 def update_bot(msg):
     user_id = msg.from_user.id
@@ -366,7 +412,7 @@ def update_bot(msg):
     except:
         pass
 
-# دستور /panel
+# ========== دستور /panel ==========
 @bot.message_handler(commands=['panel'])
 def panel(msg):
     user_id = msg.from_user.id
@@ -382,8 +428,7 @@ def panel(msg):
     btn6 = telebot.types.InlineKeyboardButton("👑 تیم مدیریتی", callback_data="panel_team")
     markup.add(btn1, btn2, btn3, btn4, btn5, btn6)
     bot.reply_to(msg, "🔰 شما وارد پنل اصلی بات شدید برای استفاده از بات روی گزینه ها کلیک کنید تا از ویژگی های پنل استفاده کنید !", reply_markup=markup)
-
-# دستور /news
+    # ========== دستور /news ==========
 @bot.message_handler(commands=['news'])
 def news_command(msg):
     user_id = msg.from_user.id
@@ -396,7 +441,7 @@ def news_command(msg):
         news_mode[user_id] = True
         bot.reply_to(msg, "✅ شما وارد حالت خبر شدید. پیام خود را بفرستید تا به لیست اخبار اضافه شود.\n🔄 برای خروج دوباره /news را بزنید.")
 
-# دستور /ad
+# ========== دستور /ad ==========
 @bot.message_handler(commands=['ad'])
 def ad_command(msg):
     user_id = msg.from_user.id
@@ -409,7 +454,7 @@ def ad_command(msg):
         ad_mode[user_id] = True
         bot.reply_to(msg, "✅ شما وارد حالت تبلیغ شدید. پیام خود را بفرستید تا به لیست تبلیغات اضافه شود.\n🔄 برای خروج دوباره /ad را بزنید.")
 
-# دستور /hazfnews
+# ========== دستور /hazfnews ==========
 @bot.message_handler(commands=['hazfnews'])
 def hazfnews(msg):
     user_id = msg.from_user.id
@@ -430,7 +475,7 @@ def hazfnews(msg):
     except:
         bot.reply_to(msg, "❌ شماره معتبر نیست.")
 
-# دستور /hazfad
+# ========== دستور /hazfad ==========
 @bot.message_handler(commands=['hazfad'])
 def hazfad(msg):
     user_id = msg.from_user.id
@@ -451,7 +496,7 @@ def hazfad(msg):
     except:
         bot.reply_to(msg, "❌ شماره معتبر نیست.")
 
-# دستور /donate
+# ========== دستور /donate ==========
 @bot.message_handler(commands=['donate'])
 def donate_command(msg):
     user_id = msg.from_user.id
@@ -478,7 +523,7 @@ def donate_command(msg):
     save_donate()
     bot.reply_to(msg, f"✅ {name} با مبلغ {amount} T به لیست حمایت‌ها اضافه شد.")
 
-# دستور /removedonate
+# ========== دستور /removedonate ==========
 @bot.message_handler(commands=['removedonate'])
 def remove_donate(msg):
     user_id = msg.from_user.id
@@ -504,7 +549,7 @@ def remove_donate(msg):
     save_donate()
     bot.reply_to(msg, f"✅ {name} از لیست حمایت‌ها حذف شد.")
 
-# دستور /start
+# ========== دستور /start ==========
 @bot.message_handler(commands=['start'])
 def start(msg):
     user_id = msg.from_user.id
@@ -513,7 +558,7 @@ def start(msg):
         return
     bot.reply_to(msg, "🔰 /info : سلام امیدوارم حالتون خوب باشه . لطفا روی این دستور کلیک کنید")
 
-# دستور /info
+# ========== دستور /info ==========
 @bot.message_handler(commands=['info'])
 def info(msg):
     user_id = msg.from_user.id
@@ -535,7 +580,7 @@ def info(msg):
     response += "📌 /panel : پنل اصلی بات\n"
     bot.reply_to(msg, response)
 
-# دستور /perms
+# ========== دستور /perms ==========
 @bot.message_handler(commands=['perms'])
 def show_perms(msg):
     user_id = msg.from_user.id
@@ -590,7 +635,7 @@ def show_perms(msg):
     response += "  ❌ ساير دستورات را ندارد"
     bot.reply_to(msg, response)
 
-# دستور /admins
+# ========== دستور /admins ==========
 @bot.message_handler(commands=['admins'])
 def show_admins(msg):
     user_id = msg.from_user.id
@@ -619,7 +664,7 @@ def show_admins(msg):
         response += "❌ هيچ ادمين ديگري وجود ندارد."
     bot.reply_to(msg, response)
 
-# دستور /cmds
+# ========== دستور /cmds ==========
 @bot.message_handler(commands=['cmds'])
 def cmds(msg):
     user_id = msg.from_user.id
@@ -643,7 +688,7 @@ def cmds(msg):
         response += "📌 /perms : نمايش دسترسي ها\n"
     bot.reply_to(msg, response)
 
-# دستور /ma
+# ========== دستور /ma ==========
 @bot.message_handler(commands=['ma'])
 def add_admin(msg):
     user_id = msg.from_user.id
@@ -695,7 +740,7 @@ def add_admin(msg):
     admin_num = assign_admin_number(new_admin_id)
     bot.reply_to(msg, f"✅ کاربر با آيدي {new_admin_id} به ليست ادمين ها اضافه شد.\n📌 شماره: {admin_num}")
 
-# دستور /kickadmin
+# ========== دستور /kickadmin ==========
 @bot.message_handler(commands=['kickadmin'])
 def kick_admin(msg):
     user_id = msg.from_user.id
@@ -749,7 +794,7 @@ def kick_admin(msg):
     save_admins()
     bot.reply_to(msg, f"✅ کاربر با آيدي {target_id} از ليست ادمين ها حذف شد.")
 
-# دستور /ban
+# ========== دستور /ban ==========
 @bot.message_handler(commands=['ban'])
 def ban_user(msg):
     user_id = msg.from_user.id
@@ -810,7 +855,7 @@ def ban_user(msg):
     bot.send_message(target_id, "⛔ *** [ Ban.System ] : شما از بات محروم شدید ***")
     bot.reply_to(msg, f"✅ کاربر با آیدی {target_id} محروم شد.")
 
-# دستور /unban
+# ========== دستور /unban ==========
 @bot.message_handler(commands=['unban'])
 def unban_user(msg):
     user_id = msg.from_user.id
@@ -858,8 +903,7 @@ def unban_user(msg):
     save_banned()
     bot.send_message(target_id, "✅ *** [ Ban.System ] : شما از حالت محرومیت خارج شدید ***\n\n🔰 اکنون میتوانید از تمام دستورات بات استفاده کنید.\n📌 برای مشاهده دستورات، دستور /info را بزنید.")
     bot.reply_to(msg, f"✅ کاربر با آیدی {target_id} از محرومیت خارج شد.")
-
-# دستور /ac
+    # ========== دستور /ac ==========
 @bot.message_handler(commands=['ac'])
 def admin_chat_toggle(msg):
     user_id = msg.from_user.id
@@ -879,7 +923,7 @@ def admin_chat_toggle(msg):
         else:
             bot.reply_to(msg, "✅ شما (OWNER) وارد حالت چت ادمين شديد.\n🔄 براي خروج دوباره /ac را بزنيد.")
 
-# دستور /tickets
+# ========== دستور /tickets ==========
 @bot.message_handler(commands=['tickets'])
 def show_tickets(msg):
     user_id = msg.from_user.id
@@ -904,7 +948,7 @@ def show_tickets(msg):
         response += f"🔓 براي باز کردن: /open {ticket_num}\n\n"
     bot.reply_to(msg, response)
 
-# دستور /helpme
+# ========== دستور /helpme ==========
 @bot.message_handler(commands=['helpme'])
 def helpme(msg):
     user_id = msg.from_user.id
@@ -917,7 +961,7 @@ def helpme(msg):
     bot.reply_to(msg, "🔰 /close : شما وارد حالت ارسال پيام شديد لطفا بعد از فرستادن پيام خود براي بستن حالت از اين دستور استفاده کنيد")
     bot.reply_to(msg, "🔮 بعد از ارسال پيام خود سازنده بات به پي وي شما پيام ارسال مي کند ولي از وايس استفاده نکنيد و به صورت متن پيام خود را بفرستيد")
 
-# دستور /close
+# ========== دستور /close ==========
 @bot.message_handler(commands=['close'])
 def close(msg):
     user_id = msg.from_user.id
@@ -930,7 +974,7 @@ def close(msg):
     else:
         bot.reply_to(msg, "✅ درحالت ارسال پيام نيستيد")
 
-# دستور /ticket
+# ========== دستور /ticket ==========
 @bot.message_handler(commands=['ticket'])
 def soal(msg):
     user_id = msg.from_user.id
@@ -967,7 +1011,7 @@ def soal(msg):
     bot.send_message(OWNER_ID, f"🎫 بليط جديد شماره: {ticket_number}\n👤 نام: {user.first_name} (@{user.username}) [آيدي: {user_id}]\n📝 سوال: {soal_text}\n\n🔓 براي باز کردن: /open {ticket_number}")
     bot.reply_to(msg, "✅ پيام شما ارسال شد")
 
-# دستور /open
+# ========== دستور /open ==========
 @bot.message_handler(commands=['open'])
 def open_chat(msg):
     user_id = msg.from_user.id
@@ -993,7 +1037,7 @@ def open_chat(msg):
     bot.send_message(user_id_ticket, "✅ بليط شما توسط ادمين باز شد. براي چت دستور /chat را بزنيد.")
     bot.reply_to(msg, f"✅ چت با بليط {ticket_number} باز شد")
 
-# دستور /chat
+# ========== دستور /chat ==========
 @bot.message_handler(commands=['chat'])
 def chat_with_user(msg):
     user_id = msg.from_user.id
@@ -1009,7 +1053,7 @@ def chat_with_user(msg):
     waiting_for_message[user_id] = True
     bot.reply_to(msg, "✅ وارد چت شديد. پيام خود را بفرستيد")
 
-# دستور /a
+# ========== دستور /a ==========
 @bot.message_handler(commands=['a'])
 def admin_chat(msg):
     user_id = msg.from_user.id
@@ -1029,7 +1073,7 @@ def admin_chat(msg):
             return
     bot.reply_to(msg, "❌ چت فعالی وجود ندارد")
 
-# دستور /cc
+# ========== دستور /cc ==========
 @bot.message_handler(commands=['cc'])
 def close_chat(msg):
     user_id = msg.from_user.id
@@ -1064,7 +1108,17 @@ def handle_messages(msg):
     if is_banned(user_id):
         return
     
-    # حالت چت خصوصی
+    # ========== ساخت کلن (دریافت توضیحات) ==========
+    if user_id in creating_clan:
+        clan_name = creating_clan[user_id]['clan_name']
+        description = msg.text
+        clans[clan_name] = {'description': description, 'creator': user_id}
+        save_clans()
+        del creating_clan[user_id]
+        bot.reply_to(msg, f"✅ کلن «{clan_name}» با موفقیت ایجاد شد.\n📋 توضیحات: {description}")
+        return
+    
+    # ========== حالت چت خصوصی ==========
     if user_id in private_chat_mode:
         partner_id = private_chat_mode[user_id]
         try:
@@ -1085,7 +1139,7 @@ def handle_messages(msg):
             bot.reply_to(msg, f"❌ خطا در ارسال پیام: {e}")
         return
     
-    # حالت خبر
+    # ========== حالت خبر ==========
     if user_id in news_mode and news_mode[user_id]:
         global news_counter
         news_counter += 1
@@ -1095,7 +1149,7 @@ def handle_messages(msg):
         news_mode[user_id] = False
         return
     
-    # حالت تبلیغ
+    # ========== حالت تبلیغ ==========
     if user_id in ad_mode and ad_mode[user_id]:
         global ad_counter
         ad_counter += 1
@@ -1105,7 +1159,7 @@ def handle_messages(msg):
         ad_mode[user_id] = False
         return
     
-    # ادمین‌ها
+    # ========== ادمین‌ها ==========
     if is_admin(user_id):
         if user_id in admin_chat_mode and admin_chat_mode[user_id]:
             if user_id == OWNER_ID:
@@ -1146,7 +1200,7 @@ def handle_messages(msg):
             bot.reply_to(msg, "ℹ️ برای دیدن دستورات ادمینی ابتدا دستور /cmds را بزنید.")
             return
     
-    # کاربران عادی
+    # ========== کاربران عادی ==========
     if user_id in waiting_for_message and waiting_for_message[user_id]:
         if user_id != OWNER_ID and user_id in chat_sessions and chat_sessions[user_id] == 'open':
             bot.send_message(OWNER_ID, f"💬 از کاربر:\n👤 نام: {msg.from_user.first_name} [آیدی: {user_id}]\n📝 پیام: {msg.text}")
@@ -1187,7 +1241,21 @@ def handle_callbacks(call):
                 bot.send_message(user_id, "📭 هیچ تبلیغی وجود ندارد.")
             bot.answer_callback_query(call.id)
         elif call.data == "panel_alliances":
-            bot.send_message(user_id, "🤝 Coming Soon ...")
+            if not clans:
+                bot.send_message(user_id, "🤝 هیچ اتحادی وجود ندارد.")
+            else:
+                markup = telebot.types.InlineKeyboardMarkup(row_width=2)
+                for clan_name in clans.keys():
+                    btn = telebot.types.InlineKeyboardButton(clan_name, callback_data=f"clan_{clan_name}")
+                    markup.add(btn)
+                bot.send_message(user_id, "🤝 لیست اتحادها:", reply_markup=markup)
+            bot.answer_callback_query(call.id)
+        elif call.data.startswith("clan_"):
+            clan_name = call.data.replace("clan_", "")
+            if clan_name in clans:
+                bot.send_message(user_id, f"📋 توضیحات اتحاد «{clan_name}»:\n\n{clans[clan_name]['description']}")
+            else:
+                bot.send_message(user_id, "❌ این اتحاد وجود ندارد.")
             bot.answer_callback_query(call.id)
         elif call.data == "panel_channels":
             bot.send_message(user_id, "📺 Coming Soon ...")
