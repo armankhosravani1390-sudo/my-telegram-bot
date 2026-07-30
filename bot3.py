@@ -714,8 +714,7 @@ def owner_cmds(msg):
     response += "🔐 /bakhshersalfilmsuper : چت خصوصی با Professor\n"
     response += "📌 /opanel : پنل مدیریت OWNER\n"
     bot.reply_to(msg, response)
-
-# ========== پنل ادمین با دستور /apanel ==========
+    # ========== پنل ادمین با دستور /apanel ==========
 @bot.message_handler(commands=['apanel'])
 def admin_panel_command(msg):
     user_id = msg.from_user.id
@@ -748,13 +747,13 @@ def owner_panel_command(msg):
         return
     
     markup = telebot.types.InlineKeyboardMarkup(row_width=2)
-    btn1 = telebot.types.InlineKeyboardButton("📰 ارسال خبر", callback_data="owner_news")
-    btn2 = telebot.types.InlineKeyboardButton("📢 ارسال تبلیغ", callback_data="owner_ad")
+    btn1 = telebot.types.InlineKeyboardButton("📰 ارسال خبر", callback_data="owner_news_direct")
+    btn2 = telebot.types.InlineKeyboardButton("📢 ارسال تبلیغ", callback_data="owner_ad_direct")
     btn3 = telebot.types.InlineKeyboardButton("💰 مدیریت حمایت‌ها", callback_data="owner_donate")
     btn4 = telebot.types.InlineKeyboardButton("👑 مدیریت ادمین‌ها", callback_data="owner_admins")
     btn5 = telebot.types.InlineKeyboardButton("⛔ مدیریت محرومیت", callback_data="owner_bans")
-    btn6 = telebot.types.InlineKeyboardButton("📊 گزارش بات", callback_data="owner_botup")
-    btn7 = telebot.types.InlineKeyboardButton("🔄 آپدیت بات", callback_data="owner_update")
+    btn6 = telebot.types.InlineKeyboardButton("📊 گزارش بات", callback_data="owner_botup_direct")
+    btn7 = telebot.types.InlineKeyboardButton("🔄 آپدیت بات", callback_data="owner_update_direct")
     btn8 = telebot.types.InlineKeyboardButton("🔙 بازگشت", callback_data="admin_back")
     markup.add(btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8)
     
@@ -1506,8 +1505,7 @@ def show_tickets(msg):
         response += f"👤 نام: {data['first_name']} (@{data['username']})\n"
         response += f"📝 سوال: {data['question'][:100]}"
         bot.send_message(user_id, response, reply_markup=markup)
-
-@bot.message_handler(func=lambda m: True, content_types=['text'])
+        @bot.message_handler(func=lambda m: True, content_types=['text'])
 def handle_messages(msg):
     user_id = msg.from_user.id
     if is_banned(user_id):
@@ -2056,18 +2054,46 @@ def handle_callbacks(call):
         owner_panel_command(call.message)
         bot.answer_callback_query(call.id)
     
-    elif call.data == "owner_news":
+    # ========== ارسال خبر (DIRECT) ==========
+    elif call.data == "owner_news_direct":
         if user_id != OWNER_ID:
             bot.answer_callback_query(call.id, "⛔ فقط OWNER!")
             return
-        news_command(call.message)
+        if user_id in news_mode and news_mode[user_id]:
+            news_mode[user_id] = False
+            bot.send_message(user_id, "❌ شما از حالت خبر خارج شدید.")
+        else:
+            news_mode[user_id] = True
+            bot.send_message(user_id, "✅ شما وارد حالت خبر شدید. پیام خود را بفرستید تا به لیست اخبار اضافه شود.\n🔄 برای خروج دوباره /news را بزنید.")
         bot.answer_callback_query(call.id)
     
-    elif call.data == "owner_ad":
+    # ========== ارسال تبلیغ (DIRECT) ==========
+    elif call.data == "owner_ad_direct":
         if user_id != OWNER_ID:
             bot.answer_callback_query(call.id, "⛔ فقط OWNER!")
             return
-        ad_command(call.message)
+        if user_id in ad_mode and ad_mode[user_id]:
+            ad_mode[user_id] = False
+            bot.send_message(user_id, "❌ شما از حالت تبلیغ خارج شدید.")
+        else:
+            ad_mode[user_id] = True
+            bot.send_message(user_id, "✅ شما وارد حالت تبلیغ شدید. پیام خود را بفرستید تا به لیست تبلیغات اضافه شود.\n🔄 برای خروج دوباره /ad را بزنید.")
+        bot.answer_callback_query(call.id)
+    
+    # ========== گزارش بات (DIRECT) ==========
+    elif call.data == "owner_botup_direct":
+        if user_id != OWNER_ID:
+            bot.answer_callback_query(call.id, "⛔ فقط OWNER!")
+            return
+        botup(call.message)
+        bot.answer_callback_query(call.id)
+    
+    # ========== آپدیت بات (DIRECT) ==========
+    elif call.data == "owner_update_direct":
+        if user_id != OWNER_ID:
+            bot.answer_callback_query(call.id, "⛔ فقط OWNER!")
+            return
+        update_bot(call.message)
         bot.answer_callback_query(call.id)
     
     elif call.data == "owner_donate":
@@ -2127,20 +2153,6 @@ def handle_callbacks(call):
             bot.send_message(user_id, "✅ هیچ کاربری محروم نیست.")
         
         bot.send_message(user_id, "📌 برای محروم کردن: /ban [ایدی]\n📌 برای رفع محرومیت: /unban [ایدی]")
-        bot.answer_callback_query(call.id)
-    
-    elif call.data == "owner_botup":
-        if user_id != OWNER_ID:
-            bot.answer_callback_query(call.id, "⛔ فقط OWNER!")
-            return
-        botup(call.message)
-        bot.answer_callback_query(call.id)
-    
-    elif call.data == "owner_update":
-        if user_id != OWNER_ID:
-            bot.answer_callback_query(call.id, "⛔ فقط OWNER!")
-            return
-        update_bot(call.message)
         bot.answer_callback_query(call.id)
     
     # ========== دکمه‌های حرکت در بازی ==========
