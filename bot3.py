@@ -741,7 +741,8 @@ def start(msg):
 # ========== هندلر دکمه‌ها ==========
 @bot.message_handler(func=lambda m: m.text == "📋 راهنما")
 def info_button(msg):
-    user_id = msg.from_user.id    if is_banned(user_id):
+    user_id = msg.from_user.id
+    if is_banned(user_id):
         bot.reply_to(msg, "⛔ *** [ Ban.System ] : شما از بات محروم شدید ***")
         return
     
