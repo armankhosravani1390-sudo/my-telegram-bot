@@ -750,13 +750,16 @@ def owner_panel_command(msg):
     markup = telebot.types.InlineKeyboardMarkup(row_width=2)
     btn1 = telebot.types.InlineKeyboardButton("📰 ارسال خبر", callback_data="owner_news_direct")
     btn2 = telebot.types.InlineKeyboardButton("📢 ارسال تبلیغ", callback_data="owner_ad_direct")
-    btn3 = telebot.types.InlineKeyboardButton("💰 مدیریت حمایت‌ها", callback_data="owner_donate")
-    btn4 = telebot.types.InlineKeyboardButton("👑 مدیریت ادمین‌ها", callback_data="owner_admins")
-    btn5 = telebot.types.InlineKeyboardButton("⛔ مدیریت محرومیت", callback_data="owner_bans")
-    btn6 = telebot.types.InlineKeyboardButton("📊 گزارش بات", callback_data="owner_botup_direct")
-    btn7 = telebot.types.InlineKeyboardButton("🔄 آپدیت بات", callback_data="owner_update_direct")
-    btn8 = telebot.types.InlineKeyboardButton("🔙 بازگشت", callback_data="admin_back")
-    markup.add(btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8)
+    btn3 = telebot.types.InlineKeyboardButton("🗑️ حذف خبر", callback_data="owner_delete_news")
+    btn4 = telebot.types.InlineKeyboardButton("🗑️ حذف تبلیغ", callback_data="owner_delete_ad")
+    btn5 = telebot.types.InlineKeyboardButton("🤝 مدیریت اتحادها", callback_data="owner_clans")
+    btn6 = telebot.types.InlineKeyboardButton("💰 مدیریت حمایت‌ها", callback_data="owner_donate")
+    btn7 = telebot.types.InlineKeyboardButton("👑 مدیریت ادمین‌ها", callback_data="owner_admins")
+    btn8 = telebot.types.InlineKeyboardButton("⛔ مدیریت محرومیت", callback_data="owner_bans")
+    btn9 = telebot.types.InlineKeyboardButton("📊 گزارش بات", callback_data="owner_botup_direct")
+    btn10 = telebot.types.InlineKeyboardButton("🔄 آپدیت بات", callback_data="owner_update_direct")
+    btn11 = telebot.types.InlineKeyboardButton("🔙 بازگشت", callback_data="admin_back")
+    markup.add(btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8, btn9, btn10, btn11)
     
     bot.reply_to(msg, "👑 پنل مدیریت OWNER:\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=markup)
 
@@ -794,12 +797,13 @@ def user_panel(msg):
     btn1 = telebot.types.InlineKeyboardButton("📰 اخبار", callback_data="user_news")
     btn2 = telebot.types.InlineKeyboardButton("📢 تبلیغات", callback_data="user_ads")
     btn3 = telebot.types.InlineKeyboardButton("🤝 اتحاد ها", callback_data="user_alliances")
-    btn4 = telebot.types.InlineKeyboardButton("💰 حمایت ها", callback_data="user_donate")
-    btn5 = telebot.types.InlineKeyboardButton("👑 تیم مدیریتی", callback_data="user_team")
-    btn6 = telebot.types.InlineKeyboardButton("📋 راهنما", callback_data="user_help")
-    btn7 = telebot.types.InlineKeyboardButton("💬 ارتباط با سازنده", callback_data="user_contact_owner")
-    btn8 = telebot.types.InlineKeyboardButton("🎫 تیکت جدید", callback_data="user_new_ticket")
-    markup.add(btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8)
+    btn4 = telebot.types.InlineKeyboardButton("📺 کانال ها", callback_data="user_channels")
+    btn5 = telebot.types.InlineKeyboardButton("💰 حمایت ها", callback_data="user_donate")
+    btn6 = telebot.types.InlineKeyboardButton("👑 تیم مدیریتی", callback_data="user_team")
+    btn7 = telebot.types.InlineKeyboardButton("📋 راهنما", callback_data="user_help")
+    btn8 = telebot.types.InlineKeyboardButton("💬 ارتباط با سازنده", callback_data="user_contact_owner")
+    btn9 = telebot.types.InlineKeyboardButton("🎫 تیکت جدید", callback_data="user_new_ticket")
+    markup.add(btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8, btn9)
     bot.reply_to(msg, "🏠 پنل اصلی کاربران:\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=markup)
 
 # ========== تیکت جدید ==========
@@ -1670,9 +1674,39 @@ def handle_callbacks(call):
         user_id_ticket = tickets[ticket_number]['user_id']
         chat_sessions[user_id_ticket] = 'open'
         
-        bot.send_message(user_id_ticket, "✅ تیکت شما توسط ادمین باز شد.\n📌 از این پس هر پیامی که بفرستید، به ادمین ارسال میشود.\n🔴 برای پایان دادن به چت، دستور /cc را بزنید.")
+        # دریافت نام ادمین
+        admin_name = "ادمین"
+        try:
+            admin_info = bot.get_chat(user_id)
+            admin_name = admin_info.first_name or admin_info.username or "ادمین"
+        except:
+            pass
+        
+        # ارسال به کاربر
+        bot.send_message(user_id_ticket, f"✅ تیکت شما توسط ادمین {admin_name} باز شد.\n📌 از این پس هر پیامی که بفرستید، به ادمین ارسال میشود.\n🔴 برای پایان دادن به چت، دستور /cc را بزنید.")
+        
+        # ارسال به همه ادمین‌ها
+        for admin_id in admins:
+            try:
+                if int(admin_id) != user_id:
+                    bot.send_message(int(admin_id), f"✅ تیکت {ticket_number} توسط ادمین {admin_name} قبول شد!")
+            except:
+                pass
+        
+        # ارسال به OWNER
+        if user_id != OWNER_ID:
+            bot.send_message(OWNER_ID, f"✅ تیکت {ticket_number} توسط ادمین {admin_name} قبول شد!")
+        
         bot.send_message(user_id, f"✅ تیکت {ticket_number} باز شد! شما در حالت چت با کاربر هستید.")
         bot.answer_callback_query(call.id, "✅ تیکت باز شد")
+    
+    # ========== کانال‌ها (Coming Soon) ==========
+    elif call.data == "user_channels":
+        if is_banned(user_id):
+            bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
+            return
+        bot.send_message(user_id, "⏳ Coming Soon ...")
+        bot.answer_callback_query(call.id, "⏳ به زودی!")
     
     # ========== Coming Soon ==========
     elif call.data == "game_coming_soon":
@@ -2080,6 +2114,103 @@ def handle_callbacks(call):
         else:
             ad_mode[user_id] = True
             bot.send_message(user_id, "✅ شما وارد حالت تبلیغ شدید. پیام خود را بفرستید تا به لیست تبلیغات اضافه شود.\n🔄 برای خروج دوباره /ad را بزنید.")
+        bot.answer_callback_query(call.id)
+    
+    # ========== حذف خبر ==========
+    elif call.data == "owner_delete_news":
+        if user_id != OWNER_ID:
+            bot.answer_callback_query(call.id, "⛔ فقط OWNER!")
+            return
+        
+        if not news_data:
+            bot.send_message(user_id, "📭 هیچ خبری برای حذف وجود ندارد.")
+            bot.answer_callback_query(call.id)
+            return
+        
+        response = "🗑️ لیست اخبار:\n\n"
+        for news_id, news_text in news_data.items():
+            response += f"📰 شماره: {news_id}\n{news_text[:100]}...\n"
+            response += f"📌 برای حذف: /hazfnews {news_id}\n\n"
+        
+        bot.send_message(user_id, response)
+        bot.send_message(user_id, "📌 دستور حذف: /hazfnews [شماره]")
+        bot.answer_callback_query(call.id)
+    
+    # ========== حذف تبلیغ ==========
+    elif call.data == "owner_delete_ad":
+        if user_id != OWNER_ID:
+            bot.answer_callback_query(call.id, "⛔ فقط OWNER!")
+            return
+        
+        if not ad_data:
+            bot.send_message(user_id, "📭 هیچ تبلیغی برای حذف وجود ندارد.")
+            bot.answer_callback_query(call.id)
+            return
+        
+        response = "🗑️ لیست تبلیغات:\n\n"
+        for ad_id, ad_text in ad_data.items():
+            response += f"📢 شماره: {ad_id}\n{ad_text[:100]}...\n"
+            response += f"📌 برای حذف: /hazfad {ad_id}\n\n"
+        
+        bot.send_message(user_id, response)
+        bot.send_message(user_id, "📌 دستور حذف: /hazfad [شماره]")
+        bot.answer_callback_query(call.id)
+    
+    # ========== مدیریت اتحادها ==========
+    elif call.data == "owner_clans":
+        if user_id != OWNER_ID:
+            bot.answer_callback_query(call.id, "⛔ فقط OWNER!")
+            return
+        
+        markup = telebot.types.InlineKeyboardMarkup(row_width=2)
+        btn1 = telebot.types.InlineKeyboardButton("➕ ساخت اتحاد", callback_data="owner_create_clan")
+        btn2 = telebot.types.InlineKeyboardButton("🗑️ حذف اتحاد", callback_data="owner_delete_clan")
+        btn3 = telebot.types.InlineKeyboardButton("📋 لیست اتحادها", callback_data="owner_list_clans")
+        btn4 = telebot.types.InlineKeyboardButton("🔙 بازگشت", callback_data="owner_panel")
+        markup.add(btn1, btn2, btn3, btn4)
+        bot.send_message(user_id, "🤝 مدیریت اتحادها:\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=markup)
+        bot.answer_callback_query(call.id)
+    
+    elif call.data == "owner_create_clan":
+        if user_id != OWNER_ID:
+            bot.answer_callback_query(call.id, "⛔ فقط OWNER!")
+            return
+        bot.send_message(user_id, "📝 لطفاً نام اتحاد را وارد کنید:\n/createclan [نام اتحاد]")
+        bot.answer_callback_query(call.id)
+    
+    elif call.data == "owner_delete_clan":
+        if user_id != OWNER_ID:
+            bot.answer_callback_query(call.id, "⛔ فقط OWNER!")
+            return
+        
+        if not clans:
+            bot.send_message(user_id, "🤝 هیچ اتحادی برای حذف وجود ندارد.")
+            bot.answer_callback_query(call.id)
+            return
+        
+        response = "🤝 لیست اتحادها:\n\n"
+        for clan_name in clans.keys():
+            response += f"📌 {clan_name}\n"
+        response += "\n📌 برای حذف: /deleteclan [نام اتحاد]"
+        bot.send_message(user_id, response)
+        bot.answer_callback_query(call.id)
+    
+    elif call.data == "owner_list_clans":
+        if user_id != OWNER_ID:
+            bot.answer_callback_query(call.id, "⛔ فقط OWNER!")
+            return
+        
+        if not clans:
+            bot.send_message(user_id, "🤝 هیچ اتحادی وجود ندارد.")
+            bot.answer_callback_query(call.id)
+            return
+        
+        response = "🤝 لیست اتحادها:\n\n"
+        for clan_name, clan_data in clans.items():
+            response += f"📌 {clan_name}\n"
+            response += f"📋 {clan_data['description'][:100]}...\n"
+            response += f"👑 سازنده: {clan_data['creator']}\n\n"
+        bot.send_message(user_id, response)
         bot.answer_callback_query(call.id)
     
     # ========== گزارش بات (DIRECT) ==========
