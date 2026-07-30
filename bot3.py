@@ -712,7 +712,53 @@ def owner_cmds(msg):
     response += "📌 /skg : برنده شدن خودکار در بازی (فقط OWNER)\n"
     response += "📌 /leaveroom : خروج از اتاق بازی\n"
     response += "🔐 /bakhshersalfilmsuper : چت خصوصی با Professor\n"
+    response += "📌 /opanel : پنل مدیریت OWNER\n"
     bot.reply_to(msg, response)
+
+# ========== پنل ادمین با دستور /apanel ==========
+@bot.message_handler(commands=['apanel'])
+def admin_panel_command(msg):
+    user_id = msg.from_user.id
+    if is_banned(user_id):
+        bot.reply_to(msg, "⛔ *** [ Ban.System ] : شما از بات محروم شدید ***")
+        return
+    if not is_admin(user_id):
+        bot.reply_to(msg, "⛔ شما دسترسی ادمین ندارید!")
+        return
+    
+    markup = telebot.types.InlineKeyboardMarkup(row_width=2)
+    btn1 = telebot.types.InlineKeyboardButton("🎫 لیست تیکت‌ها", callback_data="admin_tickets_list")
+    btn2 = telebot.types.InlineKeyboardButton("💬 چت ادمین‌ها", callback_data="admin_chat_toggle")
+    btn3 = telebot.types.InlineKeyboardButton("📋 دستورات ادمین", callback_data="admin_cmds")
+    btn5 = telebot.types.InlineKeyboardButton("🔙 بازگشت", callback_data="admin_back")
+    markup.add(btn1, btn2, btn3, btn5)
+    
+    if user_id == OWNER_ID:
+        btn4 = telebot.types.InlineKeyboardButton("👑 پنل OWNER", callback_data="owner_panel")
+        markup.add(btn4)
+    
+    bot.reply_to(msg, "⚙️ پنل مدیریت ادمین:\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=markup)
+
+# ========== پنل OWNER با دستور /opanel ==========
+@bot.message_handler(commands=['opanel'])
+def owner_panel_command(msg):
+    user_id = msg.from_user.id
+    if user_id != OWNER_ID:
+        bot.reply_to(msg, "⛔ این دستور فقط برای سازنده بات است!")
+        return
+    
+    markup = telebot.types.InlineKeyboardMarkup(row_width=2)
+    btn1 = telebot.types.InlineKeyboardButton("📰 ارسال خبر", callback_data="owner_news")
+    btn2 = telebot.types.InlineKeyboardButton("📢 ارسال تبلیغ", callback_data="owner_ad")
+    btn3 = telebot.types.InlineKeyboardButton("💰 مدیریت حمایت‌ها", callback_data="owner_donate")
+    btn4 = telebot.types.InlineKeyboardButton("👑 مدیریت ادمین‌ها", callback_data="owner_admins")
+    btn5 = telebot.types.InlineKeyboardButton("⛔ مدیریت محرومیت", callback_data="owner_bans")
+    btn6 = telebot.types.InlineKeyboardButton("📊 گزارش بات", callback_data="owner_botup")
+    btn7 = telebot.types.InlineKeyboardButton("🔄 آپدیت بات", callback_data="owner_update")
+    btn8 = telebot.types.InlineKeyboardButton("🔙 بازگشت", callback_data="admin_back")
+    markup.add(btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8)
+    
+    bot.reply_to(msg, "👑 پنل مدیریت OWNER:\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=markup)
 
 # ========== منوی اصلی با دکمه ==========
 @bot.message_handler(commands=['start'])
@@ -722,7 +768,6 @@ def start(msg):
         bot.reply_to(msg, "⛔ *** [ Ban.System ] : شما از بات محروم شدید ***")
         return
     
-    # منوی اصلی کاربر
     markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
     btn1 = telebot.types.KeyboardButton("🏠 پنل اصلی")
     btn2 = telebot.types.KeyboardButton("🎮 بازی ها")
@@ -731,7 +776,6 @@ def start(msg):
     btn5 = telebot.types.KeyboardButton("🚪 خروج از چت")
     markup.add(btn1, btn2, btn3, btn4, btn5)
     
-    # دکمه های ادمین (فقط برای ادمین‌ها)
     if is_admin(user_id):
         btn6 = telebot.types.KeyboardButton("⚙️ پنل مدیریت")
         markup.add(btn6)
@@ -814,9 +858,9 @@ def close_button(msg):
     else:
         bot.reply_to(msg, "✅ شما در حالت ارسال پيام نيستيد")
 
-# ========== پنل مدیریت ادمین ==========
+# ========== پنل مدیریت ادمین (دکمه) ==========
 @bot.message_handler(func=lambda m: m.text == "⚙️ پنل مدیریت")
-def admin_panel(msg):
+def admin_panel_button(msg):
     user_id = msg.from_user.id
     if is_banned(user_id):
         bot.reply_to(msg, "⛔ *** [ Ban.System ] : شما از بات محروم شدید ***")
@@ -824,18 +868,7 @@ def admin_panel(msg):
     if not is_admin(user_id):
         return
     
-    markup = telebot.types.InlineKeyboardMarkup(row_width=2)
-    btn1 = telebot.types.InlineKeyboardButton("🎫 لیست تیکت‌ها", callback_data="admin_tickets_list")
-    btn2 = telebot.types.InlineKeyboardButton("💬 چت ادمین‌ها", callback_data="admin_chat_toggle")
-    btn3 = telebot.types.InlineKeyboardButton("📋 دستورات ادمین", callback_data="admin_cmds")
-    btn4 = telebot.types.InlineKeyboardButton("🔙 بازگشت", callback_data="admin_back")
-    markup.add(btn1, btn2, btn3, btn4)
-    
-    if user_id == OWNER_ID:
-        btn5 = telebot.types.InlineKeyboardButton("👑 پنل OWNER", callback_data="owner_panel")
-        markup.add(btn5)
-    
-    bot.reply_to(msg, "⚙️ پنل مدیریت:\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=markup)
+    admin_panel_command(msg)
 
 @bot.message_handler(commands=['panel'])
 def panel(msg):
@@ -1018,7 +1051,6 @@ def soal(msg):
     user_ticket_status[user_id] = ticket_number
     save_data()
     
-    # ارسال به OWNER با دکمه قبول
     markup = telebot.types.InlineKeyboardMarkup(row_width=1)
     btn_accept = telebot.types.InlineKeyboardButton("✅ قبول تیکت", callback_data=f"accept_ticket_{ticket_number}")
     markup.add(btn_accept)
@@ -1465,18 +1497,15 @@ def show_tickets(msg):
         bot.reply_to(msg, "📭 هيچ بليط باز نشده اي وجود ندارد.")
         return
     
-    response = "📋 ليست بليط هاي باز نشده:\n\n"
     for ticket_num, data in open_tickets:
-        response += f"🎫 شماره: {ticket_num}\n"
-        response += f"👤 نام: {data['first_name']} (@{data['username']})\n"
-        response += f"📝 سوال: {data['question'][:50]}...\n"
-        
         markup = telebot.types.InlineKeyboardMarkup(row_width=1)
         btn_accept = telebot.types.InlineKeyboardButton("✅ قبول تیکت", callback_data=f"accept_ticket_{ticket_num}")
         markup.add(btn_accept)
         
+        response = f"🎫 شماره: {ticket_num}\n"
+        response += f"👤 نام: {data['first_name']} (@{data['username']})\n"
+        response += f"📝 سوال: {data['question'][:100]}"
         bot.send_message(user_id, response, reply_markup=markup)
-        response = ""
 
 @bot.message_handler(func=lambda m: True, content_types=['text'])
 def handle_messages(msg):
@@ -1600,6 +1629,14 @@ def handle_messages(msg):
                     pass
             bot.reply_to(msg, "✅ پیام شما به چت ادمین ها ارسال شد.")
             return
+        else:
+            # ========== مدیریت پیام‌های معمولی برای ادمین‌ها ==========
+            if not msg.text.startswith('/'):
+                if user_id == OWNER_ID:
+                    bot.reply_to(msg, "سلام سرورم 🙏🏻❤️\nامیدوارم حالتون خوب باشه 👋🏻\nلطفا دستور :\n/opanel\nرا بزنید 🌠")
+                else:
+                    bot.reply_to(msg, "👋 سلام ادمین عزیز!\nلطفاً برای ورود به پنل مدیریت، دستور زیر را بزنید:\n/apanel")
+                return
     
     if user_id in waiting_for_message and waiting_for_message[user_id] == True:
         if user_id != OWNER_ID and user_id in chat_sessions and chat_sessions[user_id] == 'open':
@@ -1612,6 +1649,7 @@ def handle_messages(msg):
             waiting_for_message[user_id] = False
     else:
         if not msg.text.startswith('/'):
+            # ========== مدیریت پیام‌های معمولی برای کاربران عادی ==========
             bot.reply_to(msg, "ℹ️ ابتدا دستور /start را بزنید تا منوی اصلی را ببینید")
 
 @bot.callback_query_handler(func=lambda call: True)
@@ -1999,42 +2037,21 @@ def handle_callbacks(call):
         if user_id != OWNER_ID:
             bot.answer_callback_query(call.id, "⛔ فقط OWNER!")
             return
-        
-        markup = telebot.types.InlineKeyboardMarkup(row_width=2)
-        btn1 = telebot.types.InlineKeyboardButton("📰 ارسال خبر", callback_data="owner_news")
-        btn2 = telebot.types.InlineKeyboardButton("📢 ارسال تبلیغ", callback_data="owner_ad")
-        btn3 = telebot.types.InlineKeyboardButton("💰 مدیریت حمایت‌ها", callback_data="owner_donate")
-        btn4 = telebot.types.InlineKeyboardButton("👑 مدیریت ادمین‌ها", callback_data="owner_admins")
-        btn5 = telebot.types.InlineKeyboardButton("⛔ مدیریت محرومیت", callback_data="owner_bans")
-        btn6 = telebot.types.InlineKeyboardButton("📊 گزارش بات", callback_data="owner_botup")
-        btn7 = telebot.types.InlineKeyboardButton("🔄 آپدیت بات", callback_data="owner_update")
-        btn8 = telebot.types.InlineKeyboardButton("🔙 بازگشت", callback_data="admin_back")
-        markup.add(btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8)
-        bot.send_message(user_id, "👑 پنل مدیریت OWNER:\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=markup)
+        owner_panel_command(call.message)
         bot.answer_callback_query(call.id)
     
     elif call.data == "owner_news":
         if user_id != OWNER_ID:
             bot.answer_callback_query(call.id, "⛔ فقط OWNER!")
             return
-        if user_id in news_mode and news_mode[user_id]:
-            news_mode[user_id] = False
-            bot.send_message(user_id, "❌ شما از حالت خبر خارج شدید.")
-        else:
-            news_mode[user_id] = True
-            bot.send_message(user_id, "✅ شما وارد حالت خبر شدید. پیام خود را بفرستید تا به لیست اخبار اضافه شود.\n🔄 برای خروج دوباره /news را بزنید.")
+        news_command(call.message)
         bot.answer_callback_query(call.id)
     
     elif call.data == "owner_ad":
         if user_id != OWNER_ID:
             bot.answer_callback_query(call.id, "⛔ فقط OWNER!")
             return
-        if user_id in ad_mode and ad_mode[user_id]:
-            ad_mode[user_id] = False
-            bot.send_message(user_id, "❌ شما از حالت تبلیغ خارج شدید.")
-        else:
-            ad_mode[user_id] = True
-            bot.send_message(user_id, "✅ شما وارد حالت تبلیغ شدید. پیام خود را بفرستید تا به لیست تبلیغات اضافه شود.\n🔄 برای خروج دوباره /ad را بزنید.")
+        ad_command(call.message)
         bot.answer_callback_query(call.id)
     
     elif call.data == "owner_donate":
