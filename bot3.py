@@ -791,14 +791,14 @@ def user_panel(msg):
         return
     
     markup = telebot.types.InlineKeyboardMarkup(row_width=2)
-    btn1 = telebot.types.InlineKeyboardButton("📰 اخبار", callback_data="panel_news")
-    btn2 = telebot.types.InlineKeyboardButton("📢 تبلیغات", callback_data="panel_ads")
-    btn3 = telebot.types.InlineKeyboardButton("🤝 اتحاد ها", callback_data="panel_alliances")
-    btn4 = telebot.types.InlineKeyboardButton("💰 حمایت ها", callback_data="panel_donate")
-    btn5 = telebot.types.InlineKeyboardButton("👑 تیم مدیریتی", callback_data="panel_team")
-    btn6 = telebot.types.InlineKeyboardButton("📋 راهنما", callback_data="panel_help")
-    btn7 = telebot.types.InlineKeyboardButton("💬 ارتباط با سازنده", callback_data="panel_contact_owner")
-    btn8 = telebot.types.InlineKeyboardButton("🎫 تیکت جدید", callback_data="panel_new_ticket")
+    btn1 = telebot.types.InlineKeyboardButton("📰 اخبار", callback_data="user_news")
+    btn2 = telebot.types.InlineKeyboardButton("📢 تبلیغات", callback_data="user_ads")
+    btn3 = telebot.types.InlineKeyboardButton("🤝 اتحاد ها", callback_data="user_alliances")
+    btn4 = telebot.types.InlineKeyboardButton("💰 حمایت ها", callback_data="user_donate")
+    btn5 = telebot.types.InlineKeyboardButton("👑 تیم مدیریتی", callback_data="user_team")
+    btn6 = telebot.types.InlineKeyboardButton("📋 راهنما", callback_data="user_help")
+    btn7 = telebot.types.InlineKeyboardButton("💬 ارتباط با سازنده", callback_data="user_contact_owner")
+    btn8 = telebot.types.InlineKeyboardButton("🎫 تیکت جدید", callback_data="user_new_ticket")
     markup.add(btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8)
     bot.reply_to(msg, "🏠 پنل اصلی کاربران:\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=markup)
 
@@ -1852,7 +1852,7 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id, "✅ خارج شدید")
     
     # ========== پنل کاربر ==========
-    elif call.data == "panel_help":
+    elif call.data == "user_help":
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
             return
@@ -1865,7 +1865,7 @@ def handle_callbacks(call):
         bot.send_message(user_id, response)
         bot.answer_callback_query(call.id)
     
-    elif call.data == "panel_contact_owner":
+    elif call.data == "user_contact_owner":
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
             return
@@ -1877,7 +1877,7 @@ def handle_callbacks(call):
         bot.send_message(user_id, "🔰 شما وارد حالت ارسال پیام به سازنده شدید.\n📌 پیام خود را بفرستید.\n🚪 برای خروج، دکمه خروج از چت را بزنید.")
         bot.answer_callback_query(call.id, "✅ وارد شدید")
     
-    elif call.data == "panel_new_ticket":
+    elif call.data == "user_new_ticket":
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
             return
@@ -1889,76 +1889,92 @@ def handle_callbacks(call):
         waiting_for_message[user_id] = 'ticket'
         bot.answer_callback_query(call.id, "✅ لطفاً پیام خود را بفرستید")
     
-    # ========== دکمه‌های پنل ==========
-    elif call.data.startswith('panel_'):
+    # ========== دکمه‌های پنل کاربر ==========
+    elif call.data == "user_news":
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
             return
-        if call.data == "panel_news":
-            if news_data:
-                response = "📰 لیست اخبار:\n\n"
-                for news_id, news_text in news_data.items():
-                    response += f"🔹 News : {news_id}\n{news_text}\n\n"
-                bot.send_message(user_id, response)
-            else:
-                bot.send_message(user_id, "📭 هیچ خبری وجود ندارد.")
-            bot.answer_callback_query(call.id)
-        elif call.data == "panel_ads":
-            if ad_data:
-                response = "📢 لیست تبلیغات:\n\n"
-                for ad_id, ad_text in ad_data.items():
-                    response += f"🔸 Ad : {ad_id}\n{ad_text}\n\n"
-                bot.send_message(user_id, response)
-            else:
-                bot.send_message(user_id, "📭 هیچ تبلیغی وجود ندارد.")
-            bot.answer_callback_query(call.id)
-        elif call.data == "panel_alliances":
-            if not clans:
-                bot.send_message(user_id, "🤝 هیچ اتحادی وجود ندارد.")
-            else:
-                markup = telebot.types.InlineKeyboardMarkup(row_width=2)
-                for clan_name in clans.keys():
-                    btn = telebot.types.InlineKeyboardButton(clan_name, callback_data=f"clan_{clan_name}")
-                    markup.add(btn)
-                bot.send_message(user_id, "🤝 لیست اتحادها:", reply_markup=markup)
-            bot.answer_callback_query(call.id)
-        elif call.data.startswith("clan_"):
-            clan_name = call.data.replace("clan_", "")
-            if clan_name in clans:
-                bot.send_message(user_id, f"📋 توضیحات اتحاد «{clan_name}»:\n\n{clans[clan_name]['description']}")
-            else:
-                bot.send_message(user_id, "❌ این اتحاد وجود ندارد.")
-            bot.answer_callback_query(call.id)
-        elif call.data == "panel_donate":
-            if donate_data:
-                response = "💰 لیست حمایت‌ها:\n\n"
-                for item in donate_data:
-                    response += f"🏅 {item['rank']} : {item['name']}\n💵 مبلغ : {item['amount']} T\n\n"
-                bot.send_message(user_id, response)
-            else:
-                bot.send_message(user_id, "💰 هیچ حمایتی ثبت نشده است.")
-            bot.answer_callback_query(call.id)
-        elif call.data == "panel_team":
-            response = "👑 تیم مدیریتی:\n\n"
-            response += "👑 سازنده: OWNER\n"
-            if admins:
-                for admin_id in admins:
-                    admin_num = get_admin_number(admin_id) or "بدون شماره"
-                    try:
-                        user_info = bot.get_chat(admin_id)
-                        name = user_info.first_name or user_info.username or "ناشناس"
-                        if admin_num == "AmiN":
-                            response += f"⭐ کاپیتان : {name}\n"
-                        elif admin_num == "Professor":
-                            response += f"🎓 آقای : {name}\n"
-                        else:
-                            response += f"{admin_num} : {name}\n"
-                    except:
-                        response += f"{admin_num} : ناشناس\n"
-            else:
-                response += "❌ هیچ ادمین دیگری وجود ندارد."
+        if news_data:
+            response = "📰 لیست اخبار:\n\n"
+            for news_id, news_text in news_data.items():
+                response += f"🔹 News : {news_id}\n{news_text}\n\n"
             bot.send_message(user_id, response)
-            bot.answer_callback_query(call.id)
+        else:
+            bot.send_message(user_id, "📭 هیچ خبری وجود ندارد.")
+        bot.answer_callback_query(call.id)
+    
+    elif call.data == "user_ads":
+        if is_banned(user_id):
+            bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
+            return
+        if ad_data:
+            response = "📢 لیست تبلیغات:\n\n"
+            for ad_id, ad_text in ad_data.items():
+                response += f"🔸 Ad : {ad_id}\n{ad_text}\n\n"
+            bot.send_message(user_id, response)
+        else:
+            bot.send_message(user_id, "📭 هیچ تبلیغی وجود ندارد.")
+        bot.answer_callback_query(call.id)
+    
+    elif call.data == "user_alliances":
+        if is_banned(user_id):
+            bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
+            return
+        if not clans:
+            bot.send_message(user_id, "🤝 هیچ اتحادی وجود ندارد.")
+        else:
+            markup = telebot.types.InlineKeyboardMarkup(row_width=2)
+            for clan_name in clans.keys():
+                btn = telebot.types.InlineKeyboardButton(clan_name, callback_data=f"clan_{clan_name}")
+                markup.add(btn)
+            bot.send_message(user_id, "🤝 لیست اتحادها:", reply_markup=markup)
+        bot.answer_callback_query(call.id)
+    
+    elif call.data.startswith("clan_"):
+        clan_name = call.data.replace("clan_", "")
+        if clan_name in clans:
+            bot.send_message(user_id, f"📋 توضیحات اتحاد «{clan_name}»:\n\n{clans[clan_name]['description']}")
+        else:
+            bot.send_message(user_id, "❌ این اتحاد وجود ندارد.")
+        bot.answer_callback_query(call.id)
+    
+    elif call.data == "user_donate":
+        if is_banned(user_id):
+            bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
+            return
+        if donate_data:
+            response = "💰 لیست حمایت‌ها:\n\n"
+            for item in donate_data:
+                response += f"🏅 {item['rank']} : {item['name']}\n💵 مبلغ : {item['amount']} T\n\n"
+            bot.send_message(user_id, response)
+        else:
+            bot.send_message(user_id, "💰 هیچ حمایتی ثبت نشده است.")
+        bot.answer_callback_query(call.id)
+    
+    elif call.data == "user_team":
+        if is_banned(user_id):
+            bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
+            return
+        response = "👑 تیم مدیریتی:\n\n"
+        response += "👑 سازنده: OWNER\n"
+        if admins:
+            for admin_id in admins:
+                admin_num = get_admin_number(admin_id) or "بدون شماره"
+                try:
+                    user_info = bot.get_chat(admin_id)
+                    name = user_info.first_name or user_info.username or "ناشناس"
+                    if admin_num == "AmiN":
+                        response += f"⭐ کاپیتان : {name}\n"
+                    elif admin_num == "Professor":
+                        response += f"🎓 آقای : {name}\n"
+                    else:
+                        response += f"{admin_num} : {name}\n"
+                except:
+                    response += f"{admin_num} : ناشناس\n"
+        else:
+            response += "❌ هیچ ادمین دیگری وجود ندارد."
+        bot.send_message(user_id, response)
+        bot.answer_callback_query(call.id)
     
     # ========== پنل مدیریت ==========
     elif call.data == "admin_tickets_list":
