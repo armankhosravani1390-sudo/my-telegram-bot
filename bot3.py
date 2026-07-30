@@ -714,7 +714,8 @@ def owner_cmds(msg):
     response += "🔐 /bakhshersalfilmsuper : چت خصوصی با Professor\n"
     response += "📌 /opanel : پنل مدیریت OWNER\n"
     bot.reply_to(msg, response)
-    # ========== پنل ادمین با دستور /apanel ==========
+
+# ========== پنل ادمین با دستور /apanel ==========
 @bot.message_handler(commands=['apanel'])
 def admin_panel_command(msg):
     user_id = msg.from_user.id
@@ -1505,7 +1506,8 @@ def show_tickets(msg):
         response += f"👤 نام: {data['first_name']} (@{data['username']})\n"
         response += f"📝 سوال: {data['question'][:100]}"
         bot.send_message(user_id, response, reply_markup=markup)
-        @bot.message_handler(func=lambda m: True, content_types=['text'])
+
+@bot.message_handler(func=lambda m: True, content_types=['text'])
 def handle_messages(msg):
     user_id = msg.from_user.id
     if is_banned(user_id):
