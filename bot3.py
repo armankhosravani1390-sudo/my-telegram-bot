@@ -977,8 +977,9 @@ def owner_panel_command(msg):
     btn8 = telebot.types.InlineKeyboardButton("⛔ مدیریت محرومیت", callback_data="owner_bans")
     btn9 = telebot.types.InlineKeyboardButton("📊 گزارش بات", callback_data="owner_botup_direct")
     btn10 = telebot.types.InlineKeyboardButton("🔄 آپدیت بات", callback_data="owner_update_direct")
-    btn11 = telebot.types.InlineKeyboardButton("🔙 بازگشت", callback_data="admin_back")
-    markup.add(btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8, btn9, btn10, btn11)
+    btn11 = telebot.types.InlineKeyboardButton("📋 دسترسی‌ها", callback_data="owner_perms")
+    btn12 = telebot.types.InlineKeyboardButton("🔙 بازگشت", callback_data="admin_back")
+    markup.add(btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8, btn9, btn10, btn11, btn12)
     
     bot.reply_to(msg, "👑 پنل مدیریت OWNER:\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=markup)
 
@@ -2552,21 +2553,21 @@ def handle_callbacks(call):
                 try:
                     user_info = bot.get_chat(admin_id)
                     name = user_info.first_name or user_info.username or "ناشناس"
-                    if admin_num == "AmiN":
+                    if admin_num == "ECH":
+                        response += f"🏆 ECH : {name}\n"
+                    elif admin_num == "AmiN":
                         response += f"⭐ کاپیتان : {name}\n"
                     elif admin_num == "Professor":
                         response += f"🎓 پرفسور : {name}\n"
-                    elif admin_num == "ECH":
-                        response += f"🏆 ECH : {name}\n"
                     else:
                         response += f"{admin_num} : {name}\n"
                 except:
-                    if admin_num == "AmiN":
+                    if admin_num == "ECH":
+                        response += f"🏆 ECH : ناشناس\n"
+                    elif admin_num == "AmiN":
                         response += f"⭐ کاپیتان : ناشناس\n"
                     elif admin_num == "Professor":
                         response += f"🎓 پرفسور : ناشناس\n"
-                    elif admin_num == "ECH":
-                        response += f"🏆 ECH : ناشناس\n"
                     else:
                         response += f"{admin_num} : ناشناس\n"
         else:
@@ -2775,6 +2776,71 @@ def handle_callbacks(call):
             bot.answer_callback_query(call.id, "⛔ فقط OWNER!")
             return
         botup(call.message)
+        bot.answer_callback_query(call.id)
+    
+    elif call.data == "owner_perms":
+        if user_id != OWNER_ID:
+            bot.answer_callback_query(call.id, "⛔ فقط OWNER!")
+            return
+        
+        response = "📋 جدول دسترسي ها:\n\n"
+        response += "👑 OWNER (سازنده):\n"
+        response += "  ✅ همه دستورات\n"
+        response += "  ✅ بدون نياز به تاييد\n\n"
+        response += "⭐ AmiN (ادمین کامل):\n"
+        response += "  ✅ /ma (نياز به تاييد OWNER)\n"
+        response += "  ✅ /kickadmin (نياز به تاييد OWNER)\n"
+        response += "  ✅ /ban (نياز به تاييد OWNER)\n"
+        response += "  ✅ /unban (نياز به تاييد OWNER)\n"
+        response += "  ✅ /tickets\n"
+        response += "  ✅ /open\n"
+        response += "  ✅ /a\n"
+        response += "  ✅ /cc\n"
+        response += "  ✅ /ac\n"
+        response += "  ✅ /cmds\n"
+        response += "  ✅ /perms\n\n"
+        response += "🎓 Professor (استاد):\n"
+        response += "  ✅ /ma (نياز به تاييد OWNER)\n"
+        response += "  ✅ /kickadmin (نياز به تاييد OWNER)\n"
+        response += "  ✅ /ban (نياز به تاييد OWNER)\n"
+        response += "  ✅ /unban (نياز به تاييد OWNER)\n"
+        response += "  ✅ /tickets\n"
+        response += "  ✅ /open\n"
+        response += "  ✅ /a\n"
+        response += "  ✅ /cc\n"
+        response += "  ✅ /ac\n"
+        response += "  ✅ /cmds\n"
+        response += "  ✅ /perms\n\n"
+        response += "🏆 ECH (ادمین ویژه):\n"
+        response += "  ✅ /ma (نياز به تاييد OWNER)\n"
+        response += "  ✅ /kickadmin (نياز به تاييد OWNER)\n"
+        response += "  ✅ /ban (نياز به تاييد OWNER)\n"
+        response += "  ✅ /unban (نياز به تاييد OWNER)\n"
+        response += "  ✅ /tickets\n"
+        response += "  ✅ /open\n"
+        response += "  ✅ /a\n"
+        response += "  ✅ /cc\n"
+        response += "  ✅ /ac\n"
+        response += "  ✅ /cmds\n"
+        response += "  ✅ /perms\n\n"
+        response += "🛡️ Admin (ادمین معمولی):\n"
+        response += "  ✅ /tickets\n"
+        response += "  ✅ /open\n"
+        response += "  ✅ /a\n"
+        response += "  ✅ /cc\n"
+        response += "  ✅ /ac\n"
+        response += "  ✅ /cmds\n"
+        response += "  ❌ /ma\n"
+        response += "  ❌ /kickadmin\n"
+        response += "  ❌ /ban\n"
+        response += "  ❌ /unban\n"
+        response += "  ❌ /perms\n\n"
+        response += "👤 User (کاربر عادی):\n"
+        response += "  ✅ /ticket\n"
+        response += "  ✅ /chat\n"
+        response += "  ❌ ساير دستورات را ندارد"
+        
+        bot.send_message(user_id, response)
         bot.answer_callback_query(call.id)
     
     elif call.data == "owner_update_direct":
