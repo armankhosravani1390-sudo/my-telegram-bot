@@ -2994,3 +2994,7 @@ if __name__ == "__main__":
     bot_thread = threading.Thread(target=run_bot)
     bot_thread.start()
     app.run(host='0.0.0.0', port=8080)
+# P Y T H O N #
+# H A C K #
+# O W N E R #
+# 3 0 0 0 #
