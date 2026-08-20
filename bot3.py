@@ -9,6 +9,7 @@ import random
 
 TOKEN = "8299446091:AAG3rkzDotNZ4KLObMy_BJ4Lm_sCBs-DHKE"
 OWNER_ID = 6703121829
+YOUR_NAME = "꧁ I R A N ꧂" 
 
 bot = telebot.TeleBot(TOKEN)
 app = Flask(__name__)
@@ -50,6 +51,9 @@ ttt_waiting_games = []
 ttt_password_temp = {}
 ttt_join_temp = {}
 ttt_game_scores = {}
+
+auto_reply_users = {}
+auto_reply_timers = {}
 
 DATA_FILE = 'data.json'
 ADMINS_FILE = 'admins.json'
@@ -569,6 +573,24 @@ def start_ttt_game(game_id):
     markup = get_ttt_board_markup(game_id, player1)
     bot.send_message(player1, "باید یکی از این دکمه‌ها را انتخاب کنید تا انتخاب شما ثبت شود ⚡", reply_markup=markup)
     bot.send_message(player2, "منتظر حرکت حریف باشید... ⏳")
+
+def send_auto_reply(user_id):
+    """ارسال پیام خودکار از طرف شما به کاربر"""
+    try:
+        bot.send_message(
+            user_id,
+            f"🧑🏻‍💻 : سلام، من دستیار {YOUR_NAME} هستم ⚡🕊️\n"
+            f"اگر پیامی دارید به من بگید که من به ایشون بگم ⭐😁\n"
+            f"با تشکر 🌹🙏🏻"
+        )
+        if user_id in auto_reply_users:
+            del auto_reply_users[user_id]
+        if user_id in auto_reply_timers:
+            del auto_reply_timers[user_id]
+        return True
+    except Exception as e:
+        print(f"❌ خطا در ارسال پیام خودکار: {e}")
+        return False
 
 @bot.message_handler(commands=['echwin'])
 def echwin_command(msg):
@@ -1754,8 +1776,43 @@ def show_tickets(msg):
         bot.send_message(user_id, response, reply_markup=markup)
 
 @bot.message_handler(func=lambda m: True, content_types=['text'])
+def handle_private_messages(msg):
+    user_id = msg.from_user.id
+    
+    if user_id != OWNER_ID:
+        chat_type = msg.chat.type
+        if chat_type == 'private' and msg.chat.id == OWNER_ID:
+            if user_id in auto_reply_timers:
+                try:
+                    auto_reply_timers[user_id].cancel()
+                except:
+                    pass
+                del auto_reply_timers[user_id]
+            
+            if user_id not in auto_reply_users:
+                auto_reply_users[user_id] = True
+                
+                timer = threading.Timer(10.0, send_auto_reply, args=[user_id])
+                auto_reply_timers[user_id] = timer
+                timer.start()
+                
+                bot.send_message(
+                    OWNER_ID,
+                    f"📩 کاربری به شما پیام داد!\n"
+                    f"👤 نام: {msg.from_user.first_name or 'ناشناس'}\n"
+                    f"🆔 آیدی: {user_id}\n"
+                    f"📝 پیام: {msg.text}\n\n"
+                    f"⏳ اگر تا ۱۰ ثانیه پاسخ ندهید، پیام خودکار از طرف شما ارسال میشود."
+                )
+
+@bot.message_handler(func=lambda m: True, content_types=['text'])
 def handle_messages(msg):
     user_id = msg.from_user.id
+    
+    if msg.chat.id == OWNER_ID and user_id != OWNER_ID:
+        handle_private_messages(msg)
+        return
+    
     if is_banned(user_id):
         return
     
