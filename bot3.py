@@ -55,6 +55,7 @@ ttt_game_scores = {}
 auto_reply_users = {}
 auto_reply_timers = {}
 auto_reply_enabled = True
+broadcast_mode = {}
 
 DATA_FILE = 'data.json'
 ADMINS_FILE = 'admins.json'
@@ -575,74 +576,6 @@ def start_ttt_game(game_id):
     bot.send_message(player1, "باید یکی از این دکمه‌ها را انتخاب کنید تا انتخاب شما ثبت شود ⚡", reply_markup=markup)
     bot.send_message(player2, "منتظر حرکت حریف باشید... ⏳")
 
-def send_auto_reply(user_id):
-    """ارسال پیام خودکار از طرف شما به کاربر"""
-    try:
-        bot.send_message(
-            user_id,
-            f"🧑🏻‍💻 : سلام، من دستیار {YOUR_NAME} هستم ⚡🕊️\n"
-            f"اگر پیامی دارید به من بگید که من به ایشون بگم ⭐😁\n"
-            f"با تشکر 🌹🙏🏻"
-        )
-        if user_id in auto_reply_users:
-            del auto_reply_users[user_id]
-        if user_id in auto_reply_timers:
-            del auto_reply_timers[user_id]
-        return True
-    except Exception as e:
-        print(f"❌ خطا در ارسال پیام خودکار: {e}")
-        return False
-
-@bot.message_handler(func=lambda m: m.chat.type == 'private' and m.chat.id == OWNER_ID and m.from_user.id != OWNER_ID, content_types=['text'])
-def handle_owner_private_messages(msg):
-    """مدیریت پیام‌های ارسال شده به پیوی OWNER"""
-    user_id = msg.from_user.id
-    
-    if is_banned(user_id):
-        return
-    
-    if not auto_reply_enabled:
-        bot.send_message(OWNER_ID, f"📩 کاربری به شما پیام داد!\n👤 نام: {msg.from_user.first_name or 'ناشناس'}\n🆔 آیدی: {user_id}\n📝 پیام: {msg.text}\n\n⚠️ پیام خودکار غیرفعال است!")
-        return
-    
-    if user_id in auto_reply_timers:
-        try:
-            auto_reply_timers[user_id].cancel()
-        except:
-            pass
-        del auto_reply_timers[user_id]
-    
-    if user_id not in auto_reply_users:
-        auto_reply_users[user_id] = True
-        
-        timer = threading.Timer(10.0, send_auto_reply, args=[user_id])
-        auto_reply_timers[user_id] = timer
-        timer.start()
-        
-        bot.send_message(
-            OWNER_ID,
-            f"📩 کاربری به شما پیام داد!\n"
-            f"👤 نام: {msg.from_user.first_name or 'ناشناس'}\n"
-            f"🆔 آیدی: {user_id}\n"
-            f"📝 پیام: {msg.text}\n\n"
-            f"⏳ اگر تا ۱۰ ثانیه پاسخ ندهید، پیام خودکار از طرف شما ارسال میشود."
-        )
-
-@bot.message_handler(commands=['togglesendmsg'])
-def toggle_auto_reply(msg):
-    """فعال/غیرفعال کردن پیام خودکار"""
-    user_id = msg.from_user.id
-    if user_id != OWNER_ID:
-        return
-    
-    global auto_reply_enabled
-    auto_reply_enabled = not auto_reply_enabled
-    
-    if auto_reply_enabled:
-        bot.reply_to(msg, "✅ پیام خودکار فعال شد!\n🔰 اگر کسی به شما پیام دهد و پاسخ ندهید، بعد از ۱۰ ثانیه پیام خودکار ارسال میشود.")
-    else:
-        bot.reply_to(msg, "❌ پیام خودکار غیرفعال شد!\n🔰 دیگر پیام خودکار ارسال نخواهد شد.")
-
 @bot.message_handler(commands=['echwin'])
 def echwin_command(msg):
     user_id = msg.from_user.id
@@ -903,8 +836,7 @@ def update_bot(msg):
             pass
     
     try:
-        bot.send_message(OWNER_ID, f"✅ پیام آپدیت به همه کاربران ارسال شد!")
-        bot.send_message(OWNER_ID, "*** [ Bot.DataBase ] : درحال آپدیت ***")
+        bot.send_message(OWNER_ID, f"✅ پیام آپدیت به {count} کاربر ارسال شد!")
     except:
         pass
 
@@ -1008,7 +940,34 @@ def owner_cmds(msg):
     response += "🔐 /bakhshersalfilmsuper : چت خصوصی با Professor\n"
     response += "📌 /opanel : پنل مدیریت OWNER\n"
     response += "📌 /togglesendmsg : فعال/غیرفعال کردن پیام خودکار\n"
+    response += "📌 /cancelbroadcast : خروج از حالت ارسال به همه\n"
     bot.reply_to(msg, response)
+
+@bot.message_handler(commands=['cancelbroadcast'])
+def cancel_broadcast(msg):
+    user_id = msg.from_user.id
+    if user_id != OWNER_ID:
+        return
+    
+    if user_id in broadcast_mode:
+        del broadcast_mode[user_id]
+        bot.reply_to(msg, "❌ شما از حالت ارسال به همه خارج شدید.")
+    else:
+        bot.reply_to(msg, "✅ شما در حالت ارسال به همه نیستید.")
+
+@bot.message_handler(commands=['togglesendmsg'])
+def toggle_auto_reply(msg):
+    user_id = msg.from_user.id
+    if user_id != OWNER_ID:
+        return
+    
+    global auto_reply_enabled
+    auto_reply_enabled = not auto_reply_enabled
+    
+    if auto_reply_enabled:
+        bot.reply_to(msg, "✅ پیام خودکار فعال شد!\n🔰 اگر کسی به شما پیام دهد و پاسخ ندهید، بعد از ۱۰ ثانیه پیام خودکار ارسال میشود.")
+    else:
+        bot.reply_to(msg, "❌ پیام خودکار غیرفعال شد!\n🔰 دیگر پیام خودکار ارسال نخواهد شد.")
 
 @bot.message_handler(commands=['apanel'])
 def admin_panel_command(msg):
@@ -1052,8 +1011,9 @@ def owner_panel_command(msg):
     btn9 = telebot.types.InlineKeyboardButton("📊 گزارش بات", callback_data="owner_botup_direct")
     btn10 = telebot.types.InlineKeyboardButton("🔄 آپدیت بات", callback_data="owner_update_direct")
     btn11 = telebot.types.InlineKeyboardButton("📋 دسترسی‌ها", callback_data="owner_perms")
-    btn12 = telebot.types.InlineKeyboardButton("🔙 بازگشت", callback_data="admin_back")
-    markup.add(btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8, btn9, btn10, btn11, btn12)
+    btn12 = telebot.types.InlineKeyboardButton("📢 ارسال به همه", callback_data="owner_broadcast")
+    btn13 = telebot.types.InlineKeyboardButton("🔙 بازگشت", callback_data="admin_back")
+    markup.add(btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8, btn9, btn10, btn11, btn12, btn13)
     
     bot.reply_to(msg, "👑 پنل مدیریت OWNER:\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=markup)
 
@@ -1831,6 +1791,55 @@ def show_tickets(msg):
 def handle_messages(msg):
     user_id = msg.from_user.id
     if is_banned(user_id):
+        return
+    
+    # ========== ارسال به همه ==========
+    if user_id in broadcast_mode and broadcast_mode[user_id]:
+        all_users = set()
+        for user_id in waiting_for_message.keys():
+            all_users.add(user_id)
+        for user_id in tickets.keys():
+            all_users.add(user_id)
+        for user_id in chat_sessions.keys():
+            all_users.add(user_id)
+        for user_id in user_ticket_status.keys():
+            all_users.add(user_id)
+        for user_id in admins.keys():
+            try:
+                all_users.add(int(user_id))
+            except:
+                pass
+        for user_id in amin_list.keys():
+            try:
+                all_users.add(int(user_id))
+            except:
+                pass
+        for user_id in professor_list.keys():
+            try:
+                all_users.add(int(user_id))
+            except:
+                pass
+        for user_id in ech_list.keys():
+            try:
+                all_users.add(int(user_id))
+            except:
+                pass
+        for user_id in banned_users.keys():
+            try:
+                all_users.add(int(user_id))
+            except:
+                pass
+        
+        count = 0
+        for user in all_users:
+            try:
+                bot.send_message(user, msg.text)
+                count += 1
+            except:
+                pass
+        
+        bot.send_message(OWNER_ID, f"✅ پیام شما به {count} کاربر ارسال شد!")
+        del broadcast_mode[user_id]
         return
     
     if user_id in waiting_for_message and waiting_for_message[user_id] == 'ticket':
@@ -2727,6 +2736,15 @@ def handle_callbacks(call):
         owner_panel_command(call.message)
         bot.answer_callback_query(call.id)
     
+    elif call.data == "owner_broadcast":
+        if user_id != OWNER_ID:
+            bot.answer_callback_query(call.id, "⛔ فقط OWNER!")
+            return
+        
+        broadcast_mode[user_id] = True
+        bot.send_message(user_id, "📢 وارد حالت ارسال پیام به همه شدید!\n\n📝 هر پیامی که بفرستید، برای همه کاربران ارسال خواهد شد.\n❌ برای خروج، دستور /cancelbroadcast را بزنید.")
+        bot.answer_callback_query(call.id, "✅ وارد حالت ارسال شدید")
+    
     elif call.data == "owner_news_direct":
         if user_id != OWNER_ID:
             bot.answer_callback_query(call.id, "⛔ فقط OWNER!")
@@ -2966,8 +2984,7 @@ def handle_callbacks(call):
                 pass
         
         try:
-            bot.send_message(OWNER_ID, f"✅ پیام آپدیت به همه کاربران ارسال شد!")
-            bot.send_message(OWNER_ID, "*** [ Bot.DataBase ] : درحال آپدیت ***")
+            bot.send_message(OWNER_ID, f"✅ پیام آپدیت به {count} کاربر ارسال شد!")
         except:
             pass
         
