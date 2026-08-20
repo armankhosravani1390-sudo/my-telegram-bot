@@ -9,7 +9,7 @@ import random
 
 TOKEN = "8299446091:AAG3rkzDotNZ4KLObMy_BJ4Lm_sCBs-DHKE"
 OWNER_ID = 6703121829
-YOUR_NAME = "꧁ I R A N ꧂" 
+YOUR_NAME = "꧁ I R A N ꧂"
 
 bot = telebot.TeleBot(TOKEN)
 app = Flask(__name__)
@@ -54,6 +54,7 @@ ttt_game_scores = {}
 
 auto_reply_users = {}
 auto_reply_timers = {}
+auto_reply_enabled = True
 
 DATA_FILE = 'data.json'
 ADMINS_FILE = 'admins.json'
@@ -592,6 +593,56 @@ def send_auto_reply(user_id):
         print(f"❌ خطا در ارسال پیام خودکار: {e}")
         return False
 
+@bot.message_handler(func=lambda m: m.chat.type == 'private' and m.chat.id == OWNER_ID and m.from_user.id != OWNER_ID, content_types=['text'])
+def handle_owner_private_messages(msg):
+    """مدیریت پیام‌های ارسال شده به پیوی OWNER"""
+    user_id = msg.from_user.id
+    
+    if is_banned(user_id):
+        return
+    
+    if not auto_reply_enabled:
+        bot.send_message(OWNER_ID, f"📩 کاربری به شما پیام داد!\n👤 نام: {msg.from_user.first_name or 'ناشناس'}\n🆔 آیدی: {user_id}\n📝 پیام: {msg.text}\n\n⚠️ پیام خودکار غیرفعال است!")
+        return
+    
+    if user_id in auto_reply_timers:
+        try:
+            auto_reply_timers[user_id].cancel()
+        except:
+            pass
+        del auto_reply_timers[user_id]
+    
+    if user_id not in auto_reply_users:
+        auto_reply_users[user_id] = True
+        
+        timer = threading.Timer(10.0, send_auto_reply, args=[user_id])
+        auto_reply_timers[user_id] = timer
+        timer.start()
+        
+        bot.send_message(
+            OWNER_ID,
+            f"📩 کاربری به شما پیام داد!\n"
+            f"👤 نام: {msg.from_user.first_name or 'ناشناس'}\n"
+            f"🆔 آیدی: {user_id}\n"
+            f"📝 پیام: {msg.text}\n\n"
+            f"⏳ اگر تا ۱۰ ثانیه پاسخ ندهید، پیام خودکار از طرف شما ارسال میشود."
+        )
+
+@bot.message_handler(commands=['togglesendmsg'])
+def toggle_auto_reply(msg):
+    """فعال/غیرفعال کردن پیام خودکار"""
+    user_id = msg.from_user.id
+    if user_id != OWNER_ID:
+        return
+    
+    global auto_reply_enabled
+    auto_reply_enabled = not auto_reply_enabled
+    
+    if auto_reply_enabled:
+        bot.reply_to(msg, "✅ پیام خودکار فعال شد!\n🔰 اگر کسی به شما پیام دهد و پاسخ ندهید، بعد از ۱۰ ثانیه پیام خودکار ارسال میشود.")
+    else:
+        bot.reply_to(msg, "❌ پیام خودکار غیرفعال شد!\n🔰 دیگر پیام خودکار ارسال نخواهد شد.")
+
 @bot.message_handler(commands=['echwin'])
 def echwin_command(msg):
     user_id = msg.from_user.id
@@ -956,6 +1007,7 @@ def owner_cmds(msg):
     response += "📌 /leaveroom : خروج از اتاق بازی\n"
     response += "🔐 /bakhshersalfilmsuper : چت خصوصی با Professor\n"
     response += "📌 /opanel : پنل مدیریت OWNER\n"
+    response += "📌 /togglesendmsg : فعال/غیرفعال کردن پیام خودکار\n"
     bot.reply_to(msg, response)
 
 @bot.message_handler(commands=['apanel'])
@@ -1776,43 +1828,8 @@ def show_tickets(msg):
         bot.send_message(user_id, response, reply_markup=markup)
 
 @bot.message_handler(func=lambda m: True, content_types=['text'])
-def handle_private_messages(msg):
-    user_id = msg.from_user.id
-    
-    if user_id != OWNER_ID:
-        chat_type = msg.chat.type
-        if chat_type == 'private' and msg.chat.id == OWNER_ID:
-            if user_id in auto_reply_timers:
-                try:
-                    auto_reply_timers[user_id].cancel()
-                except:
-                    pass
-                del auto_reply_timers[user_id]
-            
-            if user_id not in auto_reply_users:
-                auto_reply_users[user_id] = True
-                
-                timer = threading.Timer(10.0, send_auto_reply, args=[user_id])
-                auto_reply_timers[user_id] = timer
-                timer.start()
-                
-                bot.send_message(
-                    OWNER_ID,
-                    f"📩 کاربری به شما پیام داد!\n"
-                    f"👤 نام: {msg.from_user.first_name or 'ناشناس'}\n"
-                    f"🆔 آیدی: {user_id}\n"
-                    f"📝 پیام: {msg.text}\n\n"
-                    f"⏳ اگر تا ۱۰ ثانیه پاسخ ندهید، پیام خودکار از طرف شما ارسال میشود."
-                )
-
-@bot.message_handler(func=lambda m: True, content_types=['text'])
 def handle_messages(msg):
     user_id = msg.from_user.id
-    
-    if msg.chat.id == OWNER_ID and user_id != OWNER_ID:
-        handle_private_messages(msg)
-        return
-    
     if is_banned(user_id):
         return
     
