@@ -40,6 +40,7 @@ news_counter = 0
 ad_counter = 0
 news_mode = {}
 ad_mode = {}
+console_mode = {}  # ========== حالت کنسول ==========
 
 games = {}
 game_players = {}
@@ -639,6 +640,38 @@ def send_all_users_list(user_id):
     else:
         bot.send_message(user_id, response)
 
+# ========== دستور خروج از حالت‌ها ==========
+@bot.message_handler(commands=['cancel'])
+def cancel_mode(msg):
+    user_id = msg.from_user.id
+    
+    canceled = False
+    
+    if user_id in news_mode and news_mode[user_id]:
+        news_mode[user_id] = False
+        canceled = True
+    
+    if user_id in ad_mode and ad_mode[user_id]:
+        ad_mode[user_id] = False
+        canceled = True
+    
+    if user_id in broadcast_mode and broadcast_mode[user_id]:
+        del broadcast_mode[user_id]
+        canceled = True
+    
+    if user_id in console_mode and console_mode[user_id]:
+        del console_mode[user_id]
+        canceled = True
+    
+    if user_id in upload_mode:
+        del upload_mode[user_id]
+        canceled = True
+    
+    if canceled:
+        bot.reply_to(msg, "✅ شما از حالت خارج شدید!")
+    else:
+        bot.reply_to(msg, "ℹ️ شما در هیچ حالتی نیستید!")
+
 @bot.message_handler(commands=['start'])
 def start(msg):
     user_id = msg.from_user.id
@@ -667,7 +700,7 @@ def start(msg):
     
     bot.reply_to(msg, "🔰 سلام! به بات خوش آمدید!\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=markup)
 
-# ========== پنل بنیانگذار (بدون دکمه بازگشت) ==========
+# ========== پنل بنیانگذار (بدون دکمه بازگشت و دسترسی‌ها، با کنسول) ==========
 @bot.message_handler(commands=['fpanel'])
 def founder_panel(msg):
     user_id = msg.from_user.id
@@ -687,14 +720,15 @@ def founder_panel(msg):
     btn9 = telebot.types.InlineKeyboardButton("🔄 آپدیت بات", callback_data="founder_update")
     btn10 = telebot.types.InlineKeyboardButton("📊 گزارش بات", callback_data="founder_botup")
     btn11 = telebot.types.InlineKeyboardButton("📢 ارسال به همه", callback_data="founder_broadcast")
-    btn12 = telebot.types.InlineKeyboardButton("📋 دسترسی‌ها", callback_data="founder_perms")
+    # ========== دکمه کنسول جایگزین دسترسی‌ها ==========
+    btn12 = telebot.types.InlineKeyboardButton("🖥️ کنسول", callback_data="founder_console")
     btn13 = telebot.types.InlineKeyboardButton("🎬 مدیریت Media", callback_data="founder_media")
     btn14 = telebot.types.InlineKeyboardButton("📋 لیست کاربران", callback_data="founder_all_users")
     markup.add(btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8, btn9, btn10, btn11, btn12, btn13, btn14)
     
     bot.reply_to(msg, "👑 پنل مدیریت بنیانگذار:\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=markup)
 
-# ========== پنل سازنده (بدون دکمه بازگشت) ==========
+# ========== پنل سازنده (بدون دکمه بازگشت و دسترسی‌ها، با کنسول) ==========
 @bot.message_handler(commands=['opanel'])
 def owner_panel(msg):
     user_id = msg.from_user.id
@@ -714,7 +748,7 @@ def owner_panel(msg):
     btn9 = telebot.types.InlineKeyboardButton("🔄 آپدیت بات", callback_data="owner_update")
     btn10 = telebot.types.InlineKeyboardButton("📊 گزارش بات", callback_data="owner_botup")
     btn11 = telebot.types.InlineKeyboardButton("📢 ارسال به همه", callback_data="owner_broadcast")
-    btn12 = telebot.types.InlineKeyboardButton("📋 دسترسی‌ها", callback_data="owner_perms")
+    btn12 = telebot.types.InlineKeyboardButton("🖥️ کنسول", callback_data="owner_console")
     btn13 = telebot.types.InlineKeyboardButton("🎬 مدیریت Media", callback_data="owner_media")
     btn14 = telebot.types.InlineKeyboardButton("📋 لیست کاربران", callback_data="owner_all_users")
     markup.add(btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8, btn9, btn10, btn11, btn12, btn13, btn14)
@@ -851,8 +885,7 @@ def handle_callbacks(call):
         if not is_founder(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
             return
-        # ========== دکمه‌ای کردن ارسال خبر ==========
-        bot.send_message(user_id, "✅ وارد حالت ارسال خبر شدید!\n📝 لطفاً متن خبر را ارسال کنید:")
+        bot.send_message(user_id, "✅ وارد حالت ارسال خبر شدید!\n📝 لطفاً متن خبر را ارسال کنید:\n❌ برای خروج: /cancel")
         news_mode[user_id] = True
         bot.answer_callback_query(call.id, "✅ لطفاً خبر را بفرستید")
         return
@@ -861,8 +894,7 @@ def handle_callbacks(call):
         if not is_founder(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
             return
-        # ========== دکمه‌ای کردن ارسال تبلیغ ==========
-        bot.send_message(user_id, "✅ وارد حالت ارسال تبلیغ شدید!\n📝 لطفاً متن تبلیغ را ارسال کنید:")
+        bot.send_message(user_id, "✅ وارد حالت ارسال تبلیغ شدید!\n📝 لطفاً متن تبلیغ را ارسال کنید:\n❌ برای خروج: /cancel")
         ad_mode[user_id] = True
         bot.answer_callback_query(call.id, "✅ لطفاً تبلیغ را بفرستید")
         return
@@ -1008,20 +1040,22 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id)
         return
     
+    # ========== آپدیت بات (مثل /update) ==========
     if data == "founder_update":
         if not is_founder(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
             return
+        bot.answer_callback_query(call.id, "🔄 در حال آپدیت...")
         update_bot(call.message)
-        bot.answer_callback_query(call.id)
         return
     
+    # ========== گزارش بات (مثل /botup) ==========
     if data == "founder_botup":
         if not is_founder(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
             return
+        bot.answer_callback_query(call.id, "📊 در حال ارسال گزارش...")
         botup(call.message)
-        bot.answer_callback_query(call.id)
         return
     
     if data == "founder_broadcast":
@@ -1029,16 +1063,18 @@ def handle_callbacks(call):
             bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
             return
         broadcast_mode[user_id] = True
-        bot.send_message(user_id, "📢 وارد حالت ارسال پیام به همه شدید!\n\n📝 هر پیامی که بفرستید، برای همه کاربران ارسال خواهد شد.\n❌ برای خروج، دستور /cancelbroadcast را بزنید.")
+        bot.send_message(user_id, "📢 وارد حالت ارسال پیام به همه شدید!\n\n📝 هر پیامی که بفرستید، برای همه کاربران ارسال خواهد شد.\n❌ برای خروج: /cancel")
         bot.answer_callback_query(call.id, "✅ وارد حالت ارسال شدید")
         return
     
-    if data == "founder_perms":
+    # ========== کنسول ==========
+    if data == "founder_console":
         if not is_founder(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
             return
-        show_perms(call.message)
-        bot.answer_callback_query(call.id)
+        console_mode[user_id] = {'step': 'waiting_code'}
+        bot.send_message(user_id, "🖥️ **وارد حالت کنسول شدید!**\n\n🔑 لطفاً کد **1390** را وارد کنید:\n❌ برای خروج: /cancel")
+        bot.answer_callback_query(call.id, "✅ وارد کنسول شدید")
         return
     
     if data == "founder_media":
@@ -1061,7 +1097,7 @@ def handle_callbacks(call):
             bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
             return
         upload_mode[user_id] = 'photo'
-        bot.send_message(user_id, "📸 لطفاً عکس مورد نظر خود را ارسال کنید:")
+        bot.send_message(user_id, "📸 لطفاً عکس مورد نظر خود را ارسال کنید:\n❌ برای خروج: /cancel")
         bot.answer_callback_query(call.id, "✅ منتظر عکس هستم")
         return
     
@@ -1070,7 +1106,7 @@ def handle_callbacks(call):
             bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
             return
         upload_mode[user_id] = 'video'
-        bot.send_message(user_id, "🎥 لطفاً فیلم مورد نظر خود را ارسال کنید:")
+        bot.send_message(user_id, "🎥 لطفاً فیلم مورد نظر خود را ارسال کنید:\n❌ برای خروج: /cancel")
         bot.answer_callback_query(call.id, "✅ منتظر فیلم هستم")
         return
     
@@ -1079,7 +1115,7 @@ def handle_callbacks(call):
             bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
             return
         upload_mode[user_id] = 'audio'
-        bot.send_message(user_id, "🎵 لطفاً آهنگ مورد نظر خود را ارسال کنید:")
+        bot.send_message(user_id, "🎵 لطفاً آهنگ مورد نظر خود را ارسال کنید:\n❌ برای خروج: /cancel")
         bot.answer_callback_query(call.id, "✅ منتظر آهنگ هستم")
         return
     
@@ -1131,7 +1167,7 @@ def handle_callbacks(call):
         if not is_owner(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
             return
-        bot.send_message(user_id, "✅ وارد حالت ارسال خبر شدید!\n📝 لطفاً متن خبر را ارسال کنید:")
+        bot.send_message(user_id, "✅ وارد حالت ارسال خبر شدید!\n📝 لطفاً متن خبر را ارسال کنید:\n❌ برای خروج: /cancel")
         news_mode[user_id] = True
         bot.answer_callback_query(call.id, "✅ لطفاً خبر را بفرستید")
         return
@@ -1140,7 +1176,7 @@ def handle_callbacks(call):
         if not is_owner(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
             return
-        bot.send_message(user_id, "✅ وارد حالت ارسال تبلیغ شدید!\n📝 لطفاً متن تبلیغ را ارسال کنید:")
+        bot.send_message(user_id, "✅ وارد حالت ارسال تبلیغ شدید!\n📝 لطفاً متن تبلیغ را ارسال کنید:\n❌ برای خروج: /cancel")
         ad_mode[user_id] = True
         bot.answer_callback_query(call.id, "✅ لطفاً تبلیغ را بفرستید")
         return
@@ -1286,20 +1322,22 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id)
         return
     
+    # ========== آپدیت بات (مثل /update) ==========
     if data == "owner_update":
         if not is_owner(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
             return
+        bot.answer_callback_query(call.id, "🔄 در حال آپدیت...")
         update_bot(call.message)
-        bot.answer_callback_query(call.id)
         return
     
+    # ========== گزارش بات (مثل /botup) ==========
     if data == "owner_botup":
         if not is_owner(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
             return
+        bot.answer_callback_query(call.id, "📊 در حال ارسال گزارش...")
         botup(call.message)
-        bot.answer_callback_query(call.id)
         return
     
     if data == "owner_broadcast":
@@ -1307,16 +1345,18 @@ def handle_callbacks(call):
             bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
             return
         broadcast_mode[user_id] = True
-        bot.send_message(user_id, "📢 وارد حالت ارسال پیام به همه شدید!\n\n📝 هر پیامی که بفرستید، برای همه کاربران ارسال خواهد شد.\n❌ برای خروج، دستور /cancelbroadcast را بزنید.")
+        bot.send_message(user_id, "📢 وارد حالت ارسال پیام به همه شدید!\n\n📝 هر پیامی که بفرستید، برای همه کاربران ارسال خواهد شد.\n❌ برای خروج: /cancel")
         bot.answer_callback_query(call.id, "✅ وارد حالت ارسال شدید")
         return
     
-    if data == "owner_perms":
+    # ========== کنسول ==========
+    if data == "owner_console":
         if not is_owner(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
             return
-        show_perms(call.message)
-        bot.answer_callback_query(call.id)
+        console_mode[user_id] = {'step': 'waiting_code'}
+        bot.send_message(user_id, "🖥️ **وارد حالت کنسول شدید!**\n\n🔑 لطفاً کد **1390** را وارد کنید:\n❌ برای خروج: /cancel")
+        bot.answer_callback_query(call.id, "✅ وارد کنسول شدید")
         return
     
     if data == "owner_media":
@@ -1339,7 +1379,7 @@ def handle_callbacks(call):
             bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
             return
         upload_mode[user_id] = 'photo'
-        bot.send_message(user_id, "📸 لطفاً عکس مورد نظر خود را ارسال کنید:")
+        bot.send_message(user_id, "📸 لطفاً عکس مورد نظر خود را ارسال کنید:\n❌ برای خروج: /cancel")
         bot.answer_callback_query(call.id, "✅ منتظر عکس هستم")
         return
     
@@ -1348,7 +1388,7 @@ def handle_callbacks(call):
             bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
             return
         upload_mode[user_id] = 'video'
-        bot.send_message(user_id, "🎥 لطفاً فیلم مورد نظر خود را ارسال کنید:")
+        bot.send_message(user_id, "🎥 لطفاً فیلم مورد نظر خود را ارسال کنید:\n❌ برای خروج: /cancel")
         bot.answer_callback_query(call.id, "✅ منتظر فیلم هستم")
         return
     
@@ -1357,7 +1397,7 @@ def handle_callbacks(call):
             bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
             return
         upload_mode[user_id] = 'audio'
-        bot.send_message(user_id, "🎵 لطفاً آهنگ مورد نظر خود را ارسال کنید:")
+        bot.send_message(user_id, "🎵 لطفاً آهنگ مورد نظر خود را ارسال کنید:\n❌ برای خروج: /cancel")
         bot.answer_callback_query(call.id, "✅ منتظر آهنگ هستم")
         return
     
@@ -2062,7 +2102,6 @@ def handle_callbacks(call):
         return
     
     # ========== اگر دکمه ناشناخته بود ==========
-    # ========== اگر دکمه ناشناخته بود ==========
     else:
         bot.answer_callback_query(call.id, "❌ این دکمه کار نمی‌کند!")
         bot.send_message(user_id, "❌ این دکمه کار نمی‌کند!\nلطفاً از دکمه‌های دیگر استفاده کنید.")
@@ -2619,7 +2658,6 @@ def news_command(msg):
     user_id = msg.from_user.id
     if not is_founder(user_id) and not is_owner(user_id):
         return
-    # اینجا دیگه نیازی نیست چون دکمه‌ای کردیم
     bot.reply_to(msg, "✅ از دکمه «ارسال خبر» در پنل استفاده کنید.")
 
 @bot.message_handler(commands=['ad'])
@@ -2674,10 +2712,45 @@ def ticket(msg):
                 pass
     bot.reply_to(msg, "✅ پيام شما ارسال شد. منتظر پاسخ ادمین باشید.")
 
+# ========== هندلر پیام‌ها (با کنسول) ==========
 @bot.message_handler(func=lambda m: True, content_types=['text', 'photo', 'video', 'audio', 'document'])
 def handle_messages(msg):
     user_id = msg.from_user.id
     
+    # ========== حالت کنسول ==========
+    if user_id in console_mode:
+        if console_mode[user_id].get('step') == 'waiting_code':
+            if msg.text == "1390":
+                console_mode[user_id]['step'] = 'active'
+                bot.reply_to(msg, "✅ کد تایید شد! شما وارد کنسول شدید.\n\n📝 حالا هر چیزی بنویسید، به فرمت زیر نمایش داده میشه:\n\n"
+                                   "کد بخش WorkShop درست شد ✅\n"
+                                   "کد ساخت : (نوشته شما)\n"
+                                   "دیدن اپدیت ها 🏆\n"
+                                   "قسمت کد های مدیا 🏆\n"
+                                   "و حالا تمام ✅\n\n"
+                                   "❌ برای خروج: /cancel")
+            else:
+                bot.reply_to(msg, "❌ کد اشتباه است! لطفاً **1390** را وارد کنید:\n❌ برای خروج: /cancel")
+            return
+        
+        elif console_mode[user_id].get('step') == 'active':
+            # ========== فرمت کنسول ==========
+            user_input = msg.text
+            response = f"""
+🖥️ **خروجی کنسول:**
+
+✅ **کد بخش WorkShop درست شد** ✅
+📌 **کد ساخت :** `{user_input}`
+🏆 **دیدن اپدیت ها** 🏆
+🎬 **قسمت کد های مدیا** 🏆
+
+✅ **و حالا تمام** ✅
+"""
+            bot.reply_to(msg, response)
+            # بعد از هر پیام، دوباره آماده دریافت هستیم
+            return
+    
+    # ========== آپلود مدیا ==========
     if user_id in upload_mode:
         media_type = upload_mode[user_id]
         if media_type == 'photo' and msg.content_type == 'photo':
@@ -2720,6 +2793,7 @@ def handle_messages(msg):
             bot.reply_to(msg, f"❌ لطفاً یک {media_type} معتبر ارسال کنید!")
             return
     
+    # ========== ارسال به همه ==========
     if user_id in broadcast_mode and broadcast_mode[user_id]:
         all_users = set()
         for user_id_temp in waiting_for_message.keys():
@@ -2754,6 +2828,7 @@ def handle_messages(msg):
     if is_banned(user_id):
         return
     
+    # ========== تیکت ==========
     if user_id in waiting_for_message and waiting_for_message[user_id] == 'ticket':
         global ticket_counter
         if is_admin(user_id):
@@ -2792,6 +2867,7 @@ def handle_messages(msg):
         bot.reply_to(msg, "✅ پيام شما ارسال شد. منتظر پاسخ ادمین باشید.")
         return
     
+    # ========== RPS ==========
     if user_id in rps_password_temp and rps_password_temp[user_id].get('step') == 'waiting_password':
         password = msg.text
         game_id = create_game(user_id)
@@ -2862,6 +2938,7 @@ def handle_messages(msg):
         start_ttt_game(game_id)
         return
     
+    # ========== ساخت کلن ==========
     if user_id in creating_clan:
         clan_name = creating_clan[user_id]['clan_name']
         description = msg.text
@@ -2881,6 +2958,7 @@ def handle_messages(msg):
             bot.reply_to(msg, f"❌ خطا در ارسال پیام: {e}")
         return
     
+    # ========== خبر و تبلیغ ==========
     if user_id in news_mode and news_mode[user_id]:
         global news_counter
         news_counter += 1
@@ -2899,6 +2977,7 @@ def handle_messages(msg):
         ad_mode[user_id] = False
         return
     
+    # ========== ادمین ==========
     if is_admin(user_id):
         if user_id in admin_chat_mode and admin_chat_mode[user_id]:
             if user_id == FOUNDER_ID:
@@ -2926,6 +3005,7 @@ def handle_messages(msg):
                     bot.reply_to(msg, "👋 سلام ادمین عزیز!\nلطفاً برای ورود به پنل مدیریت، دستور زیر را بزنید:\n/apanel")
                 return
     
+    # ========== چت ==========
     if user_id in waiting_for_message and waiting_for_message[user_id] == True:
         if user_id != FOUNDER_ID and user_id != OWNER2_ID and user_id in chat_sessions and chat_sessions[user_id] == 'open':
             bot.send_message(FOUNDER_ID, f"💬 از کاربر:\n👤 نام: {msg.from_user.first_name} [آیدی: {user_id}]\n📝 پیام: {msg.text}")
