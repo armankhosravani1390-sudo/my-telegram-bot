@@ -7,7 +7,6 @@ import os
 from datetime import datetime
 import random
 
-# ========== توکن جدید ==========
 TOKEN = "8299446091:AAHVWDgncWd9qeU0eoNQ8GV-mX1yON-fMsM"
 OWNER_ID = 6703121829
 FOUNDER_ID = 6703121829
@@ -668,6 +667,7 @@ def start(msg):
     
     bot.reply_to(msg, "🔰 سلام! به بات خوش آمدید!\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=markup)
 
+# ========== پنل بنیانگذار (بدون دکمه بازگشت) ==========
 @bot.message_handler(commands=['fpanel'])
 def founder_panel(msg):
     user_id = msg.from_user.id
@@ -690,11 +690,11 @@ def founder_panel(msg):
     btn12 = telebot.types.InlineKeyboardButton("📋 دسترسی‌ها", callback_data="founder_perms")
     btn13 = telebot.types.InlineKeyboardButton("🎬 مدیریت Media", callback_data="founder_media")
     btn14 = telebot.types.InlineKeyboardButton("📋 لیست کاربران", callback_data="founder_all_users")
-    btn15 = telebot.types.InlineKeyboardButton("🔙 بازگشت", callback_data="founder_back")
-    markup.add(btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8, btn9, btn10, btn11, btn12, btn13, btn14, btn15)
+    markup.add(btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8, btn9, btn10, btn11, btn12, btn13, btn14)
     
     bot.reply_to(msg, "👑 پنل مدیریت بنیانگذار:\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=markup)
 
+# ========== پنل سازنده (بدون دکمه بازگشت) ==========
 @bot.message_handler(commands=['opanel'])
 def owner_panel(msg):
     user_id = msg.from_user.id
@@ -717,8 +717,7 @@ def owner_panel(msg):
     btn12 = telebot.types.InlineKeyboardButton("📋 دسترسی‌ها", callback_data="owner_perms")
     btn13 = telebot.types.InlineKeyboardButton("🎬 مدیریت Media", callback_data="owner_media")
     btn14 = telebot.types.InlineKeyboardButton("📋 لیست کاربران", callback_data="owner_all_users")
-    btn15 = telebot.types.InlineKeyboardButton("🔙 بازگشت", callback_data="owner_back")
-    markup.add(btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8, btn9, btn10, btn11, btn12, btn13, btn14, btn15)
+    markup.add(btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8, btn9, btn10, btn11, btn12, btn13, btn14)
     
     bot.reply_to(msg, "👑 پنل مدیریت سازنده:\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=markup)
 
@@ -852,23 +851,35 @@ def handle_callbacks(call):
         if not is_founder(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
             return
-        news_command(call.message)
-        bot.answer_callback_query(call.id)
+        # ========== دکمه‌ای کردن ارسال خبر ==========
+        bot.send_message(user_id, "✅ وارد حالت ارسال خبر شدید!\n📝 لطفاً متن خبر را ارسال کنید:")
+        news_mode[user_id] = True
+        bot.answer_callback_query(call.id, "✅ لطفاً خبر را بفرستید")
         return
     
     if data == "founder_ad":
         if not is_founder(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
             return
-        ad_command(call.message)
-        bot.answer_callback_query(call.id)
+        # ========== دکمه‌ای کردن ارسال تبلیغ ==========
+        bot.send_message(user_id, "✅ وارد حالت ارسال تبلیغ شدید!\n📝 لطفاً متن تبلیغ را ارسال کنید:")
+        ad_mode[user_id] = True
+        bot.answer_callback_query(call.id, "✅ لطفاً تبلیغ را بفرستید")
         return
     
     if data == "founder_delete_news":
         if not is_founder(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
             return
-        hazfnews(call.message)
+        if not news_data:
+            bot.send_message(user_id, "📭 هیچ خبری برای حذف وجود ندارد.")
+            bot.answer_callback_query(call.id)
+            return
+        response = "🗑️ لیست اخبار:\n\n"
+        for news_id, news_text in news_data.items():
+            response += f"📌 News {news_id}: {news_text[:50]}...\n"
+        response += "\n📌 برای حذف: /hazfnews [شماره]"
+        bot.send_message(user_id, response)
         bot.answer_callback_query(call.id)
         return
     
@@ -876,7 +887,15 @@ def handle_callbacks(call):
         if not is_founder(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
             return
-        hazfad(call.message)
+        if not ad_data:
+            bot.send_message(user_id, "📭 هیچ تبلیغی برای حذف وجود ندارد.")
+            bot.answer_callback_query(call.id)
+            return
+        response = "🗑️ لیست تبلیغات:\n\n"
+        for ad_id, ad_text in ad_data.items():
+            response += f"📌 Ad {ad_id}: {ad_text[:50]}...\n"
+        response += "\n📌 برای حذف: /hazfad [شماره]"
+        bot.send_message(user_id, response)
         bot.answer_callback_query(call.id)
         return
     
@@ -1112,23 +1131,33 @@ def handle_callbacks(call):
         if not is_owner(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
             return
-        news_command(call.message)
-        bot.answer_callback_query(call.id)
+        bot.send_message(user_id, "✅ وارد حالت ارسال خبر شدید!\n📝 لطفاً متن خبر را ارسال کنید:")
+        news_mode[user_id] = True
+        bot.answer_callback_query(call.id, "✅ لطفاً خبر را بفرستید")
         return
     
     if data == "owner_ad":
         if not is_owner(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
             return
-        ad_command(call.message)
-        bot.answer_callback_query(call.id)
+        bot.send_message(user_id, "✅ وارد حالت ارسال تبلیغ شدید!\n📝 لطفاً متن تبلیغ را ارسال کنید:")
+        ad_mode[user_id] = True
+        bot.answer_callback_query(call.id, "✅ لطفاً تبلیغ را بفرستید")
         return
     
     if data == "owner_delete_news":
         if not is_owner(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
             return
-        hazfnews(call.message)
+        if not news_data:
+            bot.send_message(user_id, "📭 هیچ خبری برای حذف وجود ندارد.")
+            bot.answer_callback_query(call.id)
+            return
+        response = "🗑️ لیست اخبار:\n\n"
+        for news_id, news_text in news_data.items():
+            response += f"📌 News {news_id}: {news_text[:50]}...\n"
+        response += "\n📌 برای حذف: /hazfnews [شماره]"
+        bot.send_message(user_id, response)
         bot.answer_callback_query(call.id)
         return
     
@@ -1136,7 +1165,15 @@ def handle_callbacks(call):
         if not is_owner(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
             return
-        hazfad(call.message)
+        if not ad_data:
+            bot.send_message(user_id, "📭 هیچ تبلیغی برای حذف وجود ندارد.")
+            bot.answer_callback_query(call.id)
+            return
+        response = "🗑️ لیست تبلیغات:\n\n"
+        for ad_id, ad_text in ad_data.items():
+            response += f"📌 Ad {ad_id}: {ad_text[:50]}...\n"
+        response += "\n📌 برای حذف: /hazfad [شماره]"
+        bot.send_message(user_id, response)
         bot.answer_callback_query(call.id)
         return
     
@@ -2023,6 +2060,13 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id, f"✅ انتخاب شما ثبت شد: {choice}")
         check_rps_round(game_id)
         return
+    
+    # ========== اگر دکمه ناشناخته بود ==========
+    # ========== اگر دکمه ناشناخته بود ==========
+    else:
+        bot.answer_callback_query(call.id, "❌ این دکمه کار نمی‌کند!")
+        bot.send_message(user_id, "❌ این دکمه کار نمی‌کند!\nلطفاً از دکمه‌های دیگر استفاده کنید.")
+        return
 
 # ========== ادامه دستورات ==========
 @bot.message_handler(commands=['deletemedia'])
@@ -2575,24 +2619,15 @@ def news_command(msg):
     user_id = msg.from_user.id
     if not is_founder(user_id) and not is_owner(user_id):
         return
-    if user_id in news_mode and news_mode[user_id]:
-        news_mode[user_id] = False
-        bot.reply_to(msg, "❌ شما از حالت خبر خارج شدید.")
-    else:
-        news_mode[user_id] = True
-        bot.reply_to(msg, "✅ شما وارد حالت خبر شدید. پیام خود را بفرستید تا به لیست اخبار اضافه شود.\n🔄 برای خروج دوباره /news را بزنید.")
+    # اینجا دیگه نیازی نیست چون دکمه‌ای کردیم
+    bot.reply_to(msg, "✅ از دکمه «ارسال خبر» در پنل استفاده کنید.")
 
 @bot.message_handler(commands=['ad'])
 def ad_command(msg):
     user_id = msg.from_user.id
     if not is_founder(user_id) and not is_owner(user_id):
         return
-    if user_id in ad_mode and ad_mode[user_id]:
-        ad_mode[user_id] = False
-        bot.reply_to(msg, "❌ شما از حالت تبلیغ خارج شدید.")
-    else:
-        ad_mode[user_id] = True
-        bot.reply_to(msg, "✅ شما وارد حالت تبلیغ شدید. پیام خود را بفرستید تا به لیست تبلیغات اضافه شود.\n🔄 برای خروج دوباره /ad را بزنید.")
+    bot.reply_to(msg, "✅ از دکمه «ارسال تبلیغ» در پنل استفاده کنید.")
 
 @bot.message_handler(commands=['ticket'])
 def ticket(msg):
