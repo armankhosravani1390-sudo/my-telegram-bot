@@ -7,7 +7,8 @@ import os
 from datetime import datetime
 import random
 
-TOKEN = "8299446091:AAG3rkzDotNZ4KLObMy_BJ4Lm_sCBs-DHKE"
+# ========== توکن جدید ==========
+TOKEN = "8299446091:AAHVWDgncWd9qeU0eoNQ8GV-mX1yON-fMsM"
 OWNER_ID = 6703121829
 FOUNDER_ID = 6703121829
 OWNER2_ID = 6328427378
@@ -818,7 +819,6 @@ def handle_callbacks(call):
         if is_member:
             bot.send_message(user_id, "✅ عضویت شما در هر دو کانال تایید شد! حالا می‌توانید از بات استفاده کنید.")
             bot.answer_callback_query(call.id, "✅ عضویت تایید شد")
-            # ارسال منوی اصلی
             markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
             btn1 = telebot.types.KeyboardButton("🏠 پنل اصلی")
             btn2 = telebot.types.KeyboardButton("🎮 بازی ها")
