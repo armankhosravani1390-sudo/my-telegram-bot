@@ -639,7 +639,7 @@ def send_all_users_list(user_id):
     else:
         bot.send_message(user_id, response)
 
-# ========== اصلاح شده: تابع start با پنل کامل ==========
+# ========== دستورات استارت و پنل‌ها ==========
 @bot.message_handler(commands=['start'])
 def start(msg):
     user_id = msg.from_user.id
@@ -659,7 +659,6 @@ def start(msg):
     if not check_and_ask_join(user_id, msg):
         return
     
-    # ========== منوی اصلی با دکمه‌های کیبورد ==========
     markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
     btn1 = telebot.types.KeyboardButton("🏠 پنل اصلی")
     btn2 = telebot.types.KeyboardButton("🎮 بازی ها")
@@ -667,16 +666,14 @@ def start(msg):
     btn4 = telebot.types.KeyboardButton("🚪 خروج از چت")
     markup.add(btn1, btn2, btn3, btn4)
     
-    if is_admin(user_id):
-        btn5 = telebot.types.KeyboardButton("⚙️ پنل مدیریت")
-        markup.add(btn5)
-    
     bot.reply_to(msg, "🔰 سلام! به بات خوش آمدید!\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=markup)
 
+# ========== پنل بنیانگذار ==========
 @bot.message_handler(commands=['fpanel'])
 def founder_panel(msg):
     user_id = msg.from_user.id
     if not is_founder(user_id):
+        bot.reply_to(msg, "⛔ فقط بنیانگذار دسترسی دارد!")
         return
     
     markup = telebot.types.InlineKeyboardMarkup(row_width=2)
@@ -684,25 +681,27 @@ def founder_panel(msg):
     btn2 = telebot.types.InlineKeyboardButton("📢 ارسال تبلیغ", callback_data="founder_ad")
     btn3 = telebot.types.InlineKeyboardButton("🗑️ حذف خبر", callback_data="founder_delete_news")
     btn4 = telebot.types.InlineKeyboardButton("🗑️ حذف تبلیغ", callback_data="founder_delete_ad")
-    btn5 = telebot.types.InlineKeyboardButton("🤝 مدیریت اتحادها", callback_data="founder_clans")
-    btn6 = telebot.types.InlineKeyboardButton("💰 مدیریت حمایت‌ها", callback_data="founder_donate")
-    btn7 = telebot.types.InlineKeyboardButton("👑 مدیریت ادمین‌ها", callback_data="founder_admins")
-    btn8 = telebot.types.InlineKeyboardButton("⛔ مدیریت محرومیت", callback_data="founder_bans")
-    btn9 = telebot.types.InlineKeyboardButton("📊 گزارش بات", callback_data="founder_botup")
-    btn10 = telebot.types.InlineKeyboardButton("🔄 آپدیت بات", callback_data="founder_update")
-    btn11 = telebot.types.InlineKeyboardButton("📋 دسترسی‌ها", callback_data="founder_perms")
-    btn12 = telebot.types.InlineKeyboardButton("📢 ارسال به همه", callback_data="founder_broadcast")
-    btn13 = telebot.types.InlineKeyboardButton("📋 لیست همه کاربران", callback_data="founder_all_users")
-    btn14 = telebot.types.InlineKeyboardButton("🎬 مدیریت Media", callback_data="founder_media")
+    btn5 = telebot.types.InlineKeyboardButton("💰 مدیریت حمایت‌ها", callback_data="founder_donate")
+    btn6 = telebot.types.InlineKeyboardButton("🤝 مدیریت اتحادها", callback_data="founder_clans")
+    btn7 = telebot.types.InlineKeyboardButton("⛔ مدیریت محرومیت", callback_data="founder_bans")
+    btn8 = telebot.types.InlineKeyboardButton("👑 مدیریت ادمین‌ها", callback_data="founder_admins")
+    btn9 = telebot.types.InlineKeyboardButton("🔄 آپدیت بات", callback_data="founder_update")
+    btn10 = telebot.types.InlineKeyboardButton("📊 گزارش بات", callback_data="founder_botup")
+    btn11 = telebot.types.InlineKeyboardButton("📢 ارسال به همه", callback_data="founder_broadcast")
+    btn12 = telebot.types.InlineKeyboardButton("📋 دسترسی‌ها", callback_data="founder_perms")
+    btn13 = telebot.types.InlineKeyboardButton("🎬 مدیریت Media", callback_data="founder_media")
+    btn14 = telebot.types.InlineKeyboardButton("📋 لیست کاربران", callback_data="founder_all_users")
     btn15 = telebot.types.InlineKeyboardButton("🔙 بازگشت", callback_data="founder_back")
     markup.add(btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8, btn9, btn10, btn11, btn12, btn13, btn14, btn15)
     
     bot.reply_to(msg, "👑 پنل مدیریت بنیانگذار:\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=markup)
 
+# ========== پنل سازنده ==========
 @bot.message_handler(commands=['opanel'])
 def owner_panel(msg):
     user_id = msg.from_user.id
     if not is_owner(user_id):
+        bot.reply_to(msg, "⛔ فقط سازنده دسترسی دارد!")
         return
     
     markup = telebot.types.InlineKeyboardMarkup(row_width=2)
@@ -710,21 +709,22 @@ def owner_panel(msg):
     btn2 = telebot.types.InlineKeyboardButton("📢 ارسال تبلیغ", callback_data="owner_ad")
     btn3 = telebot.types.InlineKeyboardButton("🗑️ حذف خبر", callback_data="owner_delete_news")
     btn4 = telebot.types.InlineKeyboardButton("🗑️ حذف تبلیغ", callback_data="owner_delete_ad")
-    btn5 = telebot.types.InlineKeyboardButton("🤝 مدیریت اتحادها", callback_data="owner_clans")
-    btn6 = telebot.types.InlineKeyboardButton("💰 مدیریت حمایت‌ها", callback_data="owner_donate")
-    btn7 = telebot.types.InlineKeyboardButton("👑 مدیریت ادمین‌ها", callback_data="owner_admins")
-    btn8 = telebot.types.InlineKeyboardButton("⛔ مدیریت محرومیت", callback_data="owner_bans")
-    btn9 = telebot.types.InlineKeyboardButton("📊 گزارش بات", callback_data="owner_botup")
-    btn10 = telebot.types.InlineKeyboardButton("🔄 آپدیت بات", callback_data="owner_update")
-    btn11 = telebot.types.InlineKeyboardButton("📋 دسترسی‌ها", callback_data="owner_perms")
-    btn12 = telebot.types.InlineKeyboardButton("📢 ارسال به همه", callback_data="owner_broadcast")
-    btn13 = telebot.types.InlineKeyboardButton("📋 لیست همه کاربران", callback_data="owner_all_users")
-    btn14 = telebot.types.InlineKeyboardButton("🎬 مدیریت Media", callback_data="owner_media")
+    btn5 = telebot.types.InlineKeyboardButton("💰 مدیریت حمایت‌ها", callback_data="owner_donate")
+    btn6 = telebot.types.InlineKeyboardButton("🤝 مدیریت اتحادها", callback_data="owner_clans")
+    btn7 = telebot.types.InlineKeyboardButton("⛔ مدیریت محرومیت", callback_data="owner_bans")
+    btn8 = telebot.types.InlineKeyboardButton("👑 مدیریت ادمین‌ها", callback_data="owner_admins")
+    btn9 = telebot.types.InlineKeyboardButton("🔄 آپدیت بات", callback_data="owner_update")
+    btn10 = telebot.types.InlineKeyboardButton("📊 گزارش بات", callback_data="owner_botup")
+    btn11 = telebot.types.InlineKeyboardButton("📢 ارسال به همه", callback_data="owner_broadcast")
+    btn12 = telebot.types.InlineKeyboardButton("📋 دسترسی‌ها", callback_data="owner_perms")
+    btn13 = telebot.types.InlineKeyboardButton("🎬 مدیریت Media", callback_data="owner_media")
+    btn14 = telebot.types.InlineKeyboardButton("📋 لیست کاربران", callback_data="owner_all_users")
     btn15 = telebot.types.InlineKeyboardButton("🔙 بازگشت", callback_data="owner_back")
     markup.add(btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8, btn9, btn10, btn11, btn12, btn13, btn14, btn15)
     
     bot.reply_to(msg, "👑 پنل مدیریت سازنده:\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=markup)
 
+# ========== پنل ادمین ==========
 @bot.message_handler(commands=['apanel'])
 def admin_panel(msg):
     user_id = msg.from_user.id
@@ -738,14 +738,14 @@ def admin_panel(msg):
     
     markup = telebot.types.InlineKeyboardMarkup(row_width=2)
     btn1 = telebot.types.InlineKeyboardButton("🎫 لیست تیکت‌ها", callback_data="admin_tickets")
-    btn2 = telebot.types.InlineKeyboardButton("💬 چت ادمین‌ها", callback_data="admin_chat")
-    btn3 = telebot.types.InlineKeyboardButton("📋 دستورات ادمین", callback_data="admin_cmds")
+    btn2 = telebot.types.InlineKeyboardButton("💬 چت ادمین", callback_data="admin_chat")
+    btn3 = telebot.types.InlineKeyboardButton("📋 دسترسی‌ها", callback_data="admin_perms")
     btn4 = telebot.types.InlineKeyboardButton("🔙 بازگشت", callback_data="admin_back")
     markup.add(btn1, btn2, btn3, btn4)
     
     bot.reply_to(msg, "⚙️ پنل مدیریت ادمین:\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=markup)
 
-# ========== پنل کاربری کامل ==========
+# ========== پنل کاربری ==========
 @bot.message_handler(func=lambda m: m.text == "🏠 پنل اصلی")
 def user_panel(msg):
     user_id = msg.from_user.id
@@ -756,11 +756,11 @@ def user_panel(msg):
     markup = telebot.types.InlineKeyboardMarkup(row_width=2)
     btn1 = telebot.types.InlineKeyboardButton("📰 اخبار", callback_data="user_news")
     btn2 = telebot.types.InlineKeyboardButton("📢 تبلیغات", callback_data="user_ads")
-    btn3 = telebot.types.InlineKeyboardButton("🤝 اتحاد ها", callback_data="user_alliances")
-    btn4 = telebot.types.InlineKeyboardButton("📺 کانال ها", callback_data="user_channels")
-    btn5 = telebot.types.InlineKeyboardButton("💰 حمایت ها", callback_data="user_donate")
+    btn3 = telebot.types.InlineKeyboardButton("🤝 اتحادها", callback_data="user_alliances")
+    btn4 = telebot.types.InlineKeyboardButton("📺 کانال‌ها", callback_data="user_channels")
+    btn5 = telebot.types.InlineKeyboardButton("💰 حمایت‌ها", callback_data="user_donate")
     btn6 = telebot.types.InlineKeyboardButton("👑 تیم مدیریتی", callback_data="user_team")
-    btn7 = telebot.types.InlineKeyboardButton("🎮 بازی ها", callback_data="user_games")
+    btn7 = telebot.types.InlineKeyboardButton("🎮 بازی‌ها", callback_data="user_games")
     btn8 = telebot.types.InlineKeyboardButton("📋 راهنما", callback_data="user_help")
     btn9 = telebot.types.InlineKeyboardButton("🎫 تیکت جدید", callback_data="user_new_ticket")
     btn10 = telebot.types.InlineKeyboardButton("🎬 Media's", callback_data="user_media")
@@ -775,7 +775,7 @@ def games_menu(msg):
         return
     
     markup = telebot.types.InlineKeyboardMarkup(row_width=1)
-    btn1 = telebot.types.InlineKeyboardButton("🪨 سنگ، کاغذ، قیچی 🪨", callback_data="game_rps")
+    btn1 = telebot.types.InlineKeyboardButton("🪨 سنگ، کاغذ، قیچی", callback_data="game_rps")
     btn2 = telebot.types.InlineKeyboardButton("❌⭕ Tic Tac Toe", callback_data="game_ttt")
     btn3 = telebot.types.InlineKeyboardButton("🎲 بازی ۳", callback_data="game_coming_soon")
     btn4 = telebot.types.InlineKeyboardButton("🏆 بازی ۴", callback_data="game_coming_soon")
@@ -808,22 +808,14 @@ def close_chat(msg):
     else:
         bot.reply_to(msg, "✅ شما در حالت ارسال پيام نيستيد")
 
-@bot.message_handler(func=lambda m: m.text == "⚙️ پنل مدیریت")
-def admin_panel_button(msg):
-    user_id = msg.from_user.id
-    if is_banned(user_id):
-        bot.reply_to(msg, "⛔ *** [ Ban.System ] : شما از بات محروم شدید ***")
-        return
-    if not is_admin(user_id):
-        return
-    admin_panel(msg)
-
+# ========== هندلر اصلی کالبک ==========
 @bot.callback_query_handler(func=lambda call: True)
 def handle_callbacks(call):
     user_id = call.from_user.id
+    data = call.data
     
     # ========== عضویت ==========
-    if call.data == "check_membership":
+    if data == "check_membership":
         if is_founder(user_id) or is_owner(user_id):
             bot.answer_callback_query(call.id, "✅ شما دسترسی کامل دارید!")
             return
@@ -832,52 +824,24 @@ def handle_callbacks(call):
         if is_member:
             bot.send_message(user_id, "✅ عضویت شما در هر دو کانال تایید شد! حالا می‌توانید از بات استفاده کنید.")
             bot.answer_callback_query(call.id, "✅ عضویت تایید شد")
-            # ========== اصلاح شده: فراخوانی منوی اصلی ==========
-            markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
-            btn1 = telebot.types.KeyboardButton("🏠 پنل اصلی")
-            btn2 = telebot.types.KeyboardButton("🎮 بازی ها")
-            btn3 = telebot.types.KeyboardButton("🎫 تیکت جدید")
-            btn4 = telebot.types.KeyboardButton("🚪 خروج از چت")
-            markup.add(btn1, btn2, btn3, btn4)
-            
-            if is_admin(user_id):
-                btn5 = telebot.types.KeyboardButton("⚙️ پنل مدیریت")
-                markup.add(btn5)
-            
-            bot.send_message(user_id, "🔰 به بات خوش آمدید!\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=markup)
+            start(call.message)
         else:
             bot.answer_callback_query(call.id, "❌ شما هنوز در یکی از کانال‌ها عضو نشده‌اید!")
-            bot.send_message(
-                user_id,
-                f"❌ شما هنوز در کانال {channel_name} عضو نشده‌اید!\n"
-                f"لطفاً ابتدا عضو شوید و سپس روی دکمه تایید کلیک کنید."
-            )
+            bot.send_message(user_id, f"❌ شما هنوز در کانال {channel_name} عضو نشده‌اید!\nلطفاً ابتدا عضو شوید و سپس روی دکمه تایید کلیک کنید.")
         return
     
-    if call.data == "check_membership_owner":
+    if data == "check_membership_owner":
         if not is_founder(user_id) and not is_owner(user_id):
             bot.answer_callback_query(call.id, "⛔ شما دسترسی ندارید!")
             return
         
         bot.send_message(user_id, "✅ دسترسی شما تایید شد! خوش آمدید.")
         bot.answer_callback_query(call.id, "✅ تایید شد")
-        # ========== اصلاح شده: فراخوانی منوی اصلی ==========
-        markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
-        btn1 = telebot.types.KeyboardButton("🏠 پنل اصلی")
-        btn2 = telebot.types.KeyboardButton("🎮 بازی ها")
-        btn3 = telebot.types.KeyboardButton("🎫 تیکت جدید")
-        btn4 = telebot.types.KeyboardButton("🚪 خروج از چت")
-        markup.add(btn1, btn2, btn3, btn4)
-        
-        if is_admin(user_id):
-            btn5 = telebot.types.KeyboardButton("⚙️ پنل مدیریت")
-            markup.add(btn5)
-        
-        bot.send_message(user_id, "🔰 به بات خوش آمدید!\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=markup)
+        start(call.message)
         return
     
-    # ========== Founder Panel ==========
-    if call.data == "founder_news":
+    # ========== پنل بنیانگذار ==========
+    if data == "founder_news":
         if not is_founder(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
             return
@@ -885,7 +849,7 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id)
         return
     
-    elif call.data == "founder_ad":
+    if data == "founder_ad":
         if not is_founder(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
             return
@@ -893,7 +857,7 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id)
         return
     
-    elif call.data == "founder_delete_news":
+    if data == "founder_delete_news":
         if not is_founder(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
             return
@@ -901,7 +865,7 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id)
         return
     
-    elif call.data == "founder_delete_ad":
+    if data == "founder_delete_ad":
         if not is_founder(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
             return
@@ -909,7 +873,22 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id)
         return
     
-    elif call.data == "founder_clans":
+    if data == "founder_donate":
+        if not is_founder(user_id):
+            bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
+            return
+        if donate_data:
+            response = "💰 لیست حمایت‌ها:\n\n"
+            for item in donate_data:
+                response += f"🏅 {item['rank']} : {item['name']}\n💵 مبلغ : {item['amount']} T\n\n"
+            bot.send_message(user_id, response)
+        else:
+            bot.send_message(user_id, "💰 هیچ حمایتی ثبت نشده است.")
+        bot.send_message(user_id, "📌 برای اضافه کردن: /donate [نام] [مبلغ]\n📌 برای حذف: /removedonate [نام]")
+        bot.answer_callback_query(call.id)
+        return
+    
+    if data == "founder_clans":
         if not is_founder(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
             return
@@ -923,7 +902,7 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id)
         return
     
-    elif call.data == "founder_create_clan":
+    if data == "founder_create_clan":
         if not is_founder(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
             return
@@ -931,7 +910,7 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id)
         return
     
-    elif call.data == "founder_delete_clan":
+    if data == "founder_delete_clan":
         if not is_founder(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
             return
@@ -947,7 +926,7 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id)
         return
     
-    elif call.data == "founder_list_clans":
+    if data == "founder_list_clans":
         if not is_founder(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
             return
@@ -964,22 +943,22 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id)
         return
     
-    elif call.data == "founder_donate":
+    if data == "founder_bans":
         if not is_founder(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
             return
-        if donate_data:
-            response = "💰 لیست حمایت‌ها:\n\n"
-            for item in donate_data:
-                response += f"🏅 {item['rank']} : {item['name']}\n💵 مبلغ : {item['amount']} T\n\n"
+        if banned_users:
+            response = "⛔ لیست کاربران محروم:\n\n"
+            for banned_id in banned_users:
+                response += f"🆔 {banned_id}\n"
             bot.send_message(user_id, response)
         else:
-            bot.send_message(user_id, "💰 هیچ حمایتی ثبت نشده است.")
-        bot.send_message(user_id, "📌 برای اضافه کردن: /donate [نام] [مبلغ]\n📌 برای حذف: /removedonate [نام]")
+            bot.send_message(user_id, "✅ هیچ کاربری محروم نیست.")
+        bot.send_message(user_id, "📌 برای محروم کردن: /ban [ایدی]\n📌 برای رفع محرومیت: /unban [ایدی]")
         bot.answer_callback_query(call.id)
         return
     
-    elif call.data == "founder_admins":
+    if data == "founder_admins":
         if not is_founder(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
             return
@@ -1003,30 +982,7 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id)
         return
     
-    elif call.data == "founder_bans":
-        if not is_founder(user_id):
-            bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
-            return
-        if banned_users:
-            response = "⛔ لیست کاربران محروم:\n\n"
-            for banned_id in banned_users:
-                response += f"🆔 {banned_id}\n"
-            bot.send_message(user_id, response)
-        else:
-            bot.send_message(user_id, "✅ هیچ کاربری محروم نیست.")
-        bot.send_message(user_id, "📌 برای محروم کردن: /ban [ایدی]\n📌 برای رفع محرومیت: /unban [ایدی]")
-        bot.answer_callback_query(call.id)
-        return
-    
-    elif call.data == "founder_botup":
-        if not is_founder(user_id):
-            bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
-            return
-        botup(call.message)
-        bot.answer_callback_query(call.id)
-        return
-    
-    elif call.data == "founder_update":
+    if data == "founder_update":
         if not is_founder(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
             return
@@ -1034,15 +990,15 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id)
         return
     
-    elif call.data == "founder_perms":
+    if data == "founder_botup":
         if not is_founder(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
             return
-        show_perms(call.message)
+        botup(call.message)
         bot.answer_callback_query(call.id)
         return
     
-    elif call.data == "founder_broadcast":
+    if data == "founder_broadcast":
         if not is_founder(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
             return
@@ -1051,16 +1007,15 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id, "✅ وارد حالت ارسال شدید")
         return
     
-    elif call.data == "founder_all_users":
+    if data == "founder_perms":
         if not is_founder(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
             return
-        send_all_users_list(user_id)
+        show_perms(call.message)
         bot.answer_callback_query(call.id)
         return
     
-    # ========== مدیریت مدیا Founder ==========
-    elif call.data == "founder_media":
+    if data == "founder_media":
         if not is_founder(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
             return
@@ -1075,7 +1030,7 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id)
         return
     
-    elif call.data == "founder_upload_photo":
+    if data == "founder_upload_photo":
         if not is_founder(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
             return
@@ -1084,7 +1039,7 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id, "✅ منتظر عکس هستم")
         return
     
-    elif call.data == "founder_upload_video":
+    if data == "founder_upload_video":
         if not is_founder(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
             return
@@ -1093,7 +1048,7 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id, "✅ منتظر فیلم هستم")
         return
     
-    elif call.data == "founder_upload_audio":
+    if data == "founder_upload_audio":
         if not is_founder(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
             return
@@ -1102,7 +1057,7 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id, "✅ منتظر آهنگ هستم")
         return
     
-    elif call.data == "founder_delete_media":
+    if data == "founder_delete_media":
         if not is_founder(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
             return
@@ -1129,7 +1084,15 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id)
         return
     
-    elif call.data == "founder_back":
+    if data == "founder_all_users":
+        if not is_founder(user_id):
+            bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
+            return
+        send_all_users_list(user_id)
+        bot.answer_callback_query(call.id)
+        return
+    
+    if data == "founder_back":
         if not is_founder(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
             return
@@ -1137,8 +1100,8 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id)
         return
     
-    # ========== Owner Panel ==========
-    elif call.data == "owner_news":
+    # ========== پنل سازنده ==========
+    if data == "owner_news":
         if not is_owner(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
             return
@@ -1146,7 +1109,7 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id)
         return
     
-    elif call.data == "owner_ad":
+    if data == "owner_ad":
         if not is_owner(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
             return
@@ -1154,7 +1117,7 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id)
         return
     
-    elif call.data == "owner_delete_news":
+    if data == "owner_delete_news":
         if not is_owner(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
             return
@@ -1162,7 +1125,7 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id)
         return
     
-    elif call.data == "owner_delete_ad":
+    if data == "owner_delete_ad":
         if not is_owner(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
             return
@@ -1170,7 +1133,22 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id)
         return
     
-    elif call.data == "owner_clans":
+    if data == "owner_donate":
+        if not is_owner(user_id):
+            bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
+            return
+        if donate_data:
+            response = "💰 لیست حمایت‌ها:\n\n"
+            for item in donate_data:
+                response += f"🏅 {item['rank']} : {item['name']}\n💵 مبلغ : {item['amount']} T\n\n"
+            bot.send_message(user_id, response)
+        else:
+            bot.send_message(user_id, "💰 هیچ حمایتی ثبت نشده است.")
+        bot.send_message(user_id, "📌 برای اضافه کردن: /donate [نام] [مبلغ]\n📌 برای حذف: /removedonate [نام]")
+        bot.answer_callback_query(call.id)
+        return
+    
+    if data == "owner_clans":
         if not is_owner(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
             return
@@ -1184,7 +1162,7 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id)
         return
     
-    elif call.data == "owner_create_clan":
+    if data == "owner_create_clan":
         if not is_owner(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
             return
@@ -1192,7 +1170,7 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id)
         return
     
-    elif call.data == "owner_delete_clan":
+    if data == "owner_delete_clan":
         if not is_owner(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
             return
@@ -1208,7 +1186,7 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id)
         return
     
-    elif call.data == "owner_list_clans":
+    if data == "owner_list_clans":
         if not is_owner(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
             return
@@ -1225,22 +1203,22 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id)
         return
     
-    elif call.data == "owner_donate":
+    if data == "owner_bans":
         if not is_owner(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
             return
-        if donate_data:
-            response = "💰 لیست حمایت‌ها:\n\n"
-            for item in donate_data:
-                response += f"🏅 {item['rank']} : {item['name']}\n💵 مبلغ : {item['amount']} T\n\n"
+        if banned_users:
+            response = "⛔ لیست کاربران محروم:\n\n"
+            for banned_id in banned_users:
+                response += f"🆔 {banned_id}\n"
             bot.send_message(user_id, response)
         else:
-            bot.send_message(user_id, "💰 هیچ حمایتی ثبت نشده است.")
-        bot.send_message(user_id, "📌 برای اضافه کردن: /donate [نام] [مبلغ]\n📌 برای حذف: /removedonate [نام]")
+            bot.send_message(user_id, "✅ هیچ کاربری محروم نیست.")
+        bot.send_message(user_id, "📌 برای محروم کردن: /ban [ایدی]\n📌 برای رفع محرومیت: /unban [ایدی]")
         bot.answer_callback_query(call.id)
         return
     
-    elif call.data == "owner_admins":
+    if data == "owner_admins":
         if not is_owner(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
             return
@@ -1264,30 +1242,7 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id)
         return
     
-    elif call.data == "owner_bans":
-        if not is_owner(user_id):
-            bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
-            return
-        if banned_users:
-            response = "⛔ لیست کاربران محروم:\n\n"
-            for banned_id in banned_users:
-                response += f"🆔 {banned_id}\n"
-            bot.send_message(user_id, response)
-        else:
-            bot.send_message(user_id, "✅ هیچ کاربری محروم نیست.")
-        bot.send_message(user_id, "📌 برای محروم کردن: /ban [ایدی]\n📌 برای رفع محرومیت: /unban [ایدی]")
-        bot.answer_callback_query(call.id)
-        return
-    
-    elif call.data == "owner_botup":
-        if not is_owner(user_id):
-            bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
-            return
-        botup(call.message)
-        bot.answer_callback_query(call.id)
-        return
-    
-    elif call.data == "owner_update":
+    if data == "owner_update":
         if not is_owner(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
             return
@@ -1295,15 +1250,15 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id)
         return
     
-    elif call.data == "owner_perms":
+    if data == "owner_botup":
         if not is_owner(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
             return
-        show_perms(call.message)
+        botup(call.message)
         bot.answer_callback_query(call.id)
         return
     
-    elif call.data == "owner_broadcast":
+    if data == "owner_broadcast":
         if not is_owner(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
             return
@@ -1312,16 +1267,15 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id, "✅ وارد حالت ارسال شدید")
         return
     
-    elif call.data == "owner_all_users":
+    if data == "owner_perms":
         if not is_owner(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
             return
-        send_all_users_list(user_id)
+        show_perms(call.message)
         bot.answer_callback_query(call.id)
         return
     
-    # ========== مدیریت مدیا Owner ==========
-    elif call.data == "owner_media":
+    if data == "owner_media":
         if not is_owner(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
             return
@@ -1336,7 +1290,7 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id)
         return
     
-    elif call.data == "owner_upload_photo":
+    if data == "owner_upload_photo":
         if not is_owner(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
             return
@@ -1345,7 +1299,7 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id, "✅ منتظر عکس هستم")
         return
     
-    elif call.data == "owner_upload_video":
+    if data == "owner_upload_video":
         if not is_owner(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
             return
@@ -1354,7 +1308,7 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id, "✅ منتظر فیلم هستم")
         return
     
-    elif call.data == "owner_upload_audio":
+    if data == "owner_upload_audio":
         if not is_owner(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
             return
@@ -1363,7 +1317,7 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id, "✅ منتظر آهنگ هستم")
         return
     
-    elif call.data == "owner_delete_media":
+    if data == "owner_delete_media":
         if not is_owner(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
             return
@@ -1390,7 +1344,15 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id)
         return
     
-    elif call.data == "owner_back":
+    if data == "owner_all_users":
+        if not is_owner(user_id):
+            bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
+            return
+        send_all_users_list(user_id)
+        bot.answer_callback_query(call.id)
+        return
+    
+    if data == "owner_back":
         if not is_owner(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
             return
@@ -1398,8 +1360,8 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id)
         return
     
-    # ========== Admin Panel ==========
-    elif call.data == "admin_tickets":
+    # ========== پنل ادمین ==========
+    if data == "admin_tickets":
         if not is_admin(user_id):
             bot.answer_callback_query(call.id, "⛔ شما ادمین نیستید!")
             return
@@ -1407,7 +1369,7 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id)
         return
     
-    elif call.data == "admin_chat":
+    if data == "admin_chat":
         if not is_admin(user_id):
             bot.answer_callback_query(call.id, "⛔ شما ادمین نیستید!")
             return
@@ -1415,15 +1377,15 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id)
         return
     
-    elif call.data == "admin_cmds":
+    if data == "admin_perms":
         if not is_admin(user_id):
             bot.answer_callback_query(call.id, "⛔ شما ادمین نیستید!")
             return
-        cmds(call.message)
+        show_perms(call.message)
         bot.answer_callback_query(call.id)
         return
     
-    elif call.data == "admin_back":
+    if data == "admin_back":
         if not is_admin(user_id):
             bot.answer_callback_query(call.id, "⛔ شما ادمین نیستید!")
             return
@@ -1431,8 +1393,44 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id)
         return
     
-    # ========== User Panel ==========
-    elif call.data == "user_news":
+    # ========== قبول تیکت ==========
+    if data.startswith("accept_ticket_"):
+        if not is_admin(user_id):
+            bot.answer_callback_query(call.id, "⛔ شما ادمین نیستید!")
+            return
+        
+        ticket_number = int(data.replace("accept_ticket_", ""))
+        if ticket_number not in tickets:
+            bot.answer_callback_query(call.id, "❌ تیکت وجود ندارد!")
+            return
+        
+        user_id_ticket = tickets[ticket_number]['user_id']
+        chat_sessions[user_id_ticket] = 'open'
+        
+        admin_name = "ادمین"
+        try:
+            admin_info = bot.get_chat(user_id)
+            admin_name = admin_info.first_name or admin_info.username or "ادمین"
+        except:
+            pass
+        
+        bot.send_message(
+            user_id_ticket, 
+            f"✅ تیکت شما توسط ادمین : {admin_name} باز شد 🎫\n"
+            f"📌 برای شروع مکالمه، لطفاً روی دستور زیر کلیک کنید:\n"
+            f"/chat"
+        )
+        
+        bot.send_message(
+            user_id, 
+            f"✅ تیکت {ticket_number} باز شد! شما در حالت چت با کاربر هستید. 💬"
+        )
+        
+        bot.answer_callback_query(call.id, "✅ تیکت باز شد")
+        return
+    
+    # ========== پنل کاربری ==========
+    if data == "user_news":
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
             return
@@ -1446,7 +1444,7 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id)
         return
     
-    elif call.data == "user_ads":
+    if data == "user_ads":
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
             return
@@ -1460,7 +1458,7 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id)
         return
     
-    elif call.data == "user_alliances":
+    if data == "user_alliances":
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
             return
@@ -1475,8 +1473,8 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id)
         return
     
-    elif call.data.startswith("clan_"):
-        clan_name = call.data.replace("clan_", "")
+    if data.startswith("clan_"):
+        clan_name = data.replace("clan_", "")
         if clan_name in clans:
             bot.send_message(user_id, f"📋 توضیحات اتحاد «{clan_name}»:\n\n{clans[clan_name]['description']}")
         else:
@@ -1484,15 +1482,16 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id)
         return
     
-    elif call.data == "user_channels":
+    # ========== کانال‌ها با Coming Soon ==========
+    if data == "user_channels":
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
             return
-        bot.send_message(user_id, "📺 کانال‌های ما:\n\n📌 @VoltaRolePlay\n📌 @X4NeZuKO")
-        bot.answer_callback_query(call.id)
+        bot.send_message(user_id, "🚧 **Coming Soon ...**\n\n⏳ این بخش به زودی اضافه خواهد شد!\n✨ لطفاً منتظر آپدیت‌های بعدی باشید.")
+        bot.answer_callback_query(call.id, "🚧 در حال توسعه")
         return
     
-    elif call.data == "user_donate":
+    if data == "user_donate":
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
             return
@@ -1506,7 +1505,7 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id)
         return
     
-    elif call.data == "user_team":
+    if data == "user_team":
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
             return
@@ -1527,7 +1526,7 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id)
         return
     
-    elif call.data == "user_games":
+    if data == "user_games":
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
             return
@@ -1535,7 +1534,7 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id)
         return
     
-    elif call.data == "user_help":
+    if data == "user_help":
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
             return
@@ -1548,7 +1547,7 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id)
         return
     
-    elif call.data == "user_new_ticket":
+    if data == "user_new_ticket":
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
             return
@@ -1561,80 +1560,69 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id, "✅ لطفاً پیام خود را بفرستید")
         return
     
-    # ========== بخش Media's برای کاربران ==========
-    elif call.data == "user_media":
+    if data == "user_media":
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
             return
-        
         markup = telebot.types.InlineKeyboardMarkup(row_width=2)
-        btn1 = telebot.types.InlineKeyboardButton("📸 عکس ها", callback_data="user_media_photos")
-        btn2 = telebot.types.InlineKeyboardButton("🎥 فیلم ها", callback_data="user_media_videos")
-        btn3 = telebot.types.InlineKeyboardButton("🎵 آهنگ ها", callback_data="user_media_audios")
+        btn1 = telebot.types.InlineKeyboardButton("📸 عکس‌ها", callback_data="user_media_photos")
+        btn2 = telebot.types.InlineKeyboardButton("🎥 فیلم‌ها", callback_data="user_media_videos")
+        btn3 = telebot.types.InlineKeyboardButton("🎵 آهنگ‌ها", callback_data="user_media_audios")
         btn4 = telebot.types.InlineKeyboardButton("🔙 بازگشت", callback_data="user_media_back")
         markup.add(btn1, btn2, btn3, btn4)
         bot.send_message(user_id, "🎬 Media's:\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=markup)
         bot.answer_callback_query(call.id)
         return
     
-    elif call.data == "user_media_photos":
+    if data == "user_media_photos":
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
             return
-        
         if not media_data['photos']:
             bot.send_message(user_id, "📭 هیچ عکسی موجود نیست.")
             bot.answer_callback_query(call.id)
             return
-        
         for photo in media_data['photos']:
             try:
                 bot.send_photo(user_id, photo['file_id'], caption=f"📸 {photo.get('caption', 'عکس')}")
             except:
                 bot.send_message(user_id, f"❌ خطا در نمایش عکس: {photo.get('id')}")
-        
         bot.answer_callback_query(call.id)
         return
     
-    elif call.data == "user_media_videos":
+    if data == "user_media_videos":
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
             return
-        
         if not media_data['videos']:
             bot.send_message(user_id, "📭 هیچ فیلمی موجود نیست.")
             bot.answer_callback_query(call.id)
             return
-        
         for video in media_data['videos']:
             try:
                 bot.send_video(user_id, video['file_id'], caption=f"🎥 {video.get('caption', 'فیلم')}")
             except:
                 bot.send_message(user_id, f"❌ خطا در نمایش فیلم: {video.get('id')}")
-        
         bot.answer_callback_query(call.id)
         return
     
-    elif call.data == "user_media_audios":
+    if data == "user_media_audios":
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
             return
-        
         if not media_data['audios']:
             bot.send_message(user_id, "📭 هیچ آهنگی موجود نیست.")
             bot.answer_callback_query(call.id)
             return
-        
         for audio in media_data['audios']:
             try:
                 bot.send_audio(user_id, audio['file_id'], caption=f"🎵 {audio.get('caption', 'آهنگ')}")
             except:
                 bot.send_message(user_id, f"❌ خطا در نمایش آهنگ: {audio.get('id')}")
-        
         bot.answer_callback_query(call.id)
         return
     
-    elif call.data == "user_media_back":
+    if data == "user_media_back":
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
             return
@@ -1642,8 +1630,8 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id)
         return
     
-    # ========== Game Callbacks ==========
-    elif call.data == "game_rps":
+    # ========== بازی‌ها ==========
+    if data == "game_rps":
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
             return
@@ -1651,7 +1639,6 @@ def handle_callbacks(call):
             bot.send_message(user_id, "❌ شما در حال حاضر در یک بازی هستید.")
             bot.answer_callback_query(call.id)
             return
-        
         markup = telebot.types.InlineKeyboardMarkup(row_width=2)
         btn1 = telebot.types.InlineKeyboardButton("🪨 ساخت اتاق", callback_data="create_room_menu")
         btn2 = telebot.types.InlineKeyboardButton("🚪 لیست اتاق‌ها", callback_data="show_rooms_menu")
@@ -1662,7 +1649,7 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id)
         return
     
-    elif call.data == "game_ttt":
+    if data == "game_ttt":
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
             return
@@ -1670,7 +1657,6 @@ def handle_callbacks(call):
             bot.send_message(user_id, "❌ شما در حال حاضر در یک بازی هستید.")
             bot.answer_callback_query(call.id)
             return
-        
         markup = telebot.types.InlineKeyboardMarkup(row_width=2)
         btn1 = telebot.types.InlineKeyboardButton("🪨 ساخت اتاق", callback_data="ttt_create_room_menu")
         btn2 = telebot.types.InlineKeyboardButton("🚪 لیست اتاق‌ها", callback_data="ttt_show_rooms")
@@ -1681,12 +1667,12 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id)
         return
     
-    elif call.data == "game_coming_soon":
+    if data == "game_coming_soon":
         bot.answer_callback_query(call.id, "⏳ Coming Soon ...")
-        bot.send_message(user_id, "⏳ این بازی به زودی اضافه خواهد شد!")
+        bot.send_message(user_id, "⏳ این بازی به زودی اضافه خواهد شد! ✨")
         return
     
-    elif call.data == "back_to_games":
+    if data == "back_to_games":
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
             return
@@ -1694,8 +1680,8 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id)
         return
     
-    # ========== RPS Room ==========
-    elif call.data == "create_room_menu":
+    # ========== RPS ==========
+    if data == "create_room_menu":
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
             return
@@ -1703,7 +1689,6 @@ def handle_callbacks(call):
             bot.send_message(user_id, "❌ شما در حال حاضر در یک بازی هستید.")
             bot.answer_callback_query(call.id)
             return
-        
         markup = telebot.types.InlineKeyboardMarkup(row_width=2)
         btn1 = telebot.types.InlineKeyboardButton("✅ بله", callback_data="create_room_with_pass")
         btn2 = telebot.types.InlineKeyboardButton("❌ خیر", callback_data="create_room_no_pass")
@@ -1712,7 +1697,7 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id)
         return
     
-    elif call.data == "create_room_no_pass":
+    if data == "create_room_no_pass":
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
             return
@@ -1724,7 +1709,7 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id, "✅ اتاق ساخته شد")
         return
     
-    elif call.data == "create_room_with_pass":
+    if data == "create_room_with_pass":
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
             return
@@ -1736,7 +1721,7 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id, "🔑 لطفاً رمز را وارد کنید")
         return
     
-    elif call.data == "show_rooms_menu":
+    if data == "show_rooms_menu":
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
             return
@@ -1744,7 +1729,6 @@ def handle_callbacks(call):
             bot.send_message(user_id, "❌ هیچ اتاق خالی برای ملحق شدن وجود ندارد.")
             bot.answer_callback_query(call.id)
             return
-        
         markup = telebot.types.InlineKeyboardMarkup(row_width=1)
         found = False
         for game_id in waiting_games:
@@ -1755,7 +1739,6 @@ def handle_callbacks(call):
                     btn_text += " 🔑"
                 btn = telebot.types.InlineKeyboardButton(btn_text, callback_data=f"join_room_{game_id}")
                 markup.add(btn)
-        
         if not found:
             bot.send_message(user_id, "❌ هیچ اتاق خالی برای ملحق شدن وجود ندارد.")
         else:
@@ -1765,11 +1748,11 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id)
         return
     
-    elif call.data.startswith("join_room_"):
+    if data.startswith("join_room_"):
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
             return
-        game_id = call.data.replace("join_room_", "")
+        game_id = data.replace("join_room_", "")
         if game_id not in games:
             bot.send_message(user_id, "❌ این اتاق وجود ندارد.")
             bot.answer_callback_query(call.id)
@@ -1782,13 +1765,11 @@ def handle_callbacks(call):
             bot.send_message(user_id, "❌ شما نمی‌توانید به اتاق خودتان ملحق شوید!")
             bot.answer_callback_query(call.id)
             return
-        
         if games[game_id]['password']:
             rps_join_temp[user_id] = {'game_id': game_id, 'step': 'waiting_password'}
             bot.send_message(user_id, f"🔑 این اتاق دارای رمز است.\nلطفاً رمز را وارد کنید:")
             bot.answer_callback_query(call.id, "🔑 لطفاً رمز را وارد کنید")
             return
-        
         games[game_id]['player2'] = user_id
         games[game_id]['status'] = 'playing'
         game_players[str(user_id)] = game_id
@@ -1801,27 +1782,23 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id, "✅ وارد شدید")
         return
     
-    elif call.data == "leave_room_callback":
+    if data == "leave_room_callback":
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
             return
-        
         if str(user_id) not in game_players:
             bot.send_message(user_id, "❌ شما در هیچ اتاق سنگ کاغذ قیچی نیستید!")
             bot.answer_callback_query(call.id)
             return
-        
         game_id = game_players[str(user_id)]
         if game_id not in games:
             bot.send_message(user_id, "❌ اتاق شما وجود ندارد!")
             bot.answer_callback_query(call.id)
             return
-        
         game_data = games[game_id]
         player1 = game_data['player1']
         player2 = game_data['player2']
         opponent_id = player2 if player1 == user_id else player1
-        
         delete_game(game_id)
         bot.send_message(user_id, "✅ شما با موفقیت از اتاق سنگ کاغذ قیچی خارج شدید!")
         if opponent_id:
@@ -1836,8 +1813,8 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id, "✅ خارج شدید")
         return
     
-    # ========== TTT Room ==========
-    elif call.data == "ttt_create_room_menu":
+    # ========== TTT ==========
+    if data == "ttt_create_room_menu":
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
             return
@@ -1845,7 +1822,6 @@ def handle_callbacks(call):
             bot.send_message(user_id, "❌ شما در حال حاضر در یک بازی هستید.")
             bot.answer_callback_query(call.id)
             return
-        
         markup = telebot.types.InlineKeyboardMarkup(row_width=2)
         btn1 = telebot.types.InlineKeyboardButton("✅ بله", callback_data="ttt_create_room_with_pass")
         btn2 = telebot.types.InlineKeyboardButton("❌ خیر", callback_data="ttt_create_room_no_pass")
@@ -1854,7 +1830,7 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id)
         return
     
-    elif call.data == "ttt_create_room_no_pass":
+    if data == "ttt_create_room_no_pass":
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
             return
@@ -1866,7 +1842,7 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id, "✅ اتاق ساخته شد")
         return
     
-    elif call.data == "ttt_create_room_with_pass":
+    if data == "ttt_create_room_with_pass":
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
             return
@@ -1878,7 +1854,7 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id, "🔑 لطفاً رمز را وارد کنید")
         return
     
-    elif call.data == "ttt_show_rooms":
+    if data == "ttt_show_rooms":
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
             return
@@ -1886,7 +1862,6 @@ def handle_callbacks(call):
             bot.send_message(user_id, "❌ هیچ اتاق خالی برای ملحق شدن وجود ندارد.")
             bot.answer_callback_query(call.id)
             return
-        
         markup = telebot.types.InlineKeyboardMarkup(row_width=1)
         found = False
         for game_id in ttt_waiting_games:
@@ -1897,7 +1872,6 @@ def handle_callbacks(call):
                     btn_text += " 🔑"
                 btn = telebot.types.InlineKeyboardButton(btn_text, callback_data=f"ttt_join_room_{game_id}")
                 markup.add(btn)
-        
         if not found:
             bot.send_message(user_id, "❌ هیچ اتاق خالی برای ملحق شدن وجود ندارد.")
         else:
@@ -1907,11 +1881,11 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id)
         return
     
-    elif call.data.startswith("ttt_join_room_"):
+    if data.startswith("ttt_join_room_"):
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
             return
-        game_id = call.data.replace("ttt_join_room_", "")
+        game_id = data.replace("ttt_join_room_", "")
         if game_id not in ttt_games:
             bot.send_message(user_id, "❌ این اتاق وجود ندارد.")
             bot.answer_callback_query(call.id)
@@ -1924,13 +1898,11 @@ def handle_callbacks(call):
             bot.send_message(user_id, "❌ شما نمی‌توانید به اتاق خودتان ملحق شوید!")
             bot.answer_callback_query(call.id)
             return
-        
         if ttt_games[game_id]['password']:
             ttt_join_temp[user_id] = {'game_id': game_id, 'step': 'waiting_password'}
             bot.send_message(user_id, f"🔑 این اتاق دارای رمز است.\nلطفاً رمز را وارد کنید:")
             bot.answer_callback_query(call.id, "🔑 لطفاً رمز را وارد کنید")
             return
-        
         ttt_games[game_id]['player2'] = user_id
         ttt_games[game_id]['status'] = 'playing'
         ttt_game_players[str(user_id)] = game_id
@@ -1943,27 +1915,23 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id, "✅ وارد شدید")
         return
     
-    elif call.data == "ttt_leave_room":
+    if data == "ttt_leave_room":
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
             return
-        
         if str(user_id) not in ttt_game_players:
             bot.send_message(user_id, "❌ شما در هیچ اتاق Tic Tac Toe نیستید!")
             bot.answer_callback_query(call.id)
             return
-        
         game_id = ttt_game_players[str(user_id)]
         if game_id not in ttt_games:
             bot.send_message(user_id, "❌ اتاق شما وجود ندارد!")
             bot.answer_callback_query(call.id)
             return
-        
         game_data = ttt_games[game_id]
         player1 = game_data['player1']
         player2 = game_data['player2']
         opponent_id = player2 if player1 == user_id else player1
-        
         delete_ttt_game(game_id)
         bot.send_message(user_id, "✅ شما با موفقیت از اتاق Tic Tac Toe خارج شدید!")
         if opponent_id:
@@ -1974,41 +1942,32 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id, "✅ خارج شدید")
         return
     
-    elif call.data.startswith("ttt_move_"):
+    if data.startswith("ttt_move_"):
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
             return
-        
-        parts = call.data.split("_")
+        parts = data.split("_")
         game_id = parts[2]
         position = int(parts[3])
-        
         if game_id not in ttt_games:
             bot.answer_callback_query(call.id, "❌ بازی وجود ندارد")
             return
-        
         game = ttt_games[game_id]
         if game['winner'] is not None:
             bot.answer_callback_query(call.id, "❌ این بازی تمام شده است!")
             return
-        
         if game['turn'] != user_id:
             bot.answer_callback_query(call.id, "❌ نوبت شما نیست!")
             return
-        
         if game['board'][position] != '⬜':
             bot.answer_callback_query(call.id, "❌ این خانه قبلاً پر شده است!")
             return
-        
         if user_id == game['player1']:
             symbol = game['player1_symbol']
         else:
             symbol = game['player2_symbol']
-        
         game['board'][position] = symbol
-        
         winner = check_ttt_winner(game['board'])
-        
         if winner == 'draw':
             game['winner'] = 'draw'
             bot.send_message(game['player1'], "🤝 بازی مساوی شد!")
@@ -2016,7 +1975,6 @@ def handle_callbacks(call):
             delete_ttt_game(game_id)
             bot.answer_callback_query(call.id, "🤝 مساوی")
             return
-        
         if winner is not None:
             game['winner'] = winner
             if winner == game['player1_symbol']:
@@ -2028,14 +1986,11 @@ def handle_callbacks(call):
             delete_ttt_game(game_id)
             bot.answer_callback_query(call.id, "🏆 بازی تمام شد")
             return
-        
         if game['turn'] == game['player1']:
             game['turn'] = game['player2']
         else:
             game['turn'] = game['player1']
-        
         save_ttt_games()
-        
         markup = get_ttt_board_markup(game_id, game['turn'])
         bot.send_message(game['turn'], "نوبت شماست! ⚡", reply_markup=markup)
         opponent = game['player1'] if game['turn'] == game['player2'] else game['player2']
@@ -2043,8 +1998,8 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id, "✅ حرکت ثبت شد")
         return
     
-    elif call.data.startswith("rps_move_"):
-        parts = call.data.split("_")
+    if data.startswith("rps_move_"):
+        parts = data.split("_")
         game_id = parts[2]
         choice = parts[3]
         if is_banned(user_id):
@@ -2056,50 +2011,43 @@ def handle_callbacks(call):
         if user_id not in [games[game_id]['player1'], games[game_id]['player2']]:
             bot.answer_callback_query(call.id, "❌ شما در این بازی نیستید")
             return
-        
         if str(user_id) not in game_scores:
             game_scores[str(user_id)] = {'score': 0, 'round': 0, 'game_id': game_id, 'choice': None}
         game_scores[str(user_id)]['choice'] = choice
         bot.answer_callback_query(call.id, f"✅ انتخاب شما ثبت شد: {choice}")
-        
         check_rps_round(game_id)
         return
 
+# ========== ادامه دستورات ==========
 @bot.message_handler(commands=['deletemedia'])
 def delete_media(msg):
     user_id = msg.from_user.id
     if not is_founder(user_id) and not is_owner(user_id):
         bot.reply_to(msg, "⛔ فقط بنیانگذار و سازنده دسترسی دارند!")
         return
-    
     parts = msg.text.split()
     if len(parts) < 2:
         bot.reply_to(msg, "⚠️ لطفاً ID مدیا را وارد کنید: /deletemedia [id]")
         return
-    
     media_id = parts[1]
     found = False
-    
     for item in media_data['photos'][:]:
         if item['id'] == media_id:
             media_data['photos'].remove(item)
             found = True
             break
-    
     if not found:
         for item in media_data['videos'][:]:
             if item['id'] == media_id:
                 media_data['videos'].remove(item)
                 found = True
                 break
-    
     if not found:
         for item in media_data['audios'][:]:
             if item['id'] == media_id:
                 media_data['audios'].remove(item)
                 found = True
                 break
-    
     if found:
         save_media()
         bot.reply_to(msg, f"✅ مدیا با ID {media_id} حذف شد.")
@@ -2111,7 +2059,6 @@ def cancel_broadcast(msg):
     user_id = msg.from_user.id
     if not is_founder(user_id) and not is_owner(user_id):
         return
-    
     if user_id in broadcast_mode:
         del broadcast_mode[user_id]
         bot.reply_to(msg, "❌ شما از حالت ارسال به همه خارج شدید.")
@@ -2200,7 +2147,6 @@ def update_bot(msg):
     user_id = msg.from_user.id
     if not is_founder(user_id) and not is_owner(user_id):
         return
-    
     all_users = set()
     for user_id_temp in waiting_for_message.keys():
         all_users.add(user_id_temp)
@@ -2220,7 +2166,6 @@ def update_bot(msg):
             all_users.add(int(banned_id))
         except:
             pass
-    
     count = 0
     for user in all_users:
         try:
@@ -2228,7 +2173,6 @@ def update_bot(msg):
             count += 1
         except:
             pass
-    
     try:
         bot.send_message(user_id, f"✅ پیام آپدیت به {count} کاربر ارسال شد!")
     except:
@@ -2237,7 +2181,7 @@ def update_bot(msg):
 @bot.message_handler(commands=['show_perms'])
 def show_perms(msg):
     user_id = msg.from_user.id
-    if not is_founder(user_id) and not is_owner(user_id):
+    if not is_founder(user_id) and not is_owner(user_id) and not is_admin(user_id):
         return
     
     response = "📋 جدول دسترسي ها:\n\n"
@@ -2269,7 +2213,6 @@ def add_admin(msg):
     user_id = msg.from_user.id
     if not is_founder(user_id) and not is_owner(user_id):
         return
-    
     parts = msg.text.split()
     if len(parts) < 2:
         bot.reply_to(msg, "⚠️ لطفا آيدي عددي کاربر را وارد کنيد: /ma 123456789")
@@ -2295,7 +2238,6 @@ def kick_admin(msg):
     user_id = msg.from_user.id
     if not is_founder(user_id) and not is_owner(user_id):
         return
-    
     parts = msg.text.split()
     if len(parts) < 2:
         bot.reply_to(msg, "⚠️ لطفا آيدي عددي کاربر را وارد کنيد: /kickadmin 123456789")
@@ -2320,7 +2262,6 @@ def ban_user(msg):
     user_id = msg.from_user.id
     if not is_founder(user_id) and not is_owner(user_id):
         return
-    
     parts = msg.text.split()
     if len(parts) < 2:
         bot.reply_to(msg, "⚠️ لطفا آيدي عددي کاربر را وارد کنيد: /ban 123456789")
@@ -2349,7 +2290,6 @@ def unban_user(msg):
     user_id = msg.from_user.id
     if not is_founder(user_id) and not is_owner(user_id):
         return
-    
     parts = msg.text.split()
     if len(parts) < 2:
         bot.reply_to(msg, "⚠️ لطفا آيدي عددي کاربر را وارد کنيد: /unban 123456789")
@@ -2372,7 +2312,6 @@ def show_tickets(msg):
     user_id = msg.from_user.id
     if not is_admin(user_id):
         return
-    
     open_tickets = []
     for ticket_num, ticket_data in tickets.items():
         user_id_ticket = ticket_data['user_id']
@@ -2381,12 +2320,10 @@ def show_tickets(msg):
     if not open_tickets:
         bot.reply_to(msg, "📭 هيچ بليط باز نشده اي وجود ندارد.")
         return
-    
     for ticket_num, data in open_tickets:
         markup = telebot.types.InlineKeyboardMarkup(row_width=1)
         btn_accept = telebot.types.InlineKeyboardButton("✅ قبول تیکت", callback_data=f"accept_ticket_{ticket_num}")
         markup.add(btn_accept)
-        
         response = f"🎫 شماره: {ticket_num}\n"
         response += f"👤 نام: {data['first_name']} (@{data['username']})\n"
         response += f"📝 سوال: {data['question'][:100]}"
@@ -2466,7 +2403,6 @@ def cmds(msg):
     user_id = msg.from_user.id
     if not is_admin(user_id):
         return
-    
     response = "📋 ليست دستورات ادمين:\n\n"
     response += "📌 /tickets : ليست بليط هاي باز نشده\n"
     response += "📌 /open [شماره] : باز کردن بليط\n"
@@ -2683,11 +2619,9 @@ def ticket(msg):
     }
     user_ticket_status[user_id] = ticket_number
     save_data()
-    
     markup = telebot.types.InlineKeyboardMarkup(row_width=1)
     btn_accept = telebot.types.InlineKeyboardButton("✅ قبول تیکت", callback_data=f"accept_ticket_{ticket_number}")
     markup.add(btn_accept)
-    
     bot.send_message(FOUNDER_ID, f"🎫 بليط جديد شماره: {ticket_number}\n👤 نام: {user.first_name} (@{user.username}) [آيدي: {user_id}]\n📝 سوال: {soal_text}", reply_markup=markup)
     if OWNER2_ID:
         bot.send_message(OWNER2_ID, f"🎫 بليط جديد شماره: {ticket_number}\n👤 نام: {user.first_name} (@{user.username}) [آيدي: {user_id}]\n📝 سوال: {soal_text}", reply_markup=markup)
@@ -2697,54 +2631,14 @@ def ticket(msg):
                 bot.send_message(int(admin_id), f"🎫 بليط جديد شماره: {ticket_number}\n👤 نام: {user.first_name} (@{user.username}) [آيدي: {user_id}]\n📝 سوال: {soal_text}", reply_markup=markup)
             except:
                 pass
-    
     bot.reply_to(msg, "✅ پيام شما ارسال شد. منتظر پاسخ ادمین باشید.")
-
-@bot.callback_query_handler(func=lambda call: True)
-def handle_accept_ticket(call):
-    user_id = call.from_user.id
-    if call.data.startswith("accept_ticket_"):
-        if not is_admin(user_id):
-            bot.answer_callback_query(call.id, "⛔ شما ادمین نیستید!")
-            return
-        
-        ticket_number = int(call.data.replace("accept_ticket_", ""))
-        if ticket_number not in tickets:
-            bot.answer_callback_query(call.id, "❌ تیکت وجود ندارد!")
-            return
-        
-        user_id_ticket = tickets[ticket_number]['user_id']
-        chat_sessions[user_id_ticket] = 'open'
-        
-        admin_name = "ادمین"
-        try:
-            admin_info = bot.get_chat(user_id)
-            admin_name = admin_info.first_name or admin_info.username or "ادمین"
-        except:
-            pass
-        
-        bot.send_message(
-            user_id_ticket, 
-            f"✅ تیکت شما توسط ادمین : {admin_name} باز شد 🎫\n"
-            f"📌 برای شروع مکالمه، لطفاً روی دستور زیر کلیک کنید:\n"
-            f"/chat"
-        )
-        
-        bot.send_message(
-            user_id, 
-            f"✅ تیکت {ticket_number} باز شد! شما در حالت چت با کاربر هستید. 💬"
-        )
-        
-        bot.answer_callback_query(call.id, "✅ تیکت باز شد")
 
 @bot.message_handler(func=lambda m: True, content_types=['text', 'photo', 'video', 'audio', 'document'])
 def handle_messages(msg):
     user_id = msg.from_user.id
     
-    # ========== مدیریت آپلود مدیا ==========
     if user_id in upload_mode:
         media_type = upload_mode[user_id]
-        
         if media_type == 'photo' and msg.content_type == 'photo':
             file_id = msg.photo[-1].file_id
             media_data['photos'].append({
@@ -2757,7 +2651,6 @@ def handle_messages(msg):
             del upload_mode[user_id]
             bot.reply_to(msg, "✅ عکس با موفقیت آپلود شد!")
             return
-        
         elif media_type == 'video' and msg.content_type == 'video':
             file_id = msg.video.file_id
             media_data['videos'].append({
@@ -2770,7 +2663,6 @@ def handle_messages(msg):
             del upload_mode[user_id]
             bot.reply_to(msg, "✅ فیلم با موفقیت آپلود شد!")
             return
-        
         elif media_type == 'audio' and msg.content_type == 'audio':
             file_id = msg.audio.file_id
             media_data['audios'].append({
@@ -2783,12 +2675,10 @@ def handle_messages(msg):
             del upload_mode[user_id]
             bot.reply_to(msg, "✅ آهنگ با موفقیت آپلود شد!")
             return
-        
         else:
             bot.reply_to(msg, f"❌ لطفاً یک {media_type} معتبر ارسال کنید!")
             return
     
-    # ========== ادامه کد قبلی ==========
     if user_id in broadcast_mode and broadcast_mode[user_id]:
         all_users = set()
         for user_id_temp in waiting_for_message.keys():
@@ -2809,7 +2699,6 @@ def handle_messages(msg):
                 all_users.add(int(banned_id))
             except:
                 pass
-        
         count = 0
         for user in all_users:
             try:
@@ -2817,7 +2706,6 @@ def handle_messages(msg):
                 count += 1
             except:
                 pass
-        
         bot.send_message(user_id, f"✅ پیام شما به {count} کاربر ارسال شد!")
         del broadcast_mode[user_id]
         return
@@ -2835,7 +2723,6 @@ def handle_messages(msg):
             bot.reply_to(msg, "❌ شما يک بليط فعال داريد و نمي توانيد بليط جديد بفرستيد")
             waiting_for_message[user_id] = False
             return
-        
         soal_text = msg.text
         user = msg.from_user
         ticket_counter += 1
@@ -2849,11 +2736,9 @@ def handle_messages(msg):
         user_ticket_status[user_id] = ticket_number
         save_data()
         waiting_for_message[user_id] = False
-        
         markup = telebot.types.InlineKeyboardMarkup(row_width=1)
         btn_accept = telebot.types.InlineKeyboardButton("✅ قبول تیکت", callback_data=f"accept_ticket_{ticket_number}")
         markup.add(btn_accept)
-        
         bot.send_message(FOUNDER_ID, f"🎫 بليط جديد شماره: {ticket_number}\n👤 نام: {user.first_name} (@{user.username}) [آيدي: {user_id}]\n📝 سوال: {soal_text}", reply_markup=markup)
         if OWNER2_ID:
             bot.send_message(OWNER2_ID, f"🎫 بليط جديد شماره: {ticket_number}\n👤 نام: {user.first_name} (@{user.username}) [آيدي: {user_id}]\n📝 سوال: {soal_text}", reply_markup=markup)
@@ -2863,7 +2748,6 @@ def handle_messages(msg):
                     bot.send_message(int(admin_id), f"🎫 بليط جديد شماره: {ticket_number}\n👤 نام: {user.first_name} (@{user.username}) [آيدي: {user_id}]\n📝 سوال: {soal_text}", reply_markup=markup)
                 except:
                     pass
-        
         bot.reply_to(msg, "✅ پيام شما ارسال شد. منتظر پاسخ ادمین باشید.")
         return
     
