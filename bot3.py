@@ -639,7 +639,6 @@ def send_all_users_list(user_id):
     else:
         bot.send_message(user_id, response)
 
-# ========== دستورات استارت و پنل‌ها ==========
 @bot.message_handler(commands=['start'])
 def start(msg):
     user_id = msg.from_user.id
@@ -668,7 +667,6 @@ def start(msg):
     
     bot.reply_to(msg, "🔰 سلام! به بات خوش آمدید!\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=markup)
 
-# ========== پنل بنیانگذار ==========
 @bot.message_handler(commands=['fpanel'])
 def founder_panel(msg):
     user_id = msg.from_user.id
@@ -696,7 +694,6 @@ def founder_panel(msg):
     
     bot.reply_to(msg, "👑 پنل مدیریت بنیانگذار:\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=markup)
 
-# ========== پنل سازنده ==========
 @bot.message_handler(commands=['opanel'])
 def owner_panel(msg):
     user_id = msg.from_user.id
@@ -724,7 +721,6 @@ def owner_panel(msg):
     
     bot.reply_to(msg, "👑 پنل مدیریت سازنده:\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=markup)
 
-# ========== پنل ادمین ==========
 @bot.message_handler(commands=['apanel'])
 def admin_panel(msg):
     user_id = msg.from_user.id
@@ -745,7 +741,6 @@ def admin_panel(msg):
     
     bot.reply_to(msg, "⚙️ پنل مدیریت ادمین:\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=markup)
 
-# ========== پنل کاربری ==========
 @bot.message_handler(func=lambda m: m.text == "🏠 پنل اصلی")
 def user_panel(msg):
     user_id = msg.from_user.id
@@ -808,7 +803,6 @@ def close_chat(msg):
     else:
         bot.reply_to(msg, "✅ شما در حالت ارسال پيام نيستيد")
 
-# ========== هندلر اصلی کالبک ==========
 @bot.callback_query_handler(func=lambda call: True)
 def handle_callbacks(call):
     user_id = call.from_user.id
@@ -824,7 +818,14 @@ def handle_callbacks(call):
         if is_member:
             bot.send_message(user_id, "✅ عضویت شما در هر دو کانال تایید شد! حالا می‌توانید از بات استفاده کنید.")
             bot.answer_callback_query(call.id, "✅ عضویت تایید شد")
-            start(call.message)
+            # ارسال منوی اصلی
+            markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
+            btn1 = telebot.types.KeyboardButton("🏠 پنل اصلی")
+            btn2 = telebot.types.KeyboardButton("🎮 بازی ها")
+            btn3 = telebot.types.KeyboardButton("🎫 تیکت جدید")
+            btn4 = telebot.types.KeyboardButton("🚪 خروج از چت")
+            markup.add(btn1, btn2, btn3, btn4)
+            bot.send_message(user_id, "🔰 به بات خوش آمدید!\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=markup)
         else:
             bot.answer_callback_query(call.id, "❌ شما هنوز در یکی از کانال‌ها عضو نشده‌اید!")
             bot.send_message(user_id, f"❌ شما هنوز در کانال {channel_name} عضو نشده‌اید!\nلطفاً ابتدا عضو شوید و سپس روی دکمه تایید کلیک کنید.")
@@ -837,7 +838,13 @@ def handle_callbacks(call):
         
         bot.send_message(user_id, "✅ دسترسی شما تایید شد! خوش آمدید.")
         bot.answer_callback_query(call.id, "✅ تایید شد")
-        start(call.message)
+        markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
+        btn1 = telebot.types.KeyboardButton("🏠 پنل اصلی")
+        btn2 = telebot.types.KeyboardButton("🎮 بازی ها")
+        btn3 = telebot.types.KeyboardButton("🎫 تیکت جدید")
+        btn4 = telebot.types.KeyboardButton("🚪 خروج از چت")
+        markup.add(btn1, btn2, btn3, btn4)
+        bot.send_message(user_id, "🔰 به بات خوش آمدید!\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=markup)
         return
     
     # ========== پنل بنیانگذار ==========
@@ -1482,7 +1489,6 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id)
         return
     
-    # ========== کانال‌ها با Coming Soon ==========
     if data == "user_channels":
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
