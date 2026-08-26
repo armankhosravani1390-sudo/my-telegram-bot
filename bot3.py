@@ -666,6 +666,10 @@ def cancel_mode(msg):
         del upload_mode[user_id]
         canceled = True
     
+    if user_id in admin_chat_mode and admin_chat_mode[user_id]:
+        admin_chat_mode[user_id] = False
+        canceled = True
+    
     if canceled:
         bot.reply_to(msg, "✅ شما از حالت خارج شدید!")
     else:
@@ -753,7 +757,7 @@ def owner_panel(msg):
     
     bot.reply_to(msg, "👑 پنل مدیریت سازنده:\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=markup)
 
-# ========== پنل ادمین (بدون دکمه دسترسی‌ها) ==========
+# ========== پنل ادمین ==========
 @bot.message_handler(commands=['apanel'])
 def admin_panel(msg):
     user_id = msg.from_user.id
@@ -767,9 +771,9 @@ def admin_panel(msg):
     
     markup = telebot.types.InlineKeyboardMarkup(row_width=2)
     btn1 = telebot.types.InlineKeyboardButton("🎫 لیست تیکت‌ها", callback_data="admin_tickets")
-    # ========== دکمه چت ادمین با لینک ==========
     btn2 = telebot.types.InlineKeyboardButton("💬 چت ادمین‌ها", url="https://t.me/+W0cz_z1Zjko2MjRk")
-    btn3 = telebot.types.InlineKeyboardButton("🔙 بازگشت", callback_data="admin_back")
+    # دکمه بازگشت به پنل اصلی (نه پنل ادمین)
+    btn3 = telebot.types.InlineKeyboardButton("🔙 بازگشت", callback_data="admin_back_to_main")
     markup.add(btn1, btn2, btn3)
     
     bot.reply_to(msg, "⚙️ پنل مدیریت ادمین:\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=markup)
@@ -1066,7 +1070,7 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id, "✅ وارد حالت ارسال شدید")
         return
     
-    # ========== کنسول (بدون کد 1390) ==========
+    # ========== کنسول ==========
     if data == "founder_console":
         if not is_founder(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
@@ -1353,7 +1357,7 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id, "✅ وارد حالت ارسال شدید")
         return
     
-    # ========== کنسول (بدون کد 1390) ==========
+    # ========== کنسول ==========
     if data == "owner_console":
         if not is_owner(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
@@ -1462,12 +1466,25 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id)
         return
     
-    if data == "admin_back":
+    # ========== دکمه بازگشت به پنل اصلی ==========
+    if data == "admin_back_to_main":
         if not is_admin(user_id):
             bot.answer_callback_query(call.id, "⛔ شما ادمین نیستید!")
             return
-        admin_panel(call.message)
-        bot.answer_callback_query(call.id)
+        # ارسال منوی اصلی به جای پنل ادمین
+        markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
+        btn1 = telebot.types.KeyboardButton("🏠 پنل اصلی")
+        btn2 = telebot.types.KeyboardButton("🎮 بازی ها")
+        btn3 = telebot.types.KeyboardButton("🎫 تیکت جدید")
+        btn4 = telebot.types.KeyboardButton("🚪 خروج از چت")
+        markup.add(btn1, btn2, btn3, btn4)
+        
+        if is_admin(user_id):
+            btn5 = telebot.types.KeyboardButton("⚙️ پنل مدیریت")
+            markup.add(btn5)
+        
+        bot.send_message(user_id, "🔰 به پنل اصلی خوش آمدید!\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=markup)
+        bot.answer_callback_query(call.id, "✅ بازگشت به پنل اصلی")
         return
     
     # ========== قبول تیکت ==========
@@ -2390,27 +2407,39 @@ def unban_user(msg):
     bot.send_message(target_id, "✅ *** [ Ban.System ] : شما از حالت محرومیت خارج شدید ***\n\n🔰 اکنون میتوانید از تمام دستورات بات استفاده کنید.\n📌 برای مشاهده دستورات، دستور /info را بزنید.")
     bot.reply_to(msg, f"✅ کاربر با آیدی {target_id} از محرومیت خارج شد.")
 
+# ========== لیست تیکت‌ها با مشخصات کامل ==========
 @bot.message_handler(commands=['tickets'])
 def show_tickets(msg):
     user_id = msg.from_user.id
     if not is_admin(user_id):
         return
+    
+    # بررسی تیکت‌های باز (چت فعال ندارند)
     open_tickets = []
     for ticket_num, ticket_data in tickets.items():
         user_id_ticket = ticket_data['user_id']
+        # تیکتی که چت فعال نداره یا چت بسته شده
         if user_id_ticket not in chat_sessions or chat_sessions[user_id_ticket] != 'open':
             open_tickets.append((ticket_num, ticket_data))
+    
     if not open_tickets:
-        bot.reply_to(msg, "📭 هيچ بليط باز نشده اي وجود ندارد.")
+        bot.reply_to(msg, "📭 هیچ تیکتی وجود ندارد.")
         return
     
+    # نمایش تیکت‌ها با مشخصات کامل
     for ticket_num, data in open_tickets:
         markup = telebot.types.InlineKeyboardMarkup(row_width=1)
         btn_accept = telebot.types.InlineKeyboardButton("✅ قبول تیکت", callback_data=f"accept_ticket_{ticket_num}")
         markup.add(btn_accept)
-        response = f"🎫 شماره: {ticket_num}\n"
-        response += f"👤 نام: {data['first_name']} (@{data['username']})\n"
-        response += f"📝 سوال: {data['question'][:100]}"
+        
+        response = f"🎫 **شماره تیکت:** {ticket_num}\n"
+        response += f"━━━━━━━━━━━━━━━━━━━━\n"
+        response += f"👤 **نام:** {data['first_name']}\n"
+        response += f"📌 **یوزرنیم:** @{data['username']}\n"
+        response += f"🆔 **آیدی:** {data['user_id']}\n"
+        response += f"📝 **سوال:**\n{data['question']}\n"
+        response += f"━━━━━━━━━━━━━━━━━━━━"
+        
         bot.send_message(user_id, response, reply_markup=markup)
 
 @bot.message_handler(commands=['open'])
@@ -2450,21 +2479,33 @@ def chat_with_user(msg):
     waiting_for_message[user_id] = True
     bot.reply_to(msg, "✅ وارد چت شديد. پيام خود را بفرستيد")
 
+# ========== دستور /a برای ادمین‌ها (با فعال‌سازی حالت چت) ==========
 @bot.message_handler(commands=['a'])
 def admin_chat(msg):
     user_id = msg.from_user.id
     if not is_admin(user_id):
         return
+    
     parts = msg.text.split(maxsplit=1)
     if len(parts) < 2:
-        bot.reply_to(msg, "⚠️ /a پيام")
+        bot.reply_to(msg, "⚠️ لطفاً پیام خود را وارد کنید: /a [پیام]")
         return
+    
+    # فعال کردن حالت چت برای ادمین (دیگه نیازی به /a نداره)
+    admin_chat_mode[user_id] = True
+    
+    # پیدا کردن کاربری که چت باز دارد
+    found_user = None
     for user_id_chat, status in chat_sessions.items():
         if status == 'open':
-            bot.send_message(user_id_chat, f"⚜ پاسخ ادمين:\n{parts[1]}")
-            bot.reply_to(msg, f"✅ پيام ارسال شد")
-            return
-    bot.reply_to(msg, "❌ چت فعالی وجود ندارد")
+            found_user = user_id_chat
+            break
+    
+    if found_user:
+        bot.send_message(found_user, f"⚜ **پاسخ ادمین:**\n{parts[1]}")
+        bot.reply_to(msg, f"✅ پیام ارسال شد! شما در حالت چت هستید.\n📌 برای ارسال پیام بعدی، فقط متن را تایپ کنید (نیازی به /a نیست).\n❌ برای خروج: /cancel")
+    else:
+        bot.reply_to(msg, "❌ چت فعالی وجود ندارد!")
 
 @bot.message_handler(commands=['ac'])
 def admin_chat_toggle(msg):
@@ -2487,10 +2528,11 @@ def cmds(msg):
     user_id = msg.from_user.id
     if not is_admin(user_id):
         return
+    
     response = "📋 ليست دستورات ادمين:\n\n"
     response += "📌 /tickets : ليست بليط هاي باز نشده\n"
     response += "📌 /open [شماره] : باز کردن بليط\n"
-    response += "📌 /a [پيام] : ارسال پاسخ به کاربر\n"
+    response += "📌 /a [پيام] : ارسال پاسخ به کاربر (وارد حالت چت میشوید)\n"
     response += "📌 /cc : پايان چت با کاربر\n"
     if is_founder(user_id) or is_owner(user_id):
         response += "📌 /ma [آيدي] : اضافه کردن ادمين جديد\n"
@@ -2953,35 +2995,36 @@ def handle_messages(msg):
         ad_mode[user_id] = False
         return
     
-    # ========== ادمین ==========
+    # ========== ادمین (حالت چت خودکار) ==========
     if is_admin(user_id):
+        # اگر ادمین در حالت چت هست و پیام متنی ارسال کرده (بدون /)
         if user_id in admin_chat_mode and admin_chat_mode[user_id]:
-            if user_id == FOUNDER_ID:
-                display_name = "بنیانگذار"
-            elif user_id == OWNER2_ID:
-                display_name = "سازنده"
-            else:
-                admin_num = get_admin_number(user_id) or "Admin"
-                display_name = f"{admin_num}"
-            for admin_id in admins:
-                if int(admin_id) != user_id:
-                    try:
-                        bot.send_message(int(admin_id), f"[ Admin.Chat ] ( {display_name} ) : {msg.text}")
-                    except:
-                        pass
-            bot.reply_to(msg, "✅ پیام شما به چت ادمین ها ارسال شد.")
-            return
-        else:
             if not msg.text.startswith('/'):
-                if user_id == FOUNDER_ID:
-                    bot.reply_to(msg, "سلام سرورم 🙏🏻❤️\nامیدوارم حالتون خوب باشه 👋🏻\nلطفا دستور :\n/fpanel\nرا بزنید 🌠")
-                elif user_id == OWNER2_ID:
-                    bot.reply_to(msg, "سلام سرورم 🙏🏻❤️\nامیدوارم حالتون خوب باشه 👋🏻\nلطفا دستور :\n/opanel\nرا بزنید 🌠")
+                # پیدا کردن کاربری که چت باز دارد
+                found_user = None
+                for user_id_chat, status in chat_sessions.items():
+                    if status == 'open':
+                        found_user = user_id_chat
+                        break
+                
+                if found_user:
+                    bot.send_message(found_user, f"⚜ **پاسخ ادمین:**\n{msg.text}")
+                    bot.reply_to(msg, "✅ پیام ارسال شد!")
                 else:
-                    bot.reply_to(msg, "👋 سلام ادمین عزیز!\nلطفاً برای ورود به پنل مدیریت، دستور زیر را بزنید:\n/apanel")
+                    bot.reply_to(msg, "❌ چت فعالی وجود ندارد!")
                 return
+        
+        # اگر ادمین در حالت چت نیست ولی پیام بدون / فرستاده
+        if not msg.text.startswith('/'):
+            if user_id == FOUNDER_ID:
+                bot.reply_to(msg, "سلام سرورم 🙏🏻❤️\nامیدوارم حالتون خوب باشه 👋🏻\nلطفا دستور :\n/fpanel\nرا بزنید 🌠")
+            elif user_id == OWNER2_ID:
+                bot.reply_to(msg, "سلام سرورم 🙏🏻❤️\nامیدوارم حالتون خوب باشه 👋🏻\nلطفا دستور :\n/opanel\nرا بزنید 🌠")
+            else:
+                bot.reply_to(msg, "👋 سلام ادمین عزیز!\nلطفاً برای ورود به پنل مدیریت، دستور زیر را بزنید:\n/apanel")
+            return
     
-    # ========== چت ==========
+    # ========== چت کاربر ==========
     if user_id in waiting_for_message and waiting_for_message[user_id] == True:
         if user_id != FOUNDER_ID and user_id != OWNER2_ID and user_id in chat_sessions and chat_sessions[user_id] == 'open':
             bot.send_message(FOUNDER_ID, f"💬 از کاربر:\n👤 نام: {msg.from_user.first_name} [آیدی: {user_id}]\n📝 پیام: {msg.text}")
