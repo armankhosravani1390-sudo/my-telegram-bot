@@ -40,7 +40,7 @@ news_counter = 0
 ad_counter = 0
 news_mode = {}
 ad_mode = {}
-console_mode = {}  # ========== حالت کنسول ==========
+console_mode = {}
 
 games = {}
 game_players = {}
@@ -640,7 +640,6 @@ def send_all_users_list(user_id):
     else:
         bot.send_message(user_id, response)
 
-# ========== دستور خروج از حالت‌ها ==========
 @bot.message_handler(commands=['cancel'])
 def cancel_mode(msg):
     user_id = msg.from_user.id
@@ -700,7 +699,7 @@ def start(msg):
     
     bot.reply_to(msg, "🔰 سلام! به بات خوش آمدید!\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=markup)
 
-# ========== پنل بنیانگذار (بدون دکمه بازگشت و دسترسی‌ها، با کنسول) ==========
+# ========== پنل بنیانگذار ==========
 @bot.message_handler(commands=['fpanel'])
 def founder_panel(msg):
     user_id = msg.from_user.id
@@ -720,7 +719,6 @@ def founder_panel(msg):
     btn9 = telebot.types.InlineKeyboardButton("🔄 آپدیت بات", callback_data="founder_update")
     btn10 = telebot.types.InlineKeyboardButton("📊 گزارش بات", callback_data="founder_botup")
     btn11 = telebot.types.InlineKeyboardButton("📢 ارسال به همه", callback_data="founder_broadcast")
-    # ========== دکمه کنسول جایگزین دسترسی‌ها ==========
     btn12 = telebot.types.InlineKeyboardButton("🖥️ کنسول", callback_data="founder_console")
     btn13 = telebot.types.InlineKeyboardButton("🎬 مدیریت Media", callback_data="founder_media")
     btn14 = telebot.types.InlineKeyboardButton("📋 لیست کاربران", callback_data="founder_all_users")
@@ -728,7 +726,7 @@ def founder_panel(msg):
     
     bot.reply_to(msg, "👑 پنل مدیریت بنیانگذار:\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=markup)
 
-# ========== پنل سازنده (بدون دکمه بازگشت و دسترسی‌ها، با کنسول) ==========
+# ========== پنل سازنده ==========
 @bot.message_handler(commands=['opanel'])
 def owner_panel(msg):
     user_id = msg.from_user.id
@@ -755,6 +753,7 @@ def owner_panel(msg):
     
     bot.reply_to(msg, "👑 پنل مدیریت سازنده:\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=markup)
 
+# ========== پنل ادمین (بدون دکمه دسترسی‌ها) ==========
 @bot.message_handler(commands=['apanel'])
 def admin_panel(msg):
     user_id = msg.from_user.id
@@ -768,10 +767,10 @@ def admin_panel(msg):
     
     markup = telebot.types.InlineKeyboardMarkup(row_width=2)
     btn1 = telebot.types.InlineKeyboardButton("🎫 لیست تیکت‌ها", callback_data="admin_tickets")
-    btn2 = telebot.types.InlineKeyboardButton("💬 چت ادمین", callback_data="admin_chat")
-    btn3 = telebot.types.InlineKeyboardButton("📋 دسترسی‌ها", callback_data="admin_perms")
-    btn4 = telebot.types.InlineKeyboardButton("🔙 بازگشت", callback_data="admin_back")
-    markup.add(btn1, btn2, btn3, btn4)
+    # ========== دکمه چت ادمین با لینک ==========
+    btn2 = telebot.types.InlineKeyboardButton("💬 چت ادمین‌ها", url="https://t.me/+W0cz_z1Zjko2MjRk")
+    btn3 = telebot.types.InlineKeyboardButton("🔙 بازگشت", callback_data="admin_back")
+    markup.add(btn1, btn2, btn3)
     
     bot.reply_to(msg, "⚙️ پنل مدیریت ادمین:\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=markup)
 
@@ -1067,13 +1066,18 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id, "✅ وارد حالت ارسال شدید")
         return
     
-    # ========== کنسول ==========
+    # ========== کنسول (بدون کد 1390) ==========
     if data == "founder_console":
         if not is_founder(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
             return
-        console_mode[user_id] = {'step': 'waiting_code'}
-        bot.send_message(user_id, "🖥️ **وارد حالت کنسول شدید!**\n\n🔑 لطفاً کد **1390** را وارد کنید:\n❌ برای خروج: /cancel")
+        console_mode[user_id] = {'step': 'active'}
+        bot.send_message(user_id, "🖥️ **وارد حالت کنسول شدید!**\n\n📝 حالا هر چیزی بنویسید، به فرمت زیر نمایش داده میشه:\n\n"
+                                   "✅ **کد بخش WorkShop درست شد** ✅\n"
+                                   "📌 **کد ساخت :** (نوشته شما)\n"
+                                   "🏆 **دیدن اپدیت ها** 🏆\n"
+                                   "🎬 **قسمت کد های مدیا** 🏆\n\n"
+                                   "❌ برای خروج: /cancel")
         bot.answer_callback_query(call.id, "✅ وارد کنسول شدید")
         return
     
@@ -1349,13 +1353,18 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id, "✅ وارد حالت ارسال شدید")
         return
     
-    # ========== کنسول ==========
+    # ========== کنسول (بدون کد 1390) ==========
     if data == "owner_console":
         if not is_owner(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
             return
-        console_mode[user_id] = {'step': 'waiting_code'}
-        bot.send_message(user_id, "🖥️ **وارد حالت کنسول شدید!**\n\n🔑 لطفاً کد **1390** را وارد کنید:\n❌ برای خروج: /cancel")
+        console_mode[user_id] = {'step': 'active'}
+        bot.send_message(user_id, "🖥️ **وارد حالت کنسول شدید!**\n\n📝 حالا هر چیزی بنویسید، به فرمت زیر نمایش داده میشه:\n\n"
+                                   "✅ **کد بخش WorkShop درست شد** ✅\n"
+                                   "📌 **کد ساخت :** (نوشته شما)\n"
+                                   "🏆 **دیدن اپدیت ها** 🏆\n"
+                                   "🎬 **قسمت کد های مدیا** 🏆\n\n"
+                                   "❌ برای خروج: /cancel")
         bot.answer_callback_query(call.id, "✅ وارد کنسول شدید")
         return
     
@@ -1453,22 +1462,6 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id)
         return
     
-    if data == "admin_chat":
-        if not is_admin(user_id):
-            bot.answer_callback_query(call.id, "⛔ شما ادمین نیستید!")
-            return
-        admin_chat_toggle(call.message)
-        bot.answer_callback_query(call.id)
-        return
-    
-    if data == "admin_perms":
-        if not is_admin(user_id):
-            bot.answer_callback_query(call.id, "⛔ شما ادمین نیستید!")
-            return
-        show_perms(call.message)
-        bot.answer_callback_query(call.id)
-        return
-    
     if data == "admin_back":
         if not is_admin(user_id):
             bot.answer_callback_query(call.id, "⛔ شما ادمین نیستید!")
@@ -1507,7 +1500,8 @@ def handle_callbacks(call):
         
         bot.send_message(
             user_id, 
-            f"✅ تیکت {ticket_number} باز شد! شما در حالت چت با کاربر هستید. 💬"
+            f"✅ تیکت {ticket_number} باز شد! شما در حالت چت با کاربر هستید. 💬\n"
+            f"📌 برای پایان چت از دستور /cc استفاده کنید."
         )
         
         bot.answer_callback_query(call.id, "✅ تیکت باز شد")
@@ -2409,6 +2403,7 @@ def show_tickets(msg):
     if not open_tickets:
         bot.reply_to(msg, "📭 هيچ بليط باز نشده اي وجود ندارد.")
         return
+    
     for ticket_num, data in open_tickets:
         markup = telebot.types.InlineKeyboardMarkup(row_width=1)
         btn_accept = telebot.types.InlineKeyboardButton("✅ قبول تیکت", callback_data=f"accept_ticket_{ticket_num}")
@@ -2712,43 +2707,24 @@ def ticket(msg):
                 pass
     bot.reply_to(msg, "✅ پيام شما ارسال شد. منتظر پاسخ ادمین باشید.")
 
-# ========== هندلر پیام‌ها (با کنسول) ==========
+# ========== هندلر پیام‌ها ==========
 @bot.message_handler(func=lambda m: True, content_types=['text', 'photo', 'video', 'audio', 'document'])
 def handle_messages(msg):
     user_id = msg.from_user.id
     
     # ========== حالت کنسول ==========
-    if user_id in console_mode:
-        if console_mode[user_id].get('step') == 'waiting_code':
-            if msg.text == "1390":
-                console_mode[user_id]['step'] = 'active'
-                bot.reply_to(msg, "✅ کد تایید شد! شما وارد کنسول شدید.\n\n📝 حالا هر چیزی بنویسید، به فرمت زیر نمایش داده میشه:\n\n"
-                                   "کد بخش WorkShop درست شد ✅\n"
-                                   "کد ساخت : (نوشته شما)\n"
-                                   "دیدن اپدیت ها 🏆\n"
-                                   "قسمت کد های مدیا 🏆\n"
-                                   "و حالا تمام ✅\n\n"
-                                   "❌ برای خروج: /cancel")
-            else:
-                bot.reply_to(msg, "❌ کد اشتباه است! لطفاً **1390** را وارد کنید:\n❌ برای خروج: /cancel")
-            return
-        
-        elif console_mode[user_id].get('step') == 'active':
-            # ========== فرمت کنسول ==========
-            user_input = msg.text
-            response = f"""
+    if user_id in console_mode and console_mode[user_id].get('step') == 'active':
+        user_input = msg.text
+        response = f"""
 🖥️ **خروجی کنسول:**
 
 ✅ **کد بخش WorkShop درست شد** ✅
 📌 **کد ساخت :** `{user_input}`
 🏆 **دیدن اپدیت ها** 🏆
 🎬 **قسمت کد های مدیا** 🏆
-
-✅ **و حالا تمام** ✅
 """
-            bot.reply_to(msg, response)
-            # بعد از هر پیام، دوباره آماده دریافت هستیم
-            return
+        bot.reply_to(msg, response)
+        return
     
     # ========== آپلود مدیا ==========
     if user_id in upload_mode:
