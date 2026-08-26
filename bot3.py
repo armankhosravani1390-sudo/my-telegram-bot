@@ -185,7 +185,7 @@ def load_ad():
             ad_counter = data.get('counter', 0)
     else:
         ad_data = {
-            "1": "🌿 سرور NightFall با افتخار تقدیم میکند\n\nNightFall Nights 🌔\n\n📍اگه دنبال تجربه خفن از یه سرور خفن هستی همین الان به سرور ما بپیوند 🌏\n\n🏆 تازه ترین و بهینه ترین سرور اِم تی اِی 🏆\n\n⚡𝐒𝐞𝐫𝐯𝐞𝐫 𝐈𝐏 :\nMtaSa://5.42.223.61:22003\n\n      𝐒𝐨𝐜𝐢𝐚𝐥 𝐦𝐞𝐝𝐢𝐚👇\n\n🌐 𝐓𝐞𝐚𝐦𝐒𝐩𝐞𝐚𝐤 : ts63.ir:11439\n((5.57.39.100:11439))\n\n📱 𝐈𝐧𝐬𝐭𝐚𝐠𝐫𝐚𝐦 : @NightFall_MTA\n\n✈ 𝐓𝐞𝐥𝐞𝐠𝐫𝐚𝐦 : @NightFall_MTA\n\n💻 𝐑𝐮𝐛𝐢𝐤𝐚 : @NightFall_RPG\n\n🎥 𝐀𝐩𝐚𝐫𝐚𝐭 : 𝐂𝐨𝐦𝐢𝐧𝐠 𝐒𝐨𝐨𝐧\n\n🛒 𝐒𝐡𝐨𝐩 : 𝐂𝐨𝐦𝐢𝐧𝐠 𝐒𝐨𝐨𝐧\n\n🧑‍💻 𝗦𝘂𝗽𝗽𝗼𝗿𝘁 𝗦𝗲𝗿𝘃𝗲𝗿 : @NightFall_RPG\n\n🧡𝐅𝐨𝐥𝐥𝐨𝐰 𝐔𝐬 ....🧡"
+            "1": "🌿 سرور NightFall با افتخار تقدیم میکند\n\nNightFall Nights 🌔\n\n📍اگه دنبال تجربه خفن از یه سرور خفن هستی همین الان به سرور ما بپیوند 🌏\n\n🏆 تازه ترین و بهینه ترین سرور اِم تی اِی 🏆\n\n⚡𝐒𝐞𝐫𝐯𝐞𝐫 𝐈𝐏 :\nMtaSa://5.42.223.61:22003\n\n      𝐒𝐨𝐜𝐢𝐚𝐥 𝐦𝐞𝐝𝐢𝐚👇\n\n🌐 𝐓𝐞𝐚𝐦𝐒𝐩𝐞𝐚𝐤 : ts63.ir:11439\n((5.57.39.100:11439))\n\n📱 𝐈𝐧𝐬𝐭𝐚𝐠𝐫𝐚𝐦 : @NightFall_MTA\n\n✈ 𝐓𝐞𝐥𝐞𝐠𝐫𝐚𝐦 : @NightFall_MTA\n\n💻 𝐑𝐮𝐛𝐢𝐤𝐚 : @NightFall_RPG\n\n🎥 𝐀𝐩𝐚𝐫𝐚𝐭 : 𝐂𝐨𝐦𝐢𝐧𝐠 𝐒𝐨𝐨𝐧\n\n🛒 𝐒𝐡𝐨𝐩 : 𝐂𝐨𝐦𝐢𝐧𝐠 𝐒𝐨𝐨𝐧\n\n🧑‍💻 𝗦𝘂𝗽𝗽𝗼𝗿𝘁 𝗦𝗲𝗿𝘃𝗲𝗿 : @NightFall_RPG\n\n🧡𝐅𝐨𝐥𝐥𝐨𝐰 𝐔𝐬 ....🧡"
         }
         ad_counter = 1
 
@@ -1457,13 +1457,12 @@ def handle_callbacks(call):
         return
     
     # ========== پنل ادمین ==========
-    # ========== دکمه لیست تیکت‌ها (دقیقاً مثل /tickets) ==========
+    # ========== دکمه لیست تیکت‌ها (اصلاح‌شده: از تابع مشترک با آیدی درست ادمین استفاده می‌کند) ==========
     if data == "admin_tickets":
         if not is_admin(user_id):
             bot.answer_callback_query(call.id, "⛔ شما ادمین نیستید!")
             return
-        # اینجا دقیقاً همان کاری را می‌کند که دستور /tickets انجام می‌دهد
-        show_tickets(call.message)
+        send_tickets_list(user_id)
         bot.answer_callback_query(call.id)
         return
     
@@ -2408,14 +2407,8 @@ def unban_user(msg):
     bot.send_message(target_id, "✅ *** [ Ban.System ] : شما از حالت محرومیت خارج شدید ***\n\n🔰 اکنون میتوانید از تمام دستورات بات استفاده کنید.\n📌 برای مشاهده دستورات، دستور /info را بزنید.")
     bot.reply_to(msg, f"✅ کاربر با آیدی {target_id} از محرومیت خارج شد.")
 
-# ========== تابع show_tickets (با مشخصات کامل) ==========
-@bot.message_handler(commands=['tickets'])
-def show_tickets(msg):
-    user_id = msg.from_user.id
-    if not is_admin(user_id):
-        return
-    
-    # پیدا کردن تیکت‌های باز (چت فعال ندارند)
+# ========== تابع لیست تیکت‌ها (اصلاح‌شده) ==========
+def send_tickets_list(user_id):
     open_tickets = []
     for ticket_num, ticket_data in tickets.items():
         user_id_ticket = ticket_data['user_id']
@@ -2423,10 +2416,9 @@ def show_tickets(msg):
             open_tickets.append((ticket_num, ticket_data))
     
     if not open_tickets:
-        bot.reply_to(msg, "📭 هیچ تیکتی وجود ندارد.")
+        bot.send_message(user_id, "📭 هیچ تیکتی وجود ندارد.")
         return
     
-    # نمایش تیکت‌ها با مشخصات کامل
     for ticket_num, data in open_tickets:
         markup = telebot.types.InlineKeyboardMarkup(row_width=1)
         btn_accept = telebot.types.InlineKeyboardButton("✅ قبول تیکت", callback_data=f"accept_ticket_{ticket_num}")
@@ -2441,6 +2433,13 @@ def show_tickets(msg):
         response += f"━━━━━━━━━━━━━━━━━━━━"
         
         bot.send_message(user_id, response, reply_markup=markup)
+
+@bot.message_handler(commands=['tickets'])
+def show_tickets(msg):
+    user_id = msg.from_user.id
+    if not is_admin(user_id):
+        return
+    send_tickets_list(user_id)
 
 @bot.message_handler(commands=['open'])
 def open_chat(msg):
@@ -2490,7 +2489,6 @@ def admin_chat(msg):
         bot.reply_to(msg, "⚠️ لطفاً پیام خود را وارد کنید: /a [پیام]")
         return
     
-    # فعال کردن حالت چت برای ادمین
     admin_chat_mode[user_id] = True
     
     found_user = None
@@ -2752,7 +2750,6 @@ def ticket(msg):
 def handle_messages(msg):
     user_id = msg.from_user.id
     
-    # ========== حالت کنسول ==========
     if user_id in console_mode and console_mode[user_id].get('step') == 'active':
         user_input = msg.text
         response = f"""
@@ -2766,7 +2763,6 @@ def handle_messages(msg):
         bot.reply_to(msg, response)
         return
     
-    # ========== آپلود مدیا ==========
     if user_id in upload_mode:
         media_type = upload_mode[user_id]
         if media_type == 'photo' and msg.content_type == 'photo':
@@ -2809,7 +2805,6 @@ def handle_messages(msg):
             bot.reply_to(msg, f"❌ لطفاً یک {media_type} معتبر ارسال کنید!")
             return
     
-    # ========== ارسال به همه ==========
     if user_id in broadcast_mode and broadcast_mode[user_id]:
         all_users = set()
         for user_id_temp in waiting_for_message.keys():
@@ -2844,7 +2839,6 @@ def handle_messages(msg):
     if is_banned(user_id):
         return
     
-    # ========== تیکت ==========
     if user_id in waiting_for_message and waiting_for_message[user_id] == 'ticket':
         global ticket_counter
         if is_admin(user_id):
@@ -2883,7 +2877,6 @@ def handle_messages(msg):
         bot.reply_to(msg, "✅ پيام شما ارسال شد. منتظر پاسخ ادمین باشید.")
         return
     
-    # ========== RPS ==========
     if user_id in rps_password_temp and rps_password_temp[user_id].get('step') == 'waiting_password':
         password = msg.text
         game_id = create_game(user_id)
@@ -2954,7 +2947,6 @@ def handle_messages(msg):
         start_ttt_game(game_id)
         return
     
-    # ========== ساخت کلن ==========
     if user_id in creating_clan:
         clan_name = creating_clan[user_id]['clan_name']
         description = msg.text
@@ -2974,7 +2966,6 @@ def handle_messages(msg):
             bot.reply_to(msg, f"❌ خطا در ارسال پیام: {e}")
         return
     
-    # ========== خبر و تبلیغ ==========
     if user_id in news_mode and news_mode[user_id]:
         global news_counter
         news_counter += 1
@@ -2993,7 +2984,6 @@ def handle_messages(msg):
         ad_mode[user_id] = False
         return
     
-    # ========== ادمین (حالت چت خودکار) ==========
     if is_admin(user_id):
         if user_id in admin_chat_mode and admin_chat_mode[user_id]:
             if not msg.text.startswith('/'):
@@ -3018,7 +3008,6 @@ def handle_messages(msg):
                 bot.reply_to(msg, "👋 سلام ادمین عزیز!\nلطفاً برای ورود به پنل مدیریت، دستور زیر را بزنید:\n/apanel")
             return
     
-    # ========== چت کاربر ==========
     if user_id in waiting_for_message and waiting_for_message[user_id] == True:
         if user_id != FOUNDER_ID and user_id != OWNER2_ID and user_id in chat_sessions and chat_sessions[user_id] == 'open':
             bot.send_message(FOUNDER_ID, f"💬 از کاربر:\n👤 نام: {msg.from_user.first_name} [آیدی: {user_id}]\n📝 پیام: {msg.text}")
