@@ -82,6 +82,14 @@ GAMES_FILE = 'games.json'
 TTT_GAMES_FILE = 'ttt_games.json'
 USERS_FILE = 'users.json'
 MEDIA_FILE = 'media.json'
+ANTIVIRUS_FILE = 'antivirus.json'
+
+# ========== تنظیمات کنسول Hash ==========
+CONSOLE_ACCESS_CODE = "1390"   # کد ورود سازنده به کنسول (هرگز نمایش داده نمی‌شود)
+CONSOLE_DECODE_TRIGGER = "1360"  # کد فعال‌سازی حالت بازگردانی از Hash
+HASH_OFFSET = 133  # افست مخفی برای تبدیل حروف به عدد
+
+antivirus_enabled = True
 
 def init_roles():
     global admins, admin_numbers
@@ -287,6 +295,33 @@ def save_media():
     with open(MEDIA_FILE, 'w') as f:
         json.dump(media_data, f)
 
+def load_antivirus():
+    global antivirus_enabled
+    if os.path.exists(ANTIVIRUS_FILE):
+        with open(ANTIVIRUS_FILE, 'r') as f:
+            data = json.load(f)
+            antivirus_enabled = data.get('enabled', True)
+    else:
+        antivirus_enabled = True
+
+def save_antivirus():
+    with open(ANTIVIRUS_FILE, 'w') as f:
+        json.dump({'enabled': antivirus_enabled}, f)
+
+# ========== توابع Hash کنسول ==========
+def hash_text(text):
+    # هر حرف را به کد یونیکد + آفست تبدیل کرده و با خط تیره جدا می‌کند
+    return '-'.join(str(ord(ch) + HASH_OFFSET) for ch in text)
+
+def unhash_text(hashed):
+    try:
+        parts = hashed.strip().split('-')
+        if not parts or parts == ['']:
+            return None
+        return ''.join(chr(int(p) - HASH_OFFSET) for p in parts)
+    except:
+        return None
+
 load_data()
 load_admins()
 load_admin_numbers()
@@ -299,6 +334,7 @@ load_games()
 load_ttt_games()
 load_users()
 load_media()
+load_antivirus()
 init_roles()
 
 def is_founder(user_id):
@@ -726,7 +762,9 @@ def founder_panel(msg):
     btn12 = telebot.types.InlineKeyboardButton("🖥️ کنسول", callback_data="founder_console")
     btn13 = telebot.types.InlineKeyboardButton("🎬 مدیریت Media", callback_data="founder_media")
     btn14 = telebot.types.InlineKeyboardButton("📋 لیست کاربران", callback_data="founder_all_users")
-    markup.add(btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8, btn9, btn10, btn11, btn12, btn13, btn14)
+    av_status = "🟢 روشن" if antivirus_enabled else "🔴 خاموش"
+    btn15 = telebot.types.InlineKeyboardButton(f"🛡 Antivirus ({av_status})", callback_data="founder_antivirus_toggle")
+    markup.add(btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8, btn9, btn10, btn11, btn12, btn13, btn14, btn15)
     
     bot.reply_to(msg, "👑 پنل مدیریت بنیانگذار:\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=markup)
 
@@ -841,6 +879,7 @@ def close_chat(msg):
 
 @bot.callback_query_handler(func=lambda call: True)
 def handle_callbacks(call):
+    global antivirus_enabled
     user_id = call.from_user.id
     data = call.data
     
@@ -1022,7 +1061,9 @@ def handle_callbacks(call):
         if not is_founder(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
             return
+        av_status = "🟢 روشن" if antivirus_enabled else "🔴 خاموش"
         response = "📋 ليست ادمين ها:\n\n"
+        response += f"🛡 نگهبان : GP-GUARD ( {av_status} )\n\n"
         response += "👑 بنیانگذار: Founder\n"
         response += "👑 سازنده: Owner\n"
         if admins:
@@ -1075,11 +1116,9 @@ def handle_callbacks(call):
             bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
             return
         console_mode[user_id] = {'step': 'active'}
-        bot.send_message(user_id, "🖥️ **وارد حالت کنسول شدید!**\n\n📝 حالا هر چیزی بنویسید، به فرمت زیر نمایش داده میشه:\n\n"
-                                   "✅ **کد بخش WorkShop درست شد** ✅\n"
-                                   "📌 **کد ساخت :** (نوشته شما)\n"
-                                   "🏆 **دیدن اپدیت ها** 🏆\n"
-                                   "🎬 **قسمت کد های مدیا** 🏆\n\n"
+        bot.send_message(user_id, "🖥️ **وارد کنسول Hash شدید!**\n\n"
+                                   "📝 هر متنی بنویسید، به صورت Hash (رشته‌ای از اعداد) برایتان نمایش داده می‌شود.\n"
+                                   f"🔓 برای بازگردانی یک متن Hash شده: ابتدا عدد {CONSOLE_DECODE_TRIGGER} را بفرستید، سپس متن Hash شده را ارسال کنید.\n\n"
                                    "❌ برای خروج: /cancel")
         bot.answer_callback_query(call.id, "✅ وارد کنسول شدید")
         return
@@ -1167,6 +1206,40 @@ def handle_callbacks(call):
             return
         founder_panel(call.message)
         bot.answer_callback_query(call.id)
+        return
+    
+    # ========== تاگل Antivirus (روشن/خاموش) ==========
+    if data == "founder_antivirus_toggle":
+        if not is_founder(user_id):
+            bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
+            return
+        antivirus_enabled = not antivirus_enabled
+        save_antivirus()
+        status_text = "🟢 روشن" if antivirus_enabled else "🔴 خاموش"
+        
+        markup = telebot.types.InlineKeyboardMarkup(row_width=2)
+        btn1 = telebot.types.InlineKeyboardButton("📰 ارسال خبر", callback_data="founder_news")
+        btn2 = telebot.types.InlineKeyboardButton("📢 ارسال تبلیغ", callback_data="founder_ad")
+        btn3 = telebot.types.InlineKeyboardButton("🗑️ حذف خبر", callback_data="founder_delete_news")
+        btn4 = telebot.types.InlineKeyboardButton("🗑️ حذف تبلیغ", callback_data="founder_delete_ad")
+        btn5 = telebot.types.InlineKeyboardButton("💰 مدیریت حمایت‌ها", callback_data="founder_donate")
+        btn6 = telebot.types.InlineKeyboardButton("🤝 مدیریت اتحادها", callback_data="founder_clans")
+        btn7 = telebot.types.InlineKeyboardButton("⛔ مدیریت محرومیت", callback_data="founder_bans")
+        btn8 = telebot.types.InlineKeyboardButton("👑 مدیریت ادمین‌ها", callback_data="founder_admins")
+        btn9 = telebot.types.InlineKeyboardButton("🔄 آپدیت بات", callback_data="founder_update")
+        btn10 = telebot.types.InlineKeyboardButton("📊 گزارش بات", callback_data="founder_botup")
+        btn11 = telebot.types.InlineKeyboardButton("📢 ارسال به همه", callback_data="founder_broadcast")
+        btn12 = telebot.types.InlineKeyboardButton("🖥️ کنسول", callback_data="founder_console")
+        btn13 = telebot.types.InlineKeyboardButton("🎬 مدیریت Media", callback_data="founder_media")
+        btn14 = telebot.types.InlineKeyboardButton("📋 لیست کاربران", callback_data="founder_all_users")
+        btn15 = telebot.types.InlineKeyboardButton(f"🛡 Antivirus ({status_text})", callback_data="founder_antivirus_toggle")
+        markup.add(btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8, btn9, btn10, btn11, btn12, btn13, btn14, btn15)
+        
+        try:
+            bot.edit_message_reply_markup(user_id, call.message.message_id, reply_markup=markup)
+        except:
+            pass
+        bot.answer_callback_query(call.id, f"🛡 Antivirus اکنون {status_text} است")
         return
     
     # ========== پنل سازنده ==========
@@ -1309,7 +1382,9 @@ def handle_callbacks(call):
         if not is_owner(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
             return
+        av_status = "🟢 روشن" if antivirus_enabled else "🔴 خاموش"
         response = "📋 ليست ادمين ها:\n\n"
+        response += f"🛡 نگهبان : GP-GUARD ( {av_status} )\n\n"
         response += "👑 بنیانگذار: Founder\n"
         response += "👑 سازنده: Owner\n"
         if admins:
@@ -1361,14 +1436,9 @@ def handle_callbacks(call):
         if not is_owner(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
             return
-        console_mode[user_id] = {'step': 'active'}
-        bot.send_message(user_id, "🖥️ **وارد حالت کنسول شدید!**\n\n📝 حالا هر چیزی بنویسید، به فرمت زیر نمایش داده میشه:\n\n"
-                                   "✅ **کد بخش WorkShop درست شد** ✅\n"
-                                   "📌 **کد ساخت :** (نوشته شما)\n"
-                                   "🏆 **دیدن اپدیت ها** 🏆\n"
-                                   "🎬 **قسمت کد های مدیا** 🏆\n\n"
-                                   "❌ برای خروج: /cancel")
-        bot.answer_callback_query(call.id, "✅ وارد کنسول شدید")
+        console_mode[user_id] = {'step': 'waiting_code'}
+        bot.send_message(user_id, "🔒 برای ورود به کنسول، لطفاً کد دسترسی را وارد کنید:\n❌ برای خروج: /cancel")
+        bot.answer_callback_query(call.id, "🔒 کد دسترسی را وارد کنید")
         return
     
     if data == "owner_media":
@@ -1603,7 +1673,9 @@ def handle_callbacks(call):
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
             return
+        av_status = "🟢 روشن" if antivirus_enabled else "🔴 خاموش"
         response = "👑 تیم مدیریتی:\n\n"
+        response += f"🛡 نگهبان : GP-GUARD ( {av_status} )\n\n"
         response += "👑 بنیانگذار: Founder\n"
         response += "👑 سازنده: Owner\n"
         if admins:
@@ -2296,7 +2368,6 @@ def show_perms(msg):
     response += "  ✅ /open\n"
     response += "  ✅ /a\n"
     response += "  ✅ /cc\n"
-    response += "  ✅ /ac\n"
     response += "  ✅ /cmds\n"
     response += "  ❌ /ma\n"
     response += "  ❌ /kickadmin\n"
@@ -2750,19 +2821,46 @@ def ticket(msg):
 def handle_messages(msg):
     user_id = msg.from_user.id
     
-    if user_id in console_mode and console_mode[user_id].get('step') == 'active':
-        user_input = msg.text
-        response = f"""
-🖥️ **خروجی کنسول:**
-
-✅ **کد بخش WorkShop درست شد** ✅
-📌 **کد ساخت :** `{user_input}`
-🏆 **دیدن اپدیت ها** 🏆
-🎬 **قسمت کد های مدیا** 🏆
-"""
-        bot.reply_to(msg, response)
-        return
+    # ========== حالت کنسول Hash ==========
+    if user_id in console_mode:
+        step = console_mode[user_id].get('step')
+        
+        # مرحله ورود کد دسترسی (فقط سازنده باید این کد را وارد کند)
+        if step == 'waiting_code':
+            entered_code = (msg.text or "").strip()
+            if entered_code == CONSOLE_ACCESS_CODE:
+                console_mode[user_id] = {'step': 'active'}
+                bot.reply_to(msg, "✅ کد صحیح بود! وارد کنسول Hash شدید.\n\n"
+                                   "📝 هر متنی بنویسید، به صورت Hash نمایش داده می‌شود.\n"
+                                   f"🔓 برای بازگردانی: ابتدا عدد {CONSOLE_DECODE_TRIGGER} را بفرستید، سپس متن Hash شده را ارسال کنید.\n\n"
+                                   "❌ برای خروج: /cancel")
+            else:
+                bot.reply_to(msg, "❌ کد اشتباه است!\nلطفاً دوباره تلاش کنید یا برای خروج /cancel را بزنید.")
+            return
+        
+        # حالت فعال کنسول: Hash کردن یا رفتن به حالت بازگردانی
+        if step == 'active':
+            text_in = msg.text or ""
+            if text_in.strip() == CONSOLE_DECODE_TRIGGER:
+                console_mode[user_id]['step'] = 'waiting_decode'
+                bot.reply_to(msg, "🔓 حالا متن Hash شده را ارسال کنید تا برایتان بازگردانده شود:")
+                return
+            hashed = hash_text(text_in)
+            bot.reply_to(msg, f"🔐 **متن Hash شده:**\n`{hashed}`")
+            return
+        
+        # حالت بازگردانی از Hash
+        if step == 'waiting_decode':
+            text_in = msg.text or ""
+            decoded = unhash_text(text_in)
+            console_mode[user_id]['step'] = 'active'
+            if decoded is not None:
+                bot.reply_to(msg, f"🔓 **متن بازگردانی‌شده:**\n{decoded}")
+            else:
+                bot.reply_to(msg, "❌ فرمت Hash نامعتبر است! دوباره تلاش کنید.")
+            return
     
+    # ========== آپلود مدیا ==========
     if user_id in upload_mode:
         media_type = upload_mode[user_id]
         if media_type == 'photo' and msg.content_type == 'photo':
@@ -2805,6 +2903,7 @@ def handle_messages(msg):
             bot.reply_to(msg, f"❌ لطفاً یک {media_type} معتبر ارسال کنید!")
             return
     
+    # ========== ارسال به همه ==========
     if user_id in broadcast_mode and broadcast_mode[user_id]:
         all_users = set()
         for user_id_temp in waiting_for_message.keys():
@@ -2839,6 +2938,7 @@ def handle_messages(msg):
     if is_banned(user_id):
         return
     
+    # ========== تیکت ==========
     if user_id in waiting_for_message and waiting_for_message[user_id] == 'ticket':
         global ticket_counter
         if is_admin(user_id):
@@ -2877,6 +2977,7 @@ def handle_messages(msg):
         bot.reply_to(msg, "✅ پيام شما ارسال شد. منتظر پاسخ ادمین باشید.")
         return
     
+    # ========== RPS ==========
     if user_id in rps_password_temp and rps_password_temp[user_id].get('step') == 'waiting_password':
         password = msg.text
         game_id = create_game(user_id)
@@ -2947,6 +3048,7 @@ def handle_messages(msg):
         start_ttt_game(game_id)
         return
     
+    # ========== ساخت کلن ==========
     if user_id in creating_clan:
         clan_name = creating_clan[user_id]['clan_name']
         description = msg.text
@@ -2966,6 +3068,7 @@ def handle_messages(msg):
             bot.reply_to(msg, f"❌ خطا در ارسال پیام: {e}")
         return
     
+    # ========== خبر و تبلیغ ==========
     if user_id in news_mode and news_mode[user_id]:
         global news_counter
         news_counter += 1
@@ -2984,6 +3087,7 @@ def handle_messages(msg):
         ad_mode[user_id] = False
         return
     
+    # ========== ادمین (حالت چت خودکار) ==========
     if is_admin(user_id):
         if user_id in admin_chat_mode and admin_chat_mode[user_id]:
             if not msg.text.startswith('/'):
@@ -3008,6 +3112,7 @@ def handle_messages(msg):
                 bot.reply_to(msg, "👋 سلام ادمین عزیز!\nلطفاً برای ورود به پنل مدیریت، دستور زیر را بزنید:\n/apanel")
             return
     
+    # ========== چت کاربر ==========
     if user_id in waiting_for_message and waiting_for_message[user_id] == True:
         if user_id != FOUNDER_ID and user_id != OWNER2_ID and user_id in chat_sessions and chat_sessions[user_id] == 'open':
             bot.send_message(FOUNDER_ID, f"💬 از کاربر:\n👤 نام: {msg.from_user.first_name} [آیدی: {user_id}]\n📝 پیام: {msg.text}")
