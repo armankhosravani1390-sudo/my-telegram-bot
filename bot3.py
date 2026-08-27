@@ -13,6 +13,22 @@ FOUNDER_ID = 6703121829
 OWNER2_ID = 6328427378
 FOUNDER_NAME = "꧁ I R A N ꧂"
 
+# ========== تنظیمات گروه بک‌آپ ==========
+# بعد از اینکه بات رو به گروه اضافه کردی، توی هر تاپیک /getgroupid بزن
+# و عدد thread_id رو اینجا جایگزین کن
+GROUP_ID = None  # مثال: -1001234567890
+TOPIC_IDS = {
+    'admins':    None,  # تاپیک ادمین‌ها
+    'clans':     None,  # تاپیک کلن‌ها
+    'news':      None,  # تاپیک اخبار
+    'ads':       None,  # تاپیک تبلیغات
+    'donate':    None,  # تاپیک حمایت‌ها
+    'tickets':   None,  # تاپیک تیکت‌ها
+    'games':     None,  # تاپیک بازی‌ها
+    'media':     None,  # تاپیک مدیا (عکس، فیلم، آهنگ)
+    'banned':    None,  # تاپیک محروم‌شده‌ها
+}
+
 REQUIRED_CHANNELS = [
     {"name": "@VoltaRolePlay", "link": "https://t.me/VoltaRolePlay"},
     {"name": "@X4NeZuKO", "link": "https://t.me/X4NeZuKO"}
@@ -84,10 +100,9 @@ USERS_FILE = 'users.json'
 MEDIA_FILE = 'media.json'
 ANTIVIRUS_FILE = 'antivirus.json'
 
-# ========== تنظیمات کنسول Hash ==========
-CONSOLE_ACCESS_CODE = "1390"   # کد ورود سازنده به کنسول (هرگز نمایش داده نمی‌شود)
-CONSOLE_DECODE_TRIGGER = "1360"  # کد فعال‌سازی حالت بازگردانی از Hash
-HASH_OFFSET = 133  # افست مخفی برای تبدیل حروف به عدد
+CONSOLE_ACCESS_CODE = "1390"
+CONSOLE_DECODE_TRIGGER = "1360"
+HASH_OFFSET = 133
 
 antivirus_enabled = True
 
@@ -308,9 +323,7 @@ def save_antivirus():
     with open(ANTIVIRUS_FILE, 'w') as f:
         json.dump({'enabled': antivirus_enabled}, f)
 
-# ========== توابع Hash کنسول ==========
 def hash_text(text):
-    # هر حرف را به کد یونیکد + آفست تبدیل کرده و با خط تیره جدا می‌کند
     return '-'.join(str(ord(ch) + HASH_OFFSET) for ch in text)
 
 def unhash_text(hashed):
@@ -321,6 +334,166 @@ def unhash_text(hashed):
         return ''.join(chr(int(p) - HASH_OFFSET) for p in parts)
     except:
         return None
+
+# ========== تابع ارسال گزارش به گروه ==========
+def send_backup_to_group(sender_id):
+    if not GROUP_ID:
+        bot.send_message(sender_id, "⚠️ GROUP_ID هنوز تنظیم نشده!\nابتدا بات رو به گروه اضافه کن، توی هر تاپیک /getgroupid بزن و مقادیر رو توی کد پر کن.")
+        return
+
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    def send_to_topic(topic_key, text, parse_mode=None):
+        thread_id = TOPIC_IDS.get(topic_key)
+        try:
+            if thread_id:
+                bot.send_message(GROUP_ID, text, message_thread_id=thread_id, parse_mode=parse_mode)
+            else:
+                bot.send_message(GROUP_ID, f"[{topic_key}]\n{text}", parse_mode=parse_mode)
+        except Exception as e:
+            bot.send_message(sender_id, f"❌ خطا در ارسال به تاپیک {topic_key}: {e}")
+
+    # ادمین‌ها
+    admin_text = f"👑 لیست ادمین‌ها — {now}\n{'━'*25}\n"
+    for admin_id, role in admins.items():
+        num = admin_numbers.get(admin_id, role)
+        admin_text += f"🆔 {admin_id} | {num}\n"
+    send_to_topic('admins', admin_text)
+
+    # محروم‌شده‌ها
+    banned_text = f"⛔ کاربران محروم — {now}\n{'━'*25}\n"
+    if banned_users:
+        for bid in banned_users:
+            banned_text += f"🆔 {bid}\n"
+    else:
+        banned_text += "هیچ کاربری محروم نیست.\n"
+    send_to_topic('banned', banned_text)
+
+    # کلن‌ها
+    clan_text = f"🤝 اتحادها — {now}\n{'━'*25}\n"
+    if clans:
+        for cname, cdata in clans.items():
+            clan_text += f"\n📌 نام: {cname}\n"
+            clan_text += f"📋 توضیحات:\n{cdata['description']}\n"
+            clan_text += f"👑 سازنده: {cdata['creator']}\n"
+            clan_text += "─"*20 + "\n"
+    else:
+        clan_text += "هیچ اتحادی وجود ندارد.\n"
+    # اگر متن طولانی بود تقسیم کن
+    if len(clan_text) > 4000:
+        parts = [clan_text[i:i+4000] for i in range(0, len(clan_text), 4000)]
+        for part in parts:
+            send_to_topic('clans', part)
+    else:
+        send_to_topic('clans', clan_text)
+
+    # اخبار
+    news_text = f"📰 اخبار — {now}\n{'━'*25}\n"
+    if news_data:
+        for nid, ntext in news_data.items():
+            news_text += f"\n🔹 News {nid}:\n{ntext}\n" + "─"*20 + "\n"
+    else:
+        news_text += "هیچ خبری وجود ندارد.\n"
+    if len(news_text) > 4000:
+        parts = [news_text[i:i+4000] for i in range(0, len(news_text), 4000)]
+        for part in parts:
+            send_to_topic('news', part)
+    else:
+        send_to_topic('news', news_text)
+
+    # تبلیغات
+    ad_text = f"📢 تبلیغات — {now}\n{'━'*25}\n"
+    if ad_data:
+        for aid, atext in ad_data.items():
+            ad_text += f"\n🔸 Ad {aid}:\n{atext}\n" + "─"*20 + "\n"
+    else:
+        ad_text += "هیچ تبلیغی وجود ندارد.\n"
+    if len(ad_text) > 4000:
+        parts = [ad_text[i:i+4000] for i in range(0, len(ad_text), 4000)]
+        for part in parts:
+            send_to_topic('ads', part)
+    else:
+        send_to_topic('ads', ad_text)
+
+    # حمایت‌ها
+    donate_text = f"💰 حمایت‌ها — {now}\n{'━'*25}\n"
+    if donate_data:
+        for item in donate_data:
+            donate_text += f"🏅 رتبه {item['rank']}: {item['name']} — {item['amount']} T\n"
+    else:
+        donate_text += "هیچ حمایتی ثبت نشده.\n"
+    send_to_topic('donate', donate_text)
+
+    # تیکت‌ها
+    ticket_text = f"🎫 تیکت‌ها — {now}\n{'━'*25}\n"
+    if tickets:
+        for tnum, tdata in tickets.items():
+            ticket_text += f"\n🎫 شماره {tnum}\n"
+            ticket_text += f"👤 {tdata['first_name']} (@{tdata['username']}) | آیدی: {tdata['user_id']}\n"
+            ticket_text += f"📝 سوال: {tdata['question']}\n" + "─"*20 + "\n"
+    else:
+        ticket_text += "هیچ تیکتی وجود ندارد.\n"
+    if len(ticket_text) > 4000:
+        parts = [ticket_text[i:i+4000] for i in range(0, len(ticket_text), 4000)]
+        for part in parts:
+            send_to_topic('tickets', part)
+    else:
+        send_to_topic('tickets', ticket_text)
+
+    # بازی‌ها
+    game_text = f"🎮 بازی‌ها — {now}\n{'━'*25}\n"
+    game_text += "🪨 سنگ کاغذ قیچی:\n"
+    if games:
+        for gid, gdata in games.items():
+            status = "منتظر حریف" if gdata['status'] == 'waiting' else "در حال بازی"
+            game_text += f"  Game {gid}: {status}\n"
+    else:
+        game_text += "  بازی فعالی وجود ندارد.\n"
+    game_text += "\n❌⭕ Tic Tac Toe:\n"
+    if ttt_games:
+        for gid, gdata in ttt_games.items():
+            status = "منتظر حریف" if gdata['status'] == 'waiting' else "در حال بازی"
+            game_text += f"  Game {gid}: {status}\n"
+    else:
+        game_text += "  بازی فعالی وجود ندارد.\n"
+    send_to_topic('games', game_text)
+
+    # مدیا — متن‌ها
+    media_text = f"🎬 مدیا — {now}\n{'━'*25}\n"
+    media_text += f"📸 عکس‌ها: {len(media_data['photos'])} عدد\n"
+    media_text += f"🎥 فیلم‌ها: {len(media_data['videos'])} عدد\n"
+    media_text += f"🎵 آهنگ‌ها: {len(media_data['audios'])} عدد\n"
+    send_to_topic('media', media_text)
+
+    # مدیا — فایل‌های واقعی
+    thread_id = TOPIC_IDS.get('media')
+    for photo in media_data['photos']:
+        try:
+            if thread_id:
+                bot.send_photo(GROUP_ID, photo['file_id'], caption=f"📸 {photo.get('caption','')}", message_thread_id=thread_id)
+            else:
+                bot.send_photo(GROUP_ID, photo['file_id'], caption=f"📸 {photo.get('caption','')}")
+        except:
+            pass
+    for video in media_data['videos']:
+        try:
+            if thread_id:
+                bot.send_video(GROUP_ID, video['file_id'], caption=f"🎥 {video.get('caption','')}", message_thread_id=thread_id)
+            else:
+                bot.send_video(GROUP_ID, video['file_id'], caption=f"🎥 {video.get('caption','')}")
+        except:
+            pass
+    for audio in media_data['audios']:
+        try:
+            if thread_id:
+                bot.send_audio(GROUP_ID, audio['file_id'], caption=f"🎵 {audio.get('caption','')}", message_thread_id=thread_id)
+            else:
+                bot.send_audio(GROUP_ID, audio['file_id'], caption=f"🎵 {audio.get('caption','')}")
+        except:
+            pass
+
+    bot.send_message(sender_id, "✅ تمام اطلاعات بات با موفقیت به گروه بک‌آپ ارسال شد!")
+
 
 load_data()
 load_admins()
@@ -419,16 +592,13 @@ def start_rps_game(game_id):
     player2 = games[game_id]['player2']
     if not player1 or not player2:
         return
-    
     game_scores[str(player1)] = {'score': 0, 'round': 0, 'game_id': game_id, 'choice': None}
     game_scores[str(player2)] = {'score': 0, 'round': 0, 'game_id': game_id, 'choice': None}
-    
     markup = telebot.types.InlineKeyboardMarkup(row_width=3)
     btn1 = telebot.types.InlineKeyboardButton("🪨 سنگ", callback_data=f"rps_move_{game_id}_سنگ")
     btn2 = telebot.types.InlineKeyboardButton("📄 کاغذ", callback_data=f"rps_move_{game_id}_کاغذ")
     btn3 = telebot.types.InlineKeyboardButton("✂️ قیچی", callback_data=f"rps_move_{game_id}_قیچی")
     markup.add(btn1, btn2, btn3)
-    
     bot.send_message(player1, "🎮 بازی سنگ، کاغذ، قیچی شروع شد!\n📌 اولین کسی که 3 امتیاز بگیره برنده است.\n\n🔰 انتخاب خود را بکنید:", reply_markup=markup)
     bot.send_message(player2, "🎮 بازی سنگ، کاغذ، قیچی شروع شد!\n📌 اولین کسی که 3 امتیاز بگیره برنده است.\n\n🔰 انتخاب خود را بکنید:", reply_markup=markup)
 
@@ -437,20 +607,15 @@ def check_rps_round(game_id):
         return
     player1 = games[game_id]['player1']
     player2 = games[game_id]['player2']
-    
     if str(player1) not in game_scores:
         game_scores[str(player1)] = {'score': 0, 'round': 0, 'game_id': game_id, 'choice': None}
     if str(player2) not in game_scores:
         game_scores[str(player2)] = {'score': 0, 'round': 0, 'game_id': game_id, 'choice': None}
-    
     if game_scores[str(player1)]['choice'] is not None and game_scores[str(player2)]['choice'] is not None:
         choice1 = game_scores[str(player1)]['choice']
         choice2 = game_scores[str(player2)]['choice']
-        
         winner = get_winner(choice1, choice2)
-        
         emoji_map = {'سنگ': '🪨', 'کاغذ': '📄', 'قیچی': '✂️'}
-        
         if winner == 'player1':
             game_scores[str(player1)]['score'] += 1
             bot.send_message(player1, f"✅ شما این دست را بردید! {emoji_map[choice1]} > {emoji_map[choice2]}")
@@ -462,13 +627,10 @@ def check_rps_round(game_id):
         else:
             bot.send_message(player1, f"🤝 مساوی! هر دو {emoji_map[choice1]} زدید!")
             bot.send_message(player2, f"🤝 مساوی! هر دو {emoji_map[choice2]} زدید!")
-        
         game_scores[str(player1)]['choice'] = None
         game_scores[str(player2)]['choice'] = None
-        
         score1 = game_scores[str(player1)]['score']
         score2 = game_scores[str(player2)]['score']
-        
         if score1 >= 3:
             bot.send_message(player1, f"🏆 شما بازی را بردید! تبریک! 🎉\nامتیاز نهایی: شما {score1} - حریف {score2}")
             bot.send_message(player2, f"😔 شما بازی را باختید! دفعه بعد تلاش کن!\nامتیاز نهایی: شما {score2} - حریف {score1}")
@@ -479,17 +641,14 @@ def check_rps_round(game_id):
             bot.send_message(player1, f"😔 شما بازی را باختید! دفعه بعد تلاش کن!\nامتیاز نهایی: شما {score1} - حریف {score2}")
             delete_game(game_id)
             return
-        
         round_num = game_scores[str(player1)]['round'] + 1
         game_scores[str(player1)]['round'] = round_num
         game_scores[str(player2)]['round'] = round_num
-        
         markup = telebot.types.InlineKeyboardMarkup(row_width=3)
         btn1 = telebot.types.InlineKeyboardButton("🪨 سنگ", callback_data=f"rps_move_{game_id}_سنگ")
         btn2 = telebot.types.InlineKeyboardButton("📄 کاغذ", callback_data=f"rps_move_{game_id}_کاغذ")
         btn3 = telebot.types.InlineKeyboardButton("✂️ قیچی", callback_data=f"rps_move_{game_id}_قیچی")
         markup.add(btn1, btn2, btn3)
-        
         bot.send_message(player1, f"🎮 دور {round_num} - امتیاز: شما {score1} - حریف {score2}\nانتخاب خود را بکنید:", reply_markup=markup)
         bot.send_message(player2, f"🎮 دور {round_num} - امتیاز: شما {score2} - حریف {score1}\nانتخاب خود را بکنید:", reply_markup=markup)
 
@@ -542,25 +701,21 @@ def check_ttt_winner(board):
 def get_ttt_board_markup(game_id, user_id):
     board = ttt_games[game_id]['board']
     markup = telebot.types.InlineKeyboardMarkup(row_width=3)
-    
     row1 = []
     for i in range(3):
         btn = telebot.types.InlineKeyboardButton(board[i], callback_data=f"ttt_move_{game_id}_{i}")
         row1.append(btn)
     markup.row(*row1)
-    
     row2 = []
     for i in range(3, 6):
         btn = telebot.types.InlineKeyboardButton(board[i], callback_data=f"ttt_move_{game_id}_{i}")
         row2.append(btn)
     markup.row(*row2)
-    
     row3 = []
     for i in range(6, 9):
         btn = telebot.types.InlineKeyboardButton(board[i], callback_data=f"ttt_move_{game_id}_{i}")
         row3.append(btn)
     markup.row(*row3)
-    
     return markup
 
 def start_ttt_game(game_id):
@@ -570,16 +725,13 @@ def start_ttt_game(game_id):
     player2 = ttt_games[game_id]['player2']
     if not player1 or not player2:
         return
-    
     symbols = ['⭕', '❌']
     random.shuffle(symbols)
     ttt_games[game_id]['player1_symbol'] = symbols[0]
     ttt_games[game_id]['player2_symbol'] = symbols[1]
     ttt_games[game_id]['turn'] = player1
-    
     bot.send_message(player1, f"🎮 بازی Tic Tac Toe شروع شد!\nشکل شما: {symbols[0]}\nشکل حریف: {symbols[1]}\n\nشما اول هستید! ⚡")
     bot.send_message(player2, f"🎮 بازی Tic Tac Toe شروع شد!\nشکل شما: {symbols[1]}\nشکل حریف: {symbols[0]}\n\nحریف اول است! ⚡")
-    
     markup = get_ttt_board_markup(game_id, player1)
     bot.send_message(player1, "باید یکی از این دکمه‌ها را انتخاب کنید تا انتخاب شما ثبت شود ⚡", reply_markup=markup)
     bot.send_message(player2, "منتظر حرکت حریف باشید... ⏳")
@@ -596,14 +748,12 @@ def is_user_in_channels(user_id):
 
 def check_and_ask_join(user_id, message=None):
     is_member, channel_name, channel_link = is_user_in_channels(user_id)
-    
     if is_founder(user_id) or is_owner(user_id):
         markup = telebot.types.InlineKeyboardMarkup(row_width=2)
         btn1 = telebot.types.InlineKeyboardButton("📢 عضویت", url=REQUIRED_CHANNELS[0]["link"])
         btn2 = telebot.types.InlineKeyboardButton("📢 عضویت", url=REQUIRED_CHANNELS[1]["link"])
         btn3 = telebot.types.InlineKeyboardButton("✅ تایید عضویت", callback_data="check_membership_owner")
         markup.add(btn1, btn2, btn3)
-        
         bot.send_message(
             user_id,
             f"🔰 لطفاً برای استفاده از بات، در هر دو کانال زیر عضو شوید:\n\n"
@@ -613,16 +763,13 @@ def check_and_ask_join(user_id, message=None):
             reply_markup=markup
         )
         return False
-    
     if is_member:
         return True
-    
     markup = telebot.types.InlineKeyboardMarkup(row_width=2)
     btn1 = telebot.types.InlineKeyboardButton("📢 عضویت", url=REQUIRED_CHANNELS[0]["link"])
     btn2 = telebot.types.InlineKeyboardButton("📢 عضویت", url=REQUIRED_CHANNELS[1]["link"])
     btn3 = telebot.types.InlineKeyboardButton("✅ تایید عضویت", callback_data="check_membership")
     markup.add(btn1, btn2, btn3)
-    
     bot.send_message(
         user_id,
         f"🔰 لطفاً برای استفاده از بات، در هر دو کانال زیر عضو شوید:\n\n"
@@ -637,10 +784,8 @@ def send_all_users_list(user_id):
     if not is_founder(user_id) and not is_owner(user_id):
         bot.send_message(user_id, "⛔ شما دسترسی ندارید!")
         return
-    
     response = "📋 لیست همه کاربران بات:\n\n"
     response += "━━━━━━━━━━━━━━━━━━━━\n"
-    
     for admin_id in admins:
         try:
             user_info = bot.get_chat(int(admin_id))
@@ -654,7 +799,6 @@ def send_all_users_list(user_id):
             response += "━━━━━━━━━━━━━━━━━━━━\n"
         except:
             pass
-    
     for user_id_temp in all_users_data:
         if str(user_id_temp) not in admins:
             try:
@@ -668,7 +812,6 @@ def send_all_users_list(user_id):
                 response += "━━━━━━━━━━━━━━━━━━━━\n"
             except:
                 pass
-    
     if len(response) > 4000:
         parts = [response[i:i+4000] for i in range(0, len(response), 4000)]
         for part in parts:
@@ -679,42 +822,53 @@ def send_all_users_list(user_id):
 @bot.message_handler(commands=['cancel'])
 def cancel_mode(msg):
     user_id = msg.from_user.id
-    
     canceled = False
-    
     if user_id in news_mode and news_mode[user_id]:
         news_mode[user_id] = False
         canceled = True
-    
     if user_id in ad_mode and ad_mode[user_id]:
         ad_mode[user_id] = False
         canceled = True
-    
     if user_id in broadcast_mode and broadcast_mode[user_id]:
         del broadcast_mode[user_id]
         canceled = True
-    
     if user_id in console_mode and console_mode[user_id]:
         del console_mode[user_id]
         canceled = True
-    
     if user_id in upload_mode:
         del upload_mode[user_id]
         canceled = True
-    
     if user_id in admin_chat_mode and admin_chat_mode[user_id]:
         admin_chat_mode[user_id] = False
         canceled = True
-    
     if canceled:
         bot.reply_to(msg, "✅ شما از حالت خارج شدید!")
     else:
         bot.reply_to(msg, "ℹ️ شما در هیچ حالتی نیستید!")
 
+# ========== دستور جدید: گرفتن chat_id و thread_id گروه ==========
+@bot.message_handler(commands=['getgroupid'])
+def get_group_id(msg):
+    user_id = msg.from_user.id
+    if not is_founder(user_id) and not is_owner(user_id):
+        return
+    chat = msg.chat
+    thread_id = msg.message_thread_id if msg.is_topic_message else None
+    response = f"📊 اطلاعات چت:\n\n"
+    response += f"🆔 chat_id: `{chat.id}`\n"
+    response += f"📝 نوع: {chat.type}\n"
+    if chat.title:
+        response += f"📌 نام: {chat.title}\n"
+    if thread_id:
+        response += f"🧵 thread_id (تاپیک فعلی): `{thread_id}`\n"
+    else:
+        response += f"🧵 thread_id: این پیام توی تاپیک نیست (یا گروه Topic نداره)\n"
+    response += f"\n📌 این مقادیر رو توی کد توی GROUP_ID و TOPIC_IDS پر کن."
+    bot.reply_to(msg, response, parse_mode='Markdown')
+
 @bot.message_handler(commands=['start'])
 def start(msg):
     user_id = msg.from_user.id
-    
     if str(user_id) not in all_users_data:
         all_users_data[str(user_id)] = {
             'first_name': msg.from_user.first_name or 'ناشناس',
@@ -722,31 +876,25 @@ def start(msg):
             'joined_date': str(datetime.now())
         }
         save_users()
-    
     if is_banned(user_id):
         bot.reply_to(msg, "⛔ *** [ Ban.System ] : شما از بات محروم شدید ***")
         return
-    
     if not check_and_ask_join(user_id, msg):
         return
-    
     markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
     btn1 = telebot.types.KeyboardButton("🏠 پنل اصلی")
     btn2 = telebot.types.KeyboardButton("🎮 بازی ها")
     btn3 = telebot.types.KeyboardButton("🎫 تیکت جدید")
     btn4 = telebot.types.KeyboardButton("🚪 خروج از چت")
     markup.add(btn1, btn2, btn3, btn4)
-    
     bot.reply_to(msg, "🔰 سلام! به بات خوش آمدید!\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=markup)
 
-# ========== پنل بنیانگذار ==========
 @bot.message_handler(commands=['fpanel'])
 def founder_panel(msg):
     user_id = msg.from_user.id
     if not is_founder(user_id):
         bot.reply_to(msg, "⛔ فقط بنیانگذار دسترسی دارد!")
         return
-    
     markup = telebot.types.InlineKeyboardMarkup(row_width=2)
     btn1 = telebot.types.InlineKeyboardButton("📰 ارسال خبر", callback_data="founder_news")
     btn2 = telebot.types.InlineKeyboardButton("📢 ارسال تبلیغ", callback_data="founder_ad")
@@ -765,17 +913,14 @@ def founder_panel(msg):
     av_status = "🟢 روشن" if antivirus_enabled else "🔴 خاموش"
     btn15 = telebot.types.InlineKeyboardButton(f"🛡 Antivirus ({av_status})", callback_data="founder_antivirus_toggle")
     markup.add(btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8, btn9, btn10, btn11, btn12, btn13, btn14, btn15)
-    
     bot.reply_to(msg, "👑 پنل مدیریت بنیانگذار:\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=markup)
 
-# ========== پنل سازنده ==========
 @bot.message_handler(commands=['opanel'])
 def owner_panel(msg):
     user_id = msg.from_user.id
     if not is_owner(user_id):
         bot.reply_to(msg, "⛔ فقط سازنده دسترسی دارد!")
         return
-    
     markup = telebot.types.InlineKeyboardMarkup(row_width=2)
     btn1 = telebot.types.InlineKeyboardButton("📰 ارسال خبر", callback_data="owner_news")
     btn2 = telebot.types.InlineKeyboardButton("📢 ارسال تبلیغ", callback_data="owner_ad")
@@ -792,27 +937,22 @@ def owner_panel(msg):
     btn13 = telebot.types.InlineKeyboardButton("🎬 مدیریت Media", callback_data="owner_media")
     btn14 = telebot.types.InlineKeyboardButton("📋 لیست کاربران", callback_data="owner_all_users")
     markup.add(btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8, btn9, btn10, btn11, btn12, btn13, btn14)
-    
     bot.reply_to(msg, "👑 پنل مدیریت سازنده:\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=markup)
 
-# ========== پنل ادمین (با دکمه لیست تیکت‌ها) ==========
 @bot.message_handler(commands=['apanel'])
 def admin_panel(msg):
     user_id = msg.from_user.id
     if not is_admin(user_id):
         bot.reply_to(msg, "⛔ شما دسترسی ادمین ندارید!")
         return
-    
     if is_banned(user_id):
         bot.reply_to(msg, "⛔ *** [ Ban.System ] : شما از بات محروم شدید ***")
         return
-    
     markup = telebot.types.InlineKeyboardMarkup(row_width=2)
     btn1 = telebot.types.InlineKeyboardButton("🎫 لیست تیکت‌ها", callback_data="admin_tickets")
     btn2 = telebot.types.InlineKeyboardButton("💬 چت ادمین‌ها", url="https://t.me/+W0cz_z1Zjko2MjRk")
     btn3 = telebot.types.InlineKeyboardButton("🔙 بازگشت", callback_data="admin_back_to_main")
     markup.add(btn1, btn2, btn3)
-    
     bot.reply_to(msg, "⚙️ پنل مدیریت ادمین:\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=markup)
 
 @bot.message_handler(func=lambda m: m.text == "🏠 پنل اصلی")
@@ -821,7 +961,6 @@ def user_panel(msg):
     if is_banned(user_id):
         bot.reply_to(msg, "⛔ *** [ Ban.System ] : شما از بات محروم شدید ***")
         return
-    
     markup = telebot.types.InlineKeyboardMarkup(row_width=2)
     btn1 = telebot.types.InlineKeyboardButton("📰 اخبار", callback_data="user_news")
     btn2 = telebot.types.InlineKeyboardButton("📢 تبلیغات", callback_data="user_ads")
@@ -842,7 +981,6 @@ def games_menu(msg):
     if is_banned(user_id):
         bot.reply_to(msg, "⛔ *** [ Ban.System ] : شما از بات محروم شدید ***")
         return
-    
     markup = telebot.types.InlineKeyboardMarkup(row_width=1)
     btn1 = telebot.types.InlineKeyboardButton("🪨 سنگ، کاغذ، قیچی", callback_data="game_rps")
     btn2 = telebot.types.InlineKeyboardButton("❌⭕ Tic Tac Toe", callback_data="game_ttt")
@@ -857,16 +995,14 @@ def new_ticket(msg):
     if is_banned(user_id):
         bot.reply_to(msg, "⛔ *** [ Ban.System ] : شما از بات محروم شدید ***")
         return
-    
     if is_admin(user_id):
         bot.reply_to(msg, "⛔ شما ادمین هستید و نمی توانید تیکت بزنید")
         return
-    
     bot.reply_to(msg, "📝 لطفاً سوال یا مشکل خود را به صورت متن ارسال کنید تا تیکت شما ثبت شود.")
     waiting_for_message[user_id] = 'ticket'
 
 @bot.message_handler(func=lambda m: m.text == "🚪 خروج از چت")
-def close_chat(msg):
+def close_chat_btn(msg):
     user_id = msg.from_user.id
     if is_banned(user_id):
         bot.reply_to(msg, "⛔ *** [ Ban.System ] : شما از بات محروم شدید ***")
@@ -882,13 +1018,11 @@ def handle_callbacks(call):
     global antivirus_enabled
     user_id = call.from_user.id
     data = call.data
-    
-    # ========== عضویت ==========
+
     if data == "check_membership":
         if is_founder(user_id) or is_owner(user_id):
             bot.answer_callback_query(call.id, "✅ شما دسترسی کامل دارید!")
             return
-        
         is_member, channel_name, channel_link = is_user_in_channels(user_id)
         if is_member:
             bot.send_message(user_id, "✅ عضویت شما در هر دو کانال تایید شد! حالا می‌توانید از بات استفاده کنید.")
@@ -904,12 +1038,11 @@ def handle_callbacks(call):
             bot.answer_callback_query(call.id, "❌ شما هنوز در یکی از کانال‌ها عضو نشده‌اید!")
             bot.send_message(user_id, f"❌ شما هنوز در کانال {channel_name} عضو نشده‌اید!\nلطفاً ابتدا عضو شوید و سپس روی دکمه تایید کلیک کنید.")
         return
-    
+
     if data == "check_membership_owner":
         if not is_founder(user_id) and not is_owner(user_id):
             bot.answer_callback_query(call.id, "⛔ شما دسترسی ندارید!")
             return
-        
         bot.send_message(user_id, "✅ دسترسی شما تایید شد! خوش آمدید.")
         bot.answer_callback_query(call.id, "✅ تایید شد")
         markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
@@ -920,7 +1053,7 @@ def handle_callbacks(call):
         markup.add(btn1, btn2, btn3, btn4)
         bot.send_message(user_id, "🔰 به بات خوش آمدید!\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=markup)
         return
-    
+
     # ========== پنل بنیانگذار ==========
     if data == "founder_news":
         if not is_founder(user_id):
@@ -930,7 +1063,7 @@ def handle_callbacks(call):
         news_mode[user_id] = True
         bot.answer_callback_query(call.id, "✅ لطفاً خبر را بفرستید")
         return
-    
+
     if data == "founder_ad":
         if not is_founder(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
@@ -939,7 +1072,7 @@ def handle_callbacks(call):
         ad_mode[user_id] = True
         bot.answer_callback_query(call.id, "✅ لطفاً تبلیغ را بفرستید")
         return
-    
+
     if data == "founder_delete_news":
         if not is_founder(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
@@ -955,7 +1088,7 @@ def handle_callbacks(call):
         bot.send_message(user_id, response)
         bot.answer_callback_query(call.id)
         return
-    
+
     if data == "founder_delete_ad":
         if not is_founder(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
@@ -971,7 +1104,7 @@ def handle_callbacks(call):
         bot.send_message(user_id, response)
         bot.answer_callback_query(call.id)
         return
-    
+
     if data == "founder_donate":
         if not is_founder(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
@@ -986,7 +1119,7 @@ def handle_callbacks(call):
         bot.send_message(user_id, "📌 برای اضافه کردن: /donate [نام] [مبلغ]\n📌 برای حذف: /removedonate [نام]")
         bot.answer_callback_query(call.id)
         return
-    
+
     if data == "founder_clans":
         if not is_founder(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
@@ -1000,7 +1133,7 @@ def handle_callbacks(call):
         bot.send_message(user_id, "🤝 مدیریت اتحادها:", reply_markup=markup)
         bot.answer_callback_query(call.id)
         return
-    
+
     if data == "founder_create_clan":
         if not is_founder(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
@@ -1008,7 +1141,7 @@ def handle_callbacks(call):
         bot.send_message(user_id, "📝 لطفاً نام اتحاد را وارد کنید:\n/createclan [نام اتحاد]")
         bot.answer_callback_query(call.id)
         return
-    
+
     if data == "founder_delete_clan":
         if not is_founder(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
@@ -1024,7 +1157,7 @@ def handle_callbacks(call):
         bot.send_message(user_id, response)
         bot.answer_callback_query(call.id)
         return
-    
+
     if data == "founder_list_clans":
         if not is_founder(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
@@ -1041,7 +1174,7 @@ def handle_callbacks(call):
         bot.send_message(user_id, response)
         bot.answer_callback_query(call.id)
         return
-    
+
     if data == "founder_bans":
         if not is_founder(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
@@ -1056,7 +1189,7 @@ def handle_callbacks(call):
         bot.send_message(user_id, "📌 برای محروم کردن: /ban [ایدی]\n📌 برای رفع محرومیت: /unban [ایدی]")
         bot.answer_callback_query(call.id)
         return
-    
+
     if data == "founder_admins":
         if not is_founder(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
@@ -1082,8 +1215,7 @@ def handle_callbacks(call):
         bot.send_message(user_id, "📌 برای اضافه کردن: /ma [ایدی]\n📌 برای حذف: /kickadmin [ایدی]")
         bot.answer_callback_query(call.id)
         return
-    
-    # ========== آپدیت بات (مثل /update) ==========
+
     if data == "founder_update":
         if not is_founder(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
@@ -1091,16 +1223,17 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id, "🔄 در حال آپدیت...")
         update_bot(call.message)
         return
-    
-    # ========== گزارش بات (مثل /botup) ==========
+
+    # ========== گزارش بات (آپدیت‌شده: ارسال به گروه) ==========
     if data == "founder_botup":
         if not is_founder(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
             return
-        bot.answer_callback_query(call.id, "📊 در حال ارسال گزارش...")
+        bot.answer_callback_query(call.id, "📊 در حال ارسال گزارش به گروه...")
         botup(call.message)
+        send_backup_to_group(user_id)
         return
-    
+
     if data == "founder_broadcast":
         if not is_founder(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
@@ -1109,8 +1242,7 @@ def handle_callbacks(call):
         bot.send_message(user_id, "📢 وارد حالت ارسال پیام به همه شدید!\n\n📝 هر پیامی که بفرستید، برای همه کاربران ارسال خواهد شد.\n❌ برای خروج: /cancel")
         bot.answer_callback_query(call.id, "✅ وارد حالت ارسال شدید")
         return
-    
-    # ========== کنسول ==========
+
     if data == "founder_console":
         if not is_founder(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
@@ -1122,7 +1254,7 @@ def handle_callbacks(call):
                                    "❌ برای خروج: /cancel")
         bot.answer_callback_query(call.id, "✅ وارد کنسول شدید")
         return
-    
+
     if data == "founder_media":
         if not is_founder(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
@@ -1137,7 +1269,7 @@ def handle_callbacks(call):
         bot.send_message(user_id, "🎬 مدیریت Media:\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=markup)
         bot.answer_callback_query(call.id)
         return
-    
+
     if data == "founder_upload_photo":
         if not is_founder(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
@@ -1146,7 +1278,7 @@ def handle_callbacks(call):
         bot.send_message(user_id, "📸 لطفاً عکس مورد نظر خود را ارسال کنید:\n❌ برای خروج: /cancel")
         bot.answer_callback_query(call.id, "✅ منتظر عکس هستم")
         return
-    
+
     if data == "founder_upload_video":
         if not is_founder(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
@@ -1155,7 +1287,7 @@ def handle_callbacks(call):
         bot.send_message(user_id, "🎥 لطفاً فیلم مورد نظر خود را ارسال کنید:\n❌ برای خروج: /cancel")
         bot.answer_callback_query(call.id, "✅ منتظر فیلم هستم")
         return
-    
+
     if data == "founder_upload_audio":
         if not is_founder(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
@@ -1164,7 +1296,7 @@ def handle_callbacks(call):
         bot.send_message(user_id, "🎵 لطفاً آهنگ مورد نظر خود را ارسال کنید:\n❌ برای خروج: /cancel")
         bot.answer_callback_query(call.id, "✅ منتظر آهنگ هستم")
         return
-    
+
     if data == "founder_delete_media":
         if not is_founder(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
@@ -1173,7 +1305,6 @@ def handle_callbacks(call):
             bot.send_message(user_id, "📭 هیچ مدیایی برای حذف وجود ندارد.")
             bot.answer_callback_query(call.id)
             return
-        
         response = "🗑️ لیست مدیاها برای حذف:\n\n"
         if media_data['photos']:
             response += "📸 عکس‌ها:\n"
@@ -1191,7 +1322,7 @@ def handle_callbacks(call):
         bot.send_message(user_id, response)
         bot.answer_callback_query(call.id)
         return
-    
+
     if data == "founder_all_users":
         if not is_founder(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
@@ -1199,7 +1330,7 @@ def handle_callbacks(call):
         send_all_users_list(user_id)
         bot.answer_callback_query(call.id)
         return
-    
+
     if data == "founder_back":
         if not is_founder(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
@@ -1207,8 +1338,7 @@ def handle_callbacks(call):
         founder_panel(call.message)
         bot.answer_callback_query(call.id)
         return
-    
-    # ========== تاگل Antivirus (روشن/خاموش) ==========
+
     if data == "founder_antivirus_toggle":
         if not is_founder(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
@@ -1216,7 +1346,6 @@ def handle_callbacks(call):
         antivirus_enabled = not antivirus_enabled
         save_antivirus()
         status_text = "🟢 روشن" if antivirus_enabled else "🔴 خاموش"
-        
         markup = telebot.types.InlineKeyboardMarkup(row_width=2)
         btn1 = telebot.types.InlineKeyboardButton("📰 ارسال خبر", callback_data="founder_news")
         btn2 = telebot.types.InlineKeyboardButton("📢 ارسال تبلیغ", callback_data="founder_ad")
@@ -1234,14 +1363,13 @@ def handle_callbacks(call):
         btn14 = telebot.types.InlineKeyboardButton("📋 لیست کاربران", callback_data="founder_all_users")
         btn15 = telebot.types.InlineKeyboardButton(f"🛡 Antivirus ({status_text})", callback_data="founder_antivirus_toggle")
         markup.add(btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8, btn9, btn10, btn11, btn12, btn13, btn14, btn15)
-        
         try:
             bot.edit_message_reply_markup(user_id, call.message.message_id, reply_markup=markup)
         except:
             pass
         bot.answer_callback_query(call.id, f"🛡 Antivirus اکنون {status_text} است")
         return
-    
+
     # ========== پنل سازنده ==========
     if data == "owner_news":
         if not is_owner(user_id):
@@ -1251,7 +1379,7 @@ def handle_callbacks(call):
         news_mode[user_id] = True
         bot.answer_callback_query(call.id, "✅ لطفاً خبر را بفرستید")
         return
-    
+
     if data == "owner_ad":
         if not is_owner(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
@@ -1260,7 +1388,7 @@ def handle_callbacks(call):
         ad_mode[user_id] = True
         bot.answer_callback_query(call.id, "✅ لطفاً تبلیغ را بفرستید")
         return
-    
+
     if data == "owner_delete_news":
         if not is_owner(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
@@ -1276,7 +1404,7 @@ def handle_callbacks(call):
         bot.send_message(user_id, response)
         bot.answer_callback_query(call.id)
         return
-    
+
     if data == "owner_delete_ad":
         if not is_owner(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
@@ -1292,7 +1420,7 @@ def handle_callbacks(call):
         bot.send_message(user_id, response)
         bot.answer_callback_query(call.id)
         return
-    
+
     if data == "owner_donate":
         if not is_owner(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
@@ -1307,7 +1435,7 @@ def handle_callbacks(call):
         bot.send_message(user_id, "📌 برای اضافه کردن: /donate [نام] [مبلغ]\n📌 برای حذف: /removedonate [نام]")
         bot.answer_callback_query(call.id)
         return
-    
+
     if data == "owner_clans":
         if not is_owner(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
@@ -1321,7 +1449,7 @@ def handle_callbacks(call):
         bot.send_message(user_id, "🤝 مدیریت اتحادها:", reply_markup=markup)
         bot.answer_callback_query(call.id)
         return
-    
+
     if data == "owner_create_clan":
         if not is_owner(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
@@ -1329,7 +1457,7 @@ def handle_callbacks(call):
         bot.send_message(user_id, "📝 لطفاً نام اتحاد را وارد کنید:\n/createclan [نام اتحاد]")
         bot.answer_callback_query(call.id)
         return
-    
+
     if data == "owner_delete_clan":
         if not is_owner(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
@@ -1345,7 +1473,7 @@ def handle_callbacks(call):
         bot.send_message(user_id, response)
         bot.answer_callback_query(call.id)
         return
-    
+
     if data == "owner_list_clans":
         if not is_owner(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
@@ -1362,7 +1490,7 @@ def handle_callbacks(call):
         bot.send_message(user_id, response)
         bot.answer_callback_query(call.id)
         return
-    
+
     if data == "owner_bans":
         if not is_owner(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
@@ -1377,7 +1505,7 @@ def handle_callbacks(call):
         bot.send_message(user_id, "📌 برای محروم کردن: /ban [ایدی]\n📌 برای رفع محرومیت: /unban [ایدی]")
         bot.answer_callback_query(call.id)
         return
-    
+
     if data == "owner_admins":
         if not is_owner(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
@@ -1403,8 +1531,7 @@ def handle_callbacks(call):
         bot.send_message(user_id, "📌 برای اضافه کردن: /ma [ایدی]\n📌 برای حذف: /kickadmin [ایدی]")
         bot.answer_callback_query(call.id)
         return
-    
-    # ========== آپدیت بات (مثل /update) ==========
+
     if data == "owner_update":
         if not is_owner(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
@@ -1412,16 +1539,17 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id, "🔄 در حال آپدیت...")
         update_bot(call.message)
         return
-    
-    # ========== گزارش بات (مثل /botup) ==========
+
+    # ========== گزارش بات سازنده (آپدیت‌شده) ==========
     if data == "owner_botup":
         if not is_owner(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
             return
-        bot.answer_callback_query(call.id, "📊 در حال ارسال گزارش...")
+        bot.answer_callback_query(call.id, "📊 در حال ارسال گزارش به گروه...")
         botup(call.message)
+        send_backup_to_group(user_id)
         return
-    
+
     if data == "owner_broadcast":
         if not is_owner(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
@@ -1430,8 +1558,7 @@ def handle_callbacks(call):
         bot.send_message(user_id, "📢 وارد حالت ارسال پیام به همه شدید!\n\n📝 هر پیامی که بفرستید، برای همه کاربران ارسال خواهد شد.\n❌ برای خروج: /cancel")
         bot.answer_callback_query(call.id, "✅ وارد حالت ارسال شدید")
         return
-    
-    # ========== کنسول ==========
+
     if data == "owner_console":
         if not is_owner(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
@@ -1440,7 +1567,7 @@ def handle_callbacks(call):
         bot.send_message(user_id, "🔒 برای ورود به کنسول، لطفاً کد دسترسی را وارد کنید:\n❌ برای خروج: /cancel")
         bot.answer_callback_query(call.id, "🔒 کد دسترسی را وارد کنید")
         return
-    
+
     if data == "owner_media":
         if not is_owner(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
@@ -1455,7 +1582,7 @@ def handle_callbacks(call):
         bot.send_message(user_id, "🎬 مدیریت Media:\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=markup)
         bot.answer_callback_query(call.id)
         return
-    
+
     if data == "owner_upload_photo":
         if not is_owner(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
@@ -1464,7 +1591,7 @@ def handle_callbacks(call):
         bot.send_message(user_id, "📸 لطفاً عکس مورد نظر خود را ارسال کنید:\n❌ برای خروج: /cancel")
         bot.answer_callback_query(call.id, "✅ منتظر عکس هستم")
         return
-    
+
     if data == "owner_upload_video":
         if not is_owner(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
@@ -1473,7 +1600,7 @@ def handle_callbacks(call):
         bot.send_message(user_id, "🎥 لطفاً فیلم مورد نظر خود را ارسال کنید:\n❌ برای خروج: /cancel")
         bot.answer_callback_query(call.id, "✅ منتظر فیلم هستم")
         return
-    
+
     if data == "owner_upload_audio":
         if not is_owner(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
@@ -1482,7 +1609,7 @@ def handle_callbacks(call):
         bot.send_message(user_id, "🎵 لطفاً آهنگ مورد نظر خود را ارسال کنید:\n❌ برای خروج: /cancel")
         bot.answer_callback_query(call.id, "✅ منتظر آهنگ هستم")
         return
-    
+
     if data == "owner_delete_media":
         if not is_owner(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
@@ -1491,7 +1618,6 @@ def handle_callbacks(call):
             bot.send_message(user_id, "📭 هیچ مدیایی برای حذف وجود ندارد.")
             bot.answer_callback_query(call.id)
             return
-        
         response = "🗑️ لیست مدیاها برای حذف:\n\n"
         if media_data['photos']:
             response += "📸 عکس‌ها:\n"
@@ -1509,7 +1635,7 @@ def handle_callbacks(call):
         bot.send_message(user_id, response)
         bot.answer_callback_query(call.id)
         return
-    
+
     if data == "owner_all_users":
         if not is_owner(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
@@ -1517,7 +1643,7 @@ def handle_callbacks(call):
         send_all_users_list(user_id)
         bot.answer_callback_query(call.id)
         return
-    
+
     if data == "owner_back":
         if not is_owner(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
@@ -1525,9 +1651,8 @@ def handle_callbacks(call):
         owner_panel(call.message)
         bot.answer_callback_query(call.id)
         return
-    
+
     # ========== پنل ادمین ==========
-    # ========== دکمه لیست تیکت‌ها (اصلاح‌شده: از تابع مشترک با آیدی درست ادمین استفاده می‌کند) ==========
     if data == "admin_tickets":
         if not is_admin(user_id):
             bot.answer_callback_query(call.id, "⛔ شما ادمین نیستید!")
@@ -1535,65 +1660,54 @@ def handle_callbacks(call):
         send_tickets_list(user_id)
         bot.answer_callback_query(call.id)
         return
-    
-    # ========== دکمه بازگشت به پنل اصلی ==========
+
     if data == "admin_back_to_main":
         if not is_admin(user_id):
             bot.answer_callback_query(call.id, "⛔ شما ادمین نیستید!")
             return
-        # ارسال منوی اصلی
         markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
         btn1 = telebot.types.KeyboardButton("🏠 پنل اصلی")
         btn2 = telebot.types.KeyboardButton("🎮 بازی ها")
         btn3 = telebot.types.KeyboardButton("🎫 تیکت جدید")
         btn4 = telebot.types.KeyboardButton("🚪 خروج از چت")
         markup.add(btn1, btn2, btn3, btn4)
-        
         if is_admin(user_id):
             btn5 = telebot.types.KeyboardButton("⚙️ پنل مدیریت")
             markup.add(btn5)
-        
         bot.send_message(user_id, "🔰 به پنل اصلی خوش آمدید!\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=markup)
         bot.answer_callback_query(call.id, "✅ بازگشت به پنل اصلی")
         return
-    
-    # ========== قبول تیکت ==========
+
     if data.startswith("accept_ticket_"):
         if not is_admin(user_id):
             bot.answer_callback_query(call.id, "⛔ شما ادمین نیستید!")
             return
-        
         ticket_number = int(data.replace("accept_ticket_", ""))
         if ticket_number not in tickets:
             bot.answer_callback_query(call.id, "❌ تیکت وجود ندارد!")
             return
-        
         user_id_ticket = tickets[ticket_number]['user_id']
         chat_sessions[user_id_ticket] = 'open'
-        
         admin_name = "ادمین"
         try:
             admin_info = bot.get_chat(user_id)
             admin_name = admin_info.first_name or admin_info.username or "ادمین"
         except:
             pass
-        
         bot.send_message(
-            user_id_ticket, 
+            user_id_ticket,
             f"✅ تیکت شما توسط ادمین : {admin_name} باز شد 🎫\n"
             f"📌 برای شروع مکالمه، لطفاً روی دستور زیر کلیک کنید:\n"
             f"/chat"
         )
-        
         bot.send_message(
-            user_id, 
+            user_id,
             f"✅ تیکت {ticket_number} باز شد! شما در حالت چت با کاربر هستید. 💬\n"
             f"📌 برای پایان چت از دستور /cc استفاده کنید."
         )
-        
         bot.answer_callback_query(call.id, "✅ تیکت باز شد")
         return
-    
+
     # ========== پنل کاربری ==========
     if data == "user_news":
         if is_banned(user_id):
@@ -1608,7 +1722,7 @@ def handle_callbacks(call):
             bot.send_message(user_id, "📭 هیچ خبری وجود ندارد.")
         bot.answer_callback_query(call.id)
         return
-    
+
     if data == "user_ads":
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
@@ -1622,7 +1736,7 @@ def handle_callbacks(call):
             bot.send_message(user_id, "📭 هیچ تبلیغی وجود ندارد.")
         bot.answer_callback_query(call.id)
         return
-    
+
     if data == "user_alliances":
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
@@ -1637,7 +1751,7 @@ def handle_callbacks(call):
             bot.send_message(user_id, "🤝 لیست اتحادها:", reply_markup=markup)
         bot.answer_callback_query(call.id)
         return
-    
+
     if data.startswith("clan_"):
         clan_name = data.replace("clan_", "")
         if clan_name in clans:
@@ -1646,7 +1760,7 @@ def handle_callbacks(call):
             bot.send_message(user_id, "❌ این اتحاد وجود ندارد.")
         bot.answer_callback_query(call.id)
         return
-    
+
     if data == "user_channels":
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
@@ -1654,7 +1768,7 @@ def handle_callbacks(call):
         bot.send_message(user_id, "🚧 **Coming Soon ...**\n\n⏳ این بخش به زودی اضافه خواهد شد!\n✨ لطفاً منتظر آپدیت‌های بعدی باشید.")
         bot.answer_callback_query(call.id, "🚧 در حال توسعه")
         return
-    
+
     if data == "user_donate":
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
@@ -1668,7 +1782,7 @@ def handle_callbacks(call):
             bot.send_message(user_id, "💰 هیچ حمایتی ثبت نشده است.")
         bot.answer_callback_query(call.id)
         return
-    
+
     if data == "user_team":
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
@@ -1691,7 +1805,7 @@ def handle_callbacks(call):
         bot.send_message(user_id, response)
         bot.answer_callback_query(call.id)
         return
-    
+
     if data == "user_games":
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
@@ -1699,7 +1813,7 @@ def handle_callbacks(call):
         games_menu(call.message)
         bot.answer_callback_query(call.id)
         return
-    
+
     if data == "user_help":
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
@@ -1712,7 +1826,7 @@ def handle_callbacks(call):
         bot.send_message(user_id, response)
         bot.answer_callback_query(call.id)
         return
-    
+
     if data == "user_new_ticket":
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
@@ -1725,7 +1839,7 @@ def handle_callbacks(call):
         waiting_for_message[user_id] = 'ticket'
         bot.answer_callback_query(call.id, "✅ لطفاً پیام خود را بفرستید")
         return
-    
+
     if data == "user_media":
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
@@ -1739,7 +1853,7 @@ def handle_callbacks(call):
         bot.send_message(user_id, "🎬 Media's:\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=markup)
         bot.answer_callback_query(call.id)
         return
-    
+
     if data == "user_media_photos":
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
@@ -1755,7 +1869,7 @@ def handle_callbacks(call):
                 bot.send_message(user_id, f"❌ خطا در نمایش عکس: {photo.get('id')}")
         bot.answer_callback_query(call.id)
         return
-    
+
     if data == "user_media_videos":
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
@@ -1771,7 +1885,7 @@ def handle_callbacks(call):
                 bot.send_message(user_id, f"❌ خطا در نمایش فیلم: {video.get('id')}")
         bot.answer_callback_query(call.id)
         return
-    
+
     if data == "user_media_audios":
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
@@ -1787,7 +1901,7 @@ def handle_callbacks(call):
                 bot.send_message(user_id, f"❌ خطا در نمایش آهنگ: {audio.get('id')}")
         bot.answer_callback_query(call.id)
         return
-    
+
     if data == "user_media_back":
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
@@ -1795,7 +1909,7 @@ def handle_callbacks(call):
         user_panel(call.message)
         bot.answer_callback_query(call.id)
         return
-    
+
     # ========== بازی‌ها ==========
     if data == "game_rps":
         if is_banned(user_id):
@@ -1814,7 +1928,7 @@ def handle_callbacks(call):
         bot.send_message(user_id, "🎮 بازی سنگ، کاغذ، قیچی\n\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=markup)
         bot.answer_callback_query(call.id)
         return
-    
+
     if data == "game_ttt":
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
@@ -1832,12 +1946,12 @@ def handle_callbacks(call):
         bot.send_message(user_id, "🎮 بازی Tic Tac Toe\n\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=markup)
         bot.answer_callback_query(call.id)
         return
-    
+
     if data == "game_coming_soon":
         bot.answer_callback_query(call.id, "⏳ Coming Soon ...")
         bot.send_message(user_id, "⏳ این بازی به زودی اضافه خواهد شد! ✨")
         return
-    
+
     if data == "back_to_games":
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
@@ -1845,8 +1959,7 @@ def handle_callbacks(call):
         games_menu(call.message)
         bot.answer_callback_query(call.id)
         return
-    
-    # ========== RPS ==========
+
     if data == "create_room_menu":
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
@@ -1862,7 +1975,7 @@ def handle_callbacks(call):
         bot.send_message(user_id, "🔐 آیا می‌خواهید برای اتاق خود رمز بگذارید؟", reply_markup=markup)
         bot.answer_callback_query(call.id)
         return
-    
+
     if data == "create_room_no_pass":
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
@@ -1874,7 +1987,7 @@ def handle_callbacks(call):
         bot.send_message(user_id, f"✅ اتاق سنگ ، کاغذ ، قیچی شما ساخته شد !\n🆔 ایدی اتاق : {game_id}\n🔄 منتظر حریف باشید...")
         bot.answer_callback_query(call.id, "✅ اتاق ساخته شد")
         return
-    
+
     if data == "create_room_with_pass":
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
@@ -1886,7 +1999,7 @@ def handle_callbacks(call):
         bot.send_message(user_id, "🔑 لطفاً رمز مورد نظر خود را وارد کنید:")
         bot.answer_callback_query(call.id, "🔑 لطفاً رمز را وارد کنید")
         return
-    
+
     if data == "show_rooms_menu":
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
@@ -1913,7 +2026,7 @@ def handle_callbacks(call):
             bot.send_message(user_id, "🚪 لیست اتاق‌های خالی:\n\nلطفاً روی اتاق مورد نظر کلیک کنید:", reply_markup=markup)
         bot.answer_callback_query(call.id)
         return
-    
+
     if data.startswith("join_room_"):
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
@@ -1947,7 +2060,7 @@ def handle_callbacks(call):
         start_rps_game(game_id)
         bot.answer_callback_query(call.id, "✅ وارد شدید")
         return
-    
+
     if data == "leave_room_callback":
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
@@ -1978,8 +2091,7 @@ def handle_callbacks(call):
             del game_scores[str(opponent_id)]
         bot.answer_callback_query(call.id, "✅ خارج شدید")
         return
-    
-    # ========== TTT ==========
+
     if data == "ttt_create_room_menu":
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
@@ -1995,7 +2107,7 @@ def handle_callbacks(call):
         bot.send_message(user_id, "🔐 آیا می‌خواهید برای اتاق خود رمز بگذارید؟", reply_markup=markup)
         bot.answer_callback_query(call.id)
         return
-    
+
     if data == "ttt_create_room_no_pass":
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
@@ -2007,7 +2119,7 @@ def handle_callbacks(call):
         bot.send_message(user_id, f"✅ اتاق Tic Tac Toe شما ساخته شد !\n🆔 ایدی اتاق : {game_id}\n🔄 منتظر حریف باشید...")
         bot.answer_callback_query(call.id, "✅ اتاق ساخته شد")
         return
-    
+
     if data == "ttt_create_room_with_pass":
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
@@ -2019,7 +2131,7 @@ def handle_callbacks(call):
         bot.send_message(user_id, "🔑 لطفاً رمز مورد نظر خود را وارد کنید:")
         bot.answer_callback_query(call.id, "🔑 لطفاً رمز را وارد کنید")
         return
-    
+
     if data == "ttt_show_rooms":
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
@@ -2046,7 +2158,7 @@ def handle_callbacks(call):
             bot.send_message(user_id, "🚪 لیست اتاق‌های خالی Tic Tac Toe:\n\nلطفاً روی اتاق مورد نظر کلیک کنید:", reply_markup=markup)
         bot.answer_callback_query(call.id)
         return
-    
+
     if data.startswith("ttt_join_room_"):
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
@@ -2080,7 +2192,7 @@ def handle_callbacks(call):
         start_ttt_game(game_id)
         bot.answer_callback_query(call.id, "✅ وارد شدید")
         return
-    
+
     if data == "ttt_leave_room":
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
@@ -2107,7 +2219,7 @@ def handle_callbacks(call):
                 pass
         bot.answer_callback_query(call.id, "✅ خارج شدید")
         return
-    
+
     if data.startswith("ttt_move_"):
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
@@ -2163,7 +2275,7 @@ def handle_callbacks(call):
         bot.send_message(opponent, "منتظر حرکت حریف باشید... ⏳")
         bot.answer_callback_query(call.id, "✅ حرکت ثبت شد")
         return
-    
+
     if data.startswith("rps_move_"):
         parts = data.split("_")
         game_id = parts[2]
@@ -2183,14 +2295,12 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id, f"✅ انتخاب شما ثبت شد: {choice}")
         check_rps_round(game_id)
         return
-    
-    # ========== اگر دکمه ناشناخته بود ==========
+
     else:
         bot.answer_callback_query(call.id, "❌ این دکمه کار نمی‌کند!")
         bot.send_message(user_id, "❌ این دکمه کار نمی‌کند!\nلطفاً از دکمه‌های دیگر استفاده کنید.")
         return
 
-# ========== ادامه دستورات ==========
 @bot.message_handler(commands=['deletemedia'])
 def delete_media(msg):
     user_id = msg.from_user.id
@@ -2310,9 +2420,7 @@ def botup(msg):
     response += f"  📸 عکس‌ها: {len(media_data['photos'])} عدد\n"
     response += f"  🎥 فیلم‌ها: {len(media_data['videos'])} عدد\n"
     response += f"  🎵 آهنگ‌ها: {len(media_data['audios'])} عدد\n"
-    response += "\n📌 تمام اطلاعات بالا را کپی کنید و برای من بفرستید تا در کد جدید قرار دهم."
     bot.send_message(user_id, response)
-    bot.reply_to(msg, "✅ اطلاعات کامل بات برای شما ارسال شد.")
 
 @bot.message_handler(commands=['update'])
 def update_bot(msg):
@@ -2355,7 +2463,6 @@ def show_perms(msg):
     user_id = msg.from_user.id
     if not is_founder(user_id) and not is_owner(user_id) and not is_admin(user_id):
         return
-    
     response = "📋 جدول دسترسي ها:\n\n"
     response += "👑 بنیانگذار (Founder):\n"
     response += "  ✅ همه دستورات\n"
@@ -2478,23 +2585,19 @@ def unban_user(msg):
     bot.send_message(target_id, "✅ *** [ Ban.System ] : شما از حالت محرومیت خارج شدید ***\n\n🔰 اکنون میتوانید از تمام دستورات بات استفاده کنید.\n📌 برای مشاهده دستورات، دستور /info را بزنید.")
     bot.reply_to(msg, f"✅ کاربر با آیدی {target_id} از محرومیت خارج شد.")
 
-# ========== تابع لیست تیکت‌ها (اصلاح‌شده) ==========
 def send_tickets_list(user_id):
     open_tickets = []
     for ticket_num, ticket_data in tickets.items():
         user_id_ticket = ticket_data['user_id']
         if user_id_ticket not in chat_sessions or chat_sessions[user_id_ticket] != 'open':
             open_tickets.append((ticket_num, ticket_data))
-    
     if not open_tickets:
         bot.send_message(user_id, "📭 هیچ تیکتی وجود ندارد.")
         return
-    
     for ticket_num, data in open_tickets:
         markup = telebot.types.InlineKeyboardMarkup(row_width=1)
         btn_accept = telebot.types.InlineKeyboardButton("✅ قبول تیکت", callback_data=f"accept_ticket_{ticket_num}")
         markup.add(btn_accept)
-        
         response = f"🎫 **شماره تیکت:** {ticket_num}\n"
         response += f"━━━━━━━━━━━━━━━━━━━━\n"
         response += f"👤 **نام:** {data['first_name']}\n"
@@ -2502,7 +2605,6 @@ def send_tickets_list(user_id):
         response += f"🆔 **آیدی:** {data['user_id']}\n"
         response += f"📝 **سوال:**\n{data['question']}\n"
         response += f"━━━━━━━━━━━━━━━━━━━━"
-        
         bot.send_message(user_id, response, reply_markup=markup)
 
 @bot.message_handler(commands=['tickets'])
@@ -2554,20 +2656,16 @@ def admin_chat(msg):
     user_id = msg.from_user.id
     if not is_admin(user_id):
         return
-    
     parts = msg.text.split(maxsplit=1)
     if len(parts) < 2:
         bot.reply_to(msg, "⚠️ لطفاً پیام خود را وارد کنید: /a [پیام]")
         return
-    
     admin_chat_mode[user_id] = True
-    
     found_user = None
     for user_id_chat, status in chat_sessions.items():
         if status == 'open':
             found_user = user_id_chat
             break
-    
     if found_user:
         bot.send_message(found_user, f"⚜ **پاسخ ادمین:**\n{parts[1]}")
         bot.reply_to(msg, f"✅ پیام ارسال شد! شما در حالت چت هستید.\n📌 برای ارسال پیام بعدی، فقط متن را تایپ کنید (نیازی به /a نیست).\n❌ برای خروج: /cancel")
@@ -2595,7 +2693,6 @@ def cmds(msg):
     user_id = msg.from_user.id
     if not is_admin(user_id):
         return
-    
     response = "📋 ليست دستورات ادمين:\n\n"
     response += "📌 /tickets : ليست بليط هاي باز نشده\n"
     response += "📌 /open [شماره] : باز کردن بليط\n"
@@ -2607,6 +2704,7 @@ def cmds(msg):
         response += "📌 /ban [آيدي] : محروم کردن کاربر\n"
         response += "📌 /unban [آيدي] : رفع محروميت کاربر\n"
     response += "📌 /ac : ورود/خروج از چت ادمين ها\n"
+    response += "📌 /getgroupid : گرفتن آیدی گروه و تاپیک (فقط توی گروه)\n"
     bot.reply_to(msg, response)
 
 @bot.message_handler(commands=['cc'])
@@ -2816,16 +2914,12 @@ def ticket(msg):
                 pass
     bot.reply_to(msg, "✅ پيام شما ارسال شد. منتظر پاسخ ادمین باشید.")
 
-# ========== هندلر پیام‌ها ==========
 @bot.message_handler(func=lambda m: True, content_types=['text', 'photo', 'video', 'audio', 'document'])
 def handle_messages(msg):
     user_id = msg.from_user.id
-    
-    # ========== حالت کنسول Hash ==========
+
     if user_id in console_mode:
         step = console_mode[user_id].get('step')
-        
-        # مرحله ورود کد دسترسی (فقط سازنده باید این کد را وارد کند)
         if step == 'waiting_code':
             entered_code = (msg.text or "").strip()
             if entered_code == CONSOLE_ACCESS_CODE:
@@ -2837,8 +2931,6 @@ def handle_messages(msg):
             else:
                 bot.reply_to(msg, "❌ کد اشتباه است!\nلطفاً دوباره تلاش کنید یا برای خروج /cancel را بزنید.")
             return
-        
-        # حالت فعال کنسول: Hash کردن یا رفتن به حالت بازگردانی
         if step == 'active':
             text_in = msg.text or ""
             if text_in.strip() == CONSOLE_DECODE_TRIGGER:
@@ -2848,8 +2940,6 @@ def handle_messages(msg):
             hashed = hash_text(text_in)
             bot.reply_to(msg, f"🔐 **متن Hash شده:**\n`{hashed}`")
             return
-        
-        # حالت بازگردانی از Hash
         if step == 'waiting_decode':
             text_in = msg.text or ""
             decoded = unhash_text(text_in)
@@ -2859,8 +2949,7 @@ def handle_messages(msg):
             else:
                 bot.reply_to(msg, "❌ فرمت Hash نامعتبر است! دوباره تلاش کنید.")
             return
-    
-    # ========== آپلود مدیا ==========
+
     if user_id in upload_mode:
         media_type = upload_mode[user_id]
         if media_type == 'photo' and msg.content_type == 'photo':
@@ -2902,8 +2991,7 @@ def handle_messages(msg):
         else:
             bot.reply_to(msg, f"❌ لطفاً یک {media_type} معتبر ارسال کنید!")
             return
-    
-    # ========== ارسال به همه ==========
+
     if user_id in broadcast_mode and broadcast_mode[user_id]:
         all_users = set()
         for user_id_temp in waiting_for_message.keys():
@@ -2934,11 +3022,10 @@ def handle_messages(msg):
         bot.send_message(user_id, f"✅ پیام شما به {count} کاربر ارسال شد!")
         del broadcast_mode[user_id]
         return
-    
+
     if is_banned(user_id):
         return
-    
-    # ========== تیکت ==========
+
     if user_id in waiting_for_message and waiting_for_message[user_id] == 'ticket':
         global ticket_counter
         if is_admin(user_id):
@@ -2976,8 +3063,7 @@ def handle_messages(msg):
                     pass
         bot.reply_to(msg, "✅ پيام شما ارسال شد. منتظر پاسخ ادمین باشید.")
         return
-    
-    # ========== RPS ==========
+
     if user_id in rps_password_temp and rps_password_temp[user_id].get('step') == 'waiting_password':
         password = msg.text
         game_id = create_game(user_id)
@@ -2986,7 +3072,7 @@ def handle_messages(msg):
         del rps_password_temp[user_id]
         bot.reply_to(msg, f"✅ اتاق سنگ ، کاغذ ، قیچی شما با رمز ساخته شد !\n🆔 ایدی اتاق : {game_id}\n🔑 رمز: {password}\n🔄 منتظر حریف باشید...")
         return
-    
+
     if user_id in ttt_password_temp and ttt_password_temp[user_id].get('step') == 'waiting_password':
         password = msg.text
         game_id = create_ttt_game(user_id)
@@ -2995,7 +3081,7 @@ def handle_messages(msg):
         del ttt_password_temp[user_id]
         bot.reply_to(msg, f"✅ اتاق Tic Tac Toe شما با رمز ساخته شد !\n🆔 ایدی اتاق : {game_id}\n🔑 رمز: {password}\n🔄 منتظر حریف باشید...")
         return
-    
+
     if user_id in rps_join_temp and rps_join_temp[user_id].get('step') == 'waiting_password':
         password = msg.text
         game_id = rps_join_temp[user_id]['game_id']
@@ -3021,7 +3107,7 @@ def handle_messages(msg):
         bot.send_message(games[game_id]['player1'], f"✅ حریف شما به اتاق {game_id} ملحق شد!")
         start_rps_game(game_id)
         return
-    
+
     if user_id in ttt_join_temp and ttt_join_temp[user_id].get('step') == 'waiting_password':
         password = msg.text
         game_id = ttt_join_temp[user_id]['game_id']
@@ -3047,8 +3133,7 @@ def handle_messages(msg):
         bot.send_message(ttt_games[game_id]['player1'], f"✅ حریف شما به اتاق {game_id} ملحق شد!")
         start_ttt_game(game_id)
         return
-    
-    # ========== ساخت کلن ==========
+
     if user_id in creating_clan:
         clan_name = creating_clan[user_id]['clan_name']
         description = msg.text
@@ -3057,7 +3142,7 @@ def handle_messages(msg):
         del creating_clan[user_id]
         bot.reply_to(msg, f"✅ کلن «{clan_name}» با موفقیت ایجاد شد.\n📋 توضیحات: {description}")
         return
-    
+
     if user_id in private_chat_mode:
         partner_id = private_chat_mode[user_id]
         try:
@@ -3067,8 +3152,7 @@ def handle_messages(msg):
         except Exception as e:
             bot.reply_to(msg, f"❌ خطا در ارسال پیام: {e}")
         return
-    
-    # ========== خبر و تبلیغ ==========
+
     if user_id in news_mode and news_mode[user_id]:
         global news_counter
         news_counter += 1
@@ -3077,7 +3161,7 @@ def handle_messages(msg):
         bot.reply_to(msg, f"✅ خبر {news_counter} با موفقیت ثبت شد.")
         news_mode[user_id] = False
         return
-    
+
     if user_id in ad_mode and ad_mode[user_id]:
         global ad_counter
         ad_counter += 1
@@ -3086,8 +3170,7 @@ def handle_messages(msg):
         bot.reply_to(msg, f"✅ تبلیغ {ad_counter} با موفقیت ثبت شد.")
         ad_mode[user_id] = False
         return
-    
-    # ========== ادمین (حالت چت خودکار) ==========
+
     if is_admin(user_id):
         if user_id in admin_chat_mode and admin_chat_mode[user_id]:
             if not msg.text.startswith('/'):
@@ -3102,7 +3185,6 @@ def handle_messages(msg):
                 else:
                     bot.reply_to(msg, "❌ چت فعالی وجود ندارد!")
                 return
-        
         if not msg.text.startswith('/'):
             if user_id == FOUNDER_ID:
                 bot.reply_to(msg, "سلام سرورم 🙏🏻❤️\nامیدوارم حالتون خوب باشه 👋🏻\nلطفا دستور :\n/fpanel\nرا بزنید 🌠")
@@ -3111,8 +3193,7 @@ def handle_messages(msg):
             else:
                 bot.reply_to(msg, "👋 سلام ادمین عزیز!\nلطفاً برای ورود به پنل مدیریت، دستور زیر را بزنید:\n/apanel")
             return
-    
-    # ========== چت کاربر ==========
+
     if user_id in waiting_for_message and waiting_for_message[user_id] == True:
         if user_id != FOUNDER_ID and user_id != OWNER2_ID and user_id in chat_sessions and chat_sessions[user_id] == 'open':
             bot.send_message(FOUNDER_ID, f"💬 از کاربر:\n👤 نام: {msg.from_user.first_name} [آیدی: {user_id}]\n📝 پیام: {msg.text}")
