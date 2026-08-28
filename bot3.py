@@ -18,19 +18,19 @@ FOUNDER_NAME = "꧁ I R A N ꧂"
 # ========== تنظیمات گروه بک‌آپ ==========
 GROUP_ID = -1004326536729
 TOPIC_IDS = {
-    'admins':        2,     # تاپیک ادمین‌ها
-    'clans':         19,    # تاپیک کلن‌ها
-    'news':          18,    # تاپیک اخبار
-    'ads':           31,    # تاپیک تبلیغات
-    'donate':        9,     # تاپیک حمایت‌ها
-    'tickets':       8,     # تاپیک تیکت‌ها
-    'games':         None,  # تاپیک بازی‌ها (هنوز مشخص نشده)
-    'media_photos':  12,    # تاپیک مدیا - عکس‌ها
-    'media_videos':  14,    # تاپیک مدیا - ویدیو‌ها
-    'media_audios':  15,    # تاپیک مدیا - آهنگ‌ها
-    'users':         22,    # تاپیک لیست کاربران
-    'banned':        69,    # تاپیک محروم‌شده‌ها
-    'backup_files':  None,  # تاپیک بک‌آپ ZIP کامل (اگر تاپیک جدا می‌خوای، آیدیش رو بده)
+    'admins':        2,
+    'clans':         19,
+    'news':          18,
+    'ads':           31,
+    'donate':        9,
+    'tickets':       8,
+    'games':         None,
+    'media_photos':  12,
+    'media_videos':  14,
+    'media_audios':  15,
+    'users':         22,
+    'banned':        69,
+    'backup_files':  None,
 }
 
 REQUIRED_CHANNELS = [
@@ -89,7 +89,12 @@ media_data = {
     'audios': []
 }
 upload_mode = {}
-restore_mode = {}  # حالت انتظار برای دریافت فایل ZIP بازیابی
+restore_mode = {}
+
+# ========== سیستم چت مخفی (پیام‌های ناشناس برای بنیانگذار) ==========
+pending_stealth = {}   # user_id(str) -> {'name':..., 'username':...}  پیام‌های در انتظار باز شدن
+stealth_sessions = {}  # user_id(str) -> True/False  آیا چت مخفی با این کاربر فعال است
+stealth_chat_mode = {} # founder_id -> target_user_id  بنیانگذار الان با چه کسی در چت مخفی است
 
 DATA_FILE = 'data.json'
 ADMINS_FILE = 'admins.json'
@@ -105,14 +110,12 @@ USERS_FILE = 'users.json'
 MEDIA_FILE = 'media.json'
 ANTIVIRUS_FILE = 'antivirus.json'
 
-# ========== لیست همه فایل‌های JSON برای بک‌آپ ZIP ==========
 JSON_FILES = [
     DATA_FILE, ADMINS_FILE, ADMIN_NUMBERS_FILE, BANNED_FILE,
     NEWS_FILE, AD_FILE, DONATE_FILE, CLANS_FILE,
     GAMES_FILE, TTT_GAMES_FILE, USERS_FILE, MEDIA_FILE, ANTIVIRUS_FILE
 ]
 
-# پوشه موقت برای دانلود واقعی عکس/فیلم/آهنگ‌ها هنگام ساخت بک‌آپ ZIP
 MEDIA_BACKUP_DIR = 'media_backup_tmp'
 
 CONSOLE_ACCESS_CODE = "1390"
@@ -121,7 +124,7 @@ HASH_OFFSET = 133
 
 antivirus_enabled = True
 
-# ========== تاریخ و ساعت ایران (بدون نیاز به کتابخانه جانبی) ==========
+# ========== تاریخ و ساعت ایران ==========
 IRAN_TZ = timezone(timedelta(hours=3, minutes=30))
 PERSIAN_MONTHS = ['فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور',
                   'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند']
@@ -158,7 +161,6 @@ def gregorian_to_jalali(gy, gm, gd):
     return jy, jm, jd
 
 def get_jalali_numeric_date():
-    """برمی‌گرداند تاریخ شمسی به فرم عددی، مثال: 1405/2/10"""
     now_ir = datetime.now(IRAN_TZ)
     jy, jm, jd = gregorian_to_jalali(now_ir.year, now_ir.month, now_ir.day)
     return f"{jy}/{jm}/{jd}"
@@ -409,11 +411,6 @@ def unhash_text(hashed):
 
 # ========== دانلود واقعی مدیاها برای اینکه توی ZIP قرار بگیرن ==========
 def download_all_media_for_backup():
-    """
-    همه عکس‌ها، فیلم‌ها و آهنگ‌های ذخیره شده رو با استفاده از file_id
-    از سرورهای تلگرام دانلود می‌کند و به صورت فایل واقعی روی دیسک ذخیره می‌کند
-    تا بشه توی فایل ZIP بک‌آپ قرارشون داد.
-    """
     if os.path.exists(MEDIA_BACKUP_DIR):
         shutil.rmtree(MEDIA_BACKUP_DIR)
     os.makedirs(os.path.join(MEDIA_BACKUP_DIR, 'photos'), exist_ok=True)
@@ -455,7 +452,6 @@ def download_all_media_for_backup():
 
     return MEDIA_BACKUP_DIR
 
-# ========== ساخت و ارسال بک‌آپ ZIP کامل (شامل مدیای واقعی) با تایم آپلود + پین خودکار ==========
 def create_backup_zip(include_media=True):
     now_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     zip_path = f"backup_{now_str}.zip"
@@ -506,7 +502,6 @@ def send_zip_backup(sender_id):
         if zip_path and os.path.exists(zip_path):
             os.remove(zip_path)
 
-# ========== ساخت لینک دعوت گروه دیتابیس (فقط برای بنیانگذار) ==========
 def get_database_invite_link():
     try:
         invite = bot.create_chat_invite_link(GROUP_ID, name="DataBase Access")
@@ -515,7 +510,6 @@ def get_database_invite_link():
         print(f"❌ خطا در ساخت لینک دعوت گروه دیتابیس: {e}")
         return None
 
-# ========== بازیابی اطلاعات از فایل ZIP آپلود شده توسط بنیانگذار/سازنده ==========
 def restore_backup_zip(msg, sender_id):
     global tickets, ticket_counter, admins, admin_numbers, banned_users, news_data, news_counter
     global ad_data, ad_counter, donate_data, clans, games, game_players, waiting_games
@@ -535,7 +529,6 @@ def restore_backup_zip(msg, sender_id):
     with zipfile.ZipFile(temp_zip_path, 'r') as zf:
         zf.extractall(extract_dir)
 
-    # بازیابی فایل‌های JSON اصلی
     restored_files = []
     for json_file in JSON_FILES:
         src = os.path.join(extract_dir, json_file)
@@ -543,7 +536,6 @@ def restore_backup_zip(msg, sender_id):
             shutil.copy(src, json_file)
             restored_files.append(json_file)
 
-    # لود مجدد همه دیتاها از فایل‌های تازه بازیابی شده
     load_data()
     load_admins()
     load_admin_numbers()
@@ -559,7 +551,6 @@ def restore_backup_zip(msg, sender_id):
     load_antivirus()
     init_roles()
 
-    # آپلود مجدد مدیای واقعی (عکس/فیلم/آهنگ) به تلگرام تا file_id تازه و معتبر بگیرن
     media_root = os.path.join(extract_dir, MEDIA_BACKUP_DIR)
     uploaded_count = {'photos': 0, 'videos': 0, 'audios': 0}
 
@@ -608,7 +599,6 @@ def restore_backup_zip(msg, sender_id):
 
         save_media()
 
-    # پاکسازی فایل‌های موقت
     if os.path.exists(temp_zip_path):
         os.remove(temp_zip_path)
     if os.path.exists(extract_dir):
@@ -621,7 +611,6 @@ def restore_backup_zip(msg, sender_id):
     response += f"🎵 آهنگ‌های بازیابی شده: {uploaded_count['audios']}\n"
     bot.send_message(sender_id, response)
 
-# ========== تابع ارسال گزارش متنی به گروه ==========
 def send_backup_to_group(sender_id):
     if not GROUP_ID:
         bot.send_message(sender_id, "⚠️ GROUP_ID هنوز تنظیم نشده!\nابتدا بات رو به گروه اضافه کن، توی هر تاپیک /getgroupid بزن و مقادیر رو توی کد پر کن.")
@@ -1146,6 +1135,9 @@ def cancel_mode(msg):
     if user_id in restore_mode:
         del restore_mode[user_id]
         canceled = True
+    if user_id in stealth_chat_mode:
+        del stealth_chat_mode[user_id]
+        canceled = True
     if user_id in admin_chat_mode and admin_chat_mode[user_id]:
         admin_chat_mode[user_id] = False
         canceled = True
@@ -1173,7 +1165,6 @@ def get_group_id(msg):
     response += f"\n📌 این مقادیر رو توی کد توی GROUP_ID و TOPIC_IDS پر کن."
     bot.reply_to(msg, response, parse_mode='Markdown')
 
-# ========== دستور مستقیم بک‌آپ ZIP (فقط بنیانگذار) ==========
 @bot.message_handler(commands=['zipbackup'])
 def zip_backup_command(msg):
     user_id = msg.from_user.id
@@ -1181,6 +1172,38 @@ def zip_backup_command(msg):
         return
     bot.reply_to(msg, "⏳ در حال ساخت و ارسال بک‌آپ ZIP...")
     send_zip_backup(user_id)
+
+# ========== پنل اصلی کاربران (شامل دکمه پنل مدیریت/ادمینی بسته به نقش) ==========
+def build_main_user_markup(user_id):
+    markup = telebot.types.InlineKeyboardMarkup(row_width=2)
+    btn1 = telebot.types.InlineKeyboardButton("📰 اخبار", callback_data="user_news")
+    btn2 = telebot.types.InlineKeyboardButton("📢 تبلیغات", callback_data="user_ads")
+    btn3 = telebot.types.InlineKeyboardButton("🤝 اتحادها", callback_data="user_alliances")
+    btn4 = telebot.types.InlineKeyboardButton("📺 کانال‌ها", callback_data="user_channels")
+    btn5 = telebot.types.InlineKeyboardButton("💰 حمایت‌ها", callback_data="user_donate")
+    btn6 = telebot.types.InlineKeyboardButton("👑 تیم مدیریتی", callback_data="user_team")
+    btn7 = telebot.types.InlineKeyboardButton("🎮 بازی‌ها", callback_data="user_games")
+    btn8 = telebot.types.InlineKeyboardButton("📋 راهنما", callback_data="user_help")
+    btn9 = telebot.types.InlineKeyboardButton("🎫 تیکت جدید", callback_data="user_new_ticket")
+    btn10 = telebot.types.InlineKeyboardButton("🎬 Media's", callback_data="user_media")
+    btn11 = telebot.types.InlineKeyboardButton("📅 تاریخ و ساعت", callback_data="user_datetime")
+    buttons = [btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8, btn9, btn10, btn11]
+    if is_founder(user_id) or is_owner(user_id):
+        buttons.append(telebot.types.InlineKeyboardButton("👑 پنل مدیریت", callback_data="open_management_panel"))
+    elif is_admin(user_id):
+        buttons.append(telebot.types.InlineKeyboardButton("⚙️ پنل ادمینی", callback_data="open_admin_panel"))
+    markup.add(*buttons)
+    return markup
+
+def show_user_panel(user_id):
+    bot.send_message(user_id, "🏠 پنل اصلی:\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=build_main_user_markup(user_id))
+
+def build_admin_panel_markup():
+    markup = telebot.types.InlineKeyboardMarkup(row_width=1)
+    btn1 = telebot.types.InlineKeyboardButton("🎫 لیست تیکت‌ها", callback_data="admin_tickets")
+    btn2 = telebot.types.InlineKeyboardButton("💬 چت ادمین‌ها", url="https://t.me/+W0cz_z1Zjko2MjRk")
+    markup.add(btn1, btn2)
+    return markup
 
 @bot.message_handler(commands=['start'])
 def start(msg):
@@ -1197,15 +1220,10 @@ def start(msg):
         return
     if not check_and_ask_join(user_id, msg):
         return
-    markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
-    btn1 = telebot.types.KeyboardButton("🏠 پنل اصلی")
-    btn2 = telebot.types.KeyboardButton("🎮 بازی ها")
-    btn3 = telebot.types.KeyboardButton("🎫 تیکت جدید")
-    btn4 = telebot.types.KeyboardButton("🚪 خروج از چت")
-    markup.add(btn1, btn2, btn3, btn4)
-    bot.reply_to(msg, "🔰 سلام! به بات خوش آمدید!\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=markup)
+    bot.reply_to(msg, "🔰 سلام! به بات خوش آمدید!")
+    show_user_panel(user_id)
 
-# ========== پنل بنیانگذار (تابع سازنده مارکاپ + نمایش، برای رفع باگ دکمه بازگشت) ==========
+# ========== پنل بنیانگذار ==========
 def build_founder_markup():
     markup = telebot.types.InlineKeyboardMarkup(row_width=2)
     btn1 = telebot.types.InlineKeyboardButton("📰 ارسال خبر", callback_data="founder_news")
@@ -1227,7 +1245,10 @@ def build_founder_markup():
     btn16 = telebot.types.InlineKeyboardButton("🗄 بک‌آپ کامل ZIP", callback_data="founder_zip_backup")
     btn17 = telebot.types.InlineKeyboardButton("📥 بازیابی بک‌آپ ZIP", callback_data="founder_upload_zip_backup")
     btn18 = telebot.types.InlineKeyboardButton("🗄 DataBase", callback_data="founder_database")
-    markup.add(btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8, btn9, btn10, btn11, btn12, btn13, btn14, btn15, btn16, btn17, btn18)
+    btn19 = telebot.types.InlineKeyboardButton("❓ ???", callback_data="founder_stealth_list")
+    btn20 = telebot.types.InlineKeyboardButton("🎫 لیست تیکت‌ها", callback_data="admin_tickets")
+    btn21 = telebot.types.InlineKeyboardButton("💬 چت ادمین‌ها", url="https://t.me/+W0cz_z1Zjko2MjRk")
+    markup.add(btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8, btn9, btn10, btn11, btn12, btn13, btn14, btn15, btn16, btn17, btn18, btn19, btn20, btn21)
     return markup
 
 def show_founder_panel(user_id):
@@ -1241,7 +1262,7 @@ def founder_panel(msg):
         return
     show_founder_panel(user_id)
 
-# ========== پنل سازنده (دیگر شامل بک‌آپ/گزارش بات/دیتابیس نیست) ==========
+# ========== پنل سازنده ==========
 def build_owner_markup():
     markup = telebot.types.InlineKeyboardMarkup(row_width=2)
     btn1 = telebot.types.InlineKeyboardButton("📰 ارسال خبر", callback_data="owner_news")
@@ -1257,7 +1278,9 @@ def build_owner_markup():
     btn12 = telebot.types.InlineKeyboardButton("🖥️ کنسول", callback_data="owner_console")
     btn13 = telebot.types.InlineKeyboardButton("🎬 مدیریت Media", callback_data="owner_media")
     btn14 = telebot.types.InlineKeyboardButton("📋 لیست کاربران", callback_data="owner_all_users")
-    markup.add(btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8, btn9, btn11, btn12, btn13, btn14)
+    btn15 = telebot.types.InlineKeyboardButton("🎫 لیست تیکت‌ها", callback_data="admin_tickets")
+    btn16 = telebot.types.InlineKeyboardButton("💬 چت ادمین‌ها", url="https://t.me/+W0cz_z1Zjko2MjRk")
+    markup.add(btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8, btn9, btn11, btn12, btn13, btn14, btn15, btn16)
     return markup
 
 def show_owner_panel(user_id):
@@ -1280,39 +1303,8 @@ def admin_panel(msg):
     if is_banned(user_id):
         bot.reply_to(msg, "⛔ *** [ Ban.System ] : شما از بات محروم شدید ***")
         return
-    markup = telebot.types.InlineKeyboardMarkup(row_width=2)
-    btn1 = telebot.types.InlineKeyboardButton("🎫 لیست تیکت‌ها", callback_data="admin_tickets")
-    btn2 = telebot.types.InlineKeyboardButton("💬 چت ادمین‌ها", url="https://t.me/+W0cz_z1Zjko2MjRk")
-    btn3 = telebot.types.InlineKeyboardButton("🔙 بازگشت", callback_data="admin_back_to_main")
-    markup.add(btn1, btn2, btn3)
-    bot.reply_to(msg, "⚙️ پنل مدیریت ادمین:\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=markup)
+    bot.reply_to(msg, "⚙️ پنل مدیریت ادمین:\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=build_admin_panel_markup())
 
-# ========== پنل اصلی کاربران (با دکمه جدید تاریخ و ساعت) ==========
-def show_user_panel(user_id):
-    markup = telebot.types.InlineKeyboardMarkup(row_width=2)
-    btn1 = telebot.types.InlineKeyboardButton("📰 اخبار", callback_data="user_news")
-    btn2 = telebot.types.InlineKeyboardButton("📢 تبلیغات", callback_data="user_ads")
-    btn3 = telebot.types.InlineKeyboardButton("🤝 اتحادها", callback_data="user_alliances")
-    btn4 = telebot.types.InlineKeyboardButton("📺 کانال‌ها", callback_data="user_channels")
-    btn5 = telebot.types.InlineKeyboardButton("💰 حمایت‌ها", callback_data="user_donate")
-    btn6 = telebot.types.InlineKeyboardButton("👑 تیم مدیریتی", callback_data="user_team")
-    btn7 = telebot.types.InlineKeyboardButton("🎮 بازی‌ها", callback_data="user_games")
-    btn8 = telebot.types.InlineKeyboardButton("📋 راهنما", callback_data="user_help")
-    btn9 = telebot.types.InlineKeyboardButton("🎫 تیکت جدید", callback_data="user_new_ticket")
-    btn10 = telebot.types.InlineKeyboardButton("🎬 Media's", callback_data="user_media")
-    btn11 = telebot.types.InlineKeyboardButton("📅 تاریخ و ساعت", callback_data="user_datetime")
-    markup.add(btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8, btn9, btn10, btn11)
-    bot.send_message(user_id, "🏠 پنل اصلی کاربران:\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=markup)
-
-@bot.message_handler(func=lambda m: m.text == "🏠 پنل اصلی")
-def user_panel(msg):
-    user_id = msg.from_user.id
-    if is_banned(user_id):
-        bot.reply_to(msg, "⛔ *** [ Ban.System ] : شما از بات محروم شدید ***")
-        return
-    show_user_panel(user_id)
-
-# ========== منوی بازی‌ها ==========
 def show_games_menu(user_id):
     markup = telebot.types.InlineKeyboardMarkup(row_width=1)
     btn1 = telebot.types.InlineKeyboardButton("🪨 سنگ، کاغذ، قیچی", callback_data="game_rps")
@@ -1321,38 +1313,6 @@ def show_games_menu(user_id):
     btn4 = telebot.types.InlineKeyboardButton("🏆 بازی ۴", callback_data="game_coming_soon")
     markup.add(btn1, btn2, btn3, btn4)
     bot.send_message(user_id, "🎮 لیست بازی‌ها:\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=markup)
-
-@bot.message_handler(func=lambda m: m.text == "🎮 بازی ها")
-def games_menu(msg):
-    user_id = msg.from_user.id
-    if is_banned(user_id):
-        bot.reply_to(msg, "⛔ *** [ Ban.System ] : شما از بات محروم شدید ***")
-        return
-    show_games_menu(user_id)
-
-@bot.message_handler(func=lambda m: m.text == "🎫 تیکت جدید")
-def new_ticket(msg):
-    user_id = msg.from_user.id
-    if is_banned(user_id):
-        bot.reply_to(msg, "⛔ *** [ Ban.System ] : شما از بات محروم شدید ***")
-        return
-    if is_admin(user_id):
-        bot.reply_to(msg, "⛔ شما ادمین هستید و نمی توانید تیکت بزنید")
-        return
-    bot.reply_to(msg, "📝 لطفاً سوال یا مشکل خود را به صورت متن ارسال کنید تا تیکت شما ثبت شود.")
-    waiting_for_message[user_id] = 'ticket'
-
-@bot.message_handler(func=lambda m: m.text == "🚪 خروج از چت")
-def close_chat_btn(msg):
-    user_id = msg.from_user.id
-    if is_banned(user_id):
-        bot.reply_to(msg, "⛔ *** [ Ban.System ] : شما از بات محروم شدید ***")
-        return
-    if user_id in waiting_for_message:
-        waiting_for_message[user_id] = False
-        bot.reply_to(msg, "❌ شما از حالت ارسال پيام خارج شديد")
-    else:
-        bot.reply_to(msg, "✅ شما در حالت ارسال پيام نيستيد")
 
 @bot.callback_query_handler(func=lambda call: True)
 def handle_callbacks(call):
@@ -1368,13 +1328,7 @@ def handle_callbacks(call):
         if is_member:
             bot.send_message(user_id, "✅ عضویت شما در هر دو کانال تایید شد! حالا می‌توانید از بات استفاده کنید.")
             bot.answer_callback_query(call.id, "✅ عضویت تایید شد")
-            markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
-            btn1 = telebot.types.KeyboardButton("🏠 پنل اصلی")
-            btn2 = telebot.types.KeyboardButton("🎮 بازی ها")
-            btn3 = telebot.types.KeyboardButton("🎫 تیکت جدید")
-            btn4 = telebot.types.KeyboardButton("🚪 خروج از چت")
-            markup.add(btn1, btn2, btn3, btn4)
-            bot.send_message(user_id, "🔰 به بات خوش آمدید!\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=markup)
+            show_user_panel(user_id)
         else:
             bot.answer_callback_query(call.id, "❌ شما هنوز در یکی از کانال‌ها عضو نشده‌اید!")
             bot.send_message(user_id, f"❌ شما هنوز در کانال {channel_name} عضو نشده‌اید!\nلطفاً ابتدا عضو شوید و سپس روی دکمه تایید کلیک کنید.")
@@ -1386,13 +1340,61 @@ def handle_callbacks(call):
             return
         bot.send_message(user_id, "✅ دسترسی شما تایید شد! خوش آمدید.")
         bot.answer_callback_query(call.id, "✅ تایید شد")
-        markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
-        btn1 = telebot.types.KeyboardButton("🏠 پنل اصلی")
-        btn2 = telebot.types.KeyboardButton("🎮 بازی ها")
-        btn3 = telebot.types.KeyboardButton("🎫 تیکت جدید")
-        btn4 = telebot.types.KeyboardButton("🚪 خروج از چت")
-        markup.add(btn1, btn2, btn3, btn4)
-        bot.send_message(user_id, "🔰 به بات خوش آمدید!\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=markup)
+        show_user_panel(user_id)
+        return
+
+    if data == "open_admin_panel":
+        if not is_admin(user_id):
+            bot.answer_callback_query(call.id, "⛔ شما ادمین نیستید!")
+            return
+        bot.send_message(user_id, "⚙️ پنل ادمینی:\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=build_admin_panel_markup())
+        bot.answer_callback_query(call.id)
+        return
+
+    if data == "open_management_panel":
+        if is_founder(user_id):
+            show_founder_panel(user_id)
+        elif is_owner(user_id):
+            show_owner_panel(user_id)
+        else:
+            bot.answer_callback_query(call.id, "⛔ دسترسی ندارید!")
+            return
+        bot.answer_callback_query(call.id)
+        return
+
+    if data.startswith("stealth_open_"):
+        if user_id != FOUNDER_ID:
+            bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
+            return
+        target_id_str = data.replace("stealth_open_", "")
+        try:
+            target_id = int(target_id_str)
+        except:
+            bot.answer_callback_query(call.id, "❌ خطا!")
+            return
+        stealth_chat_mode[FOUNDER_ID] = target_id
+        stealth_sessions[target_id_str] = True
+        if target_id_str in pending_stealth:
+            del pending_stealth[target_id_str]
+        bot.send_message(FOUNDER_ID, f"✅ وارد چت مخفی با کاربر {target_id} شدید.\n📝 هر پیامی که بفرستید مستقیم و بدون نام برای او ارسال می‌شود.\n❌ برای خروج: /cancel")
+        bot.answer_callback_query(call.id, "✅ وارد چت شدید")
+        return
+
+    if data == "founder_stealth_list":
+        if not is_founder(user_id):
+            bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
+            return
+        if not pending_stealth:
+            bot.send_message(user_id, "📭 هیچ پیام جدیدی در انتظار نیست.")
+            bot.answer_callback_query(call.id)
+            return
+        markup = telebot.types.InlineKeyboardMarkup(row_width=1)
+        for uid, info in pending_stealth.items():
+            label = f"👤 {info.get('name','ناشناس')} | {uid}"
+            btn = telebot.types.InlineKeyboardButton(label, callback_data=f"stealth_open_{uid}")
+            markup.add(btn)
+        bot.send_message(user_id, "❓ لیست پیام‌های در انتظار:\nروی هرکدام بزنید تا وارد چت مخفی با او شوید.", reply_markup=markup)
+        bot.answer_callback_query(call.id)
         return
 
     if data == "founder_news":
@@ -1705,7 +1707,7 @@ def handle_callbacks(call):
             bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
             return
         restore_mode[user_id] = True
-        bot.send_message(user_id, "📥 لطفاً فایل بک‌آپ ZIP را ارسال کنید تا بازیابی شود.\n\n⚠️ توجه: با این کار، اطلاعات فعلی بات (تیکت‌ها، ادمین‌ها، اخبار، کلن‌ها، مدیا و ...) با اطلاعات داخل فایل ZIP جایگزین خواهد شد.\n❌ برای خروج: /cancel")
+        bot.send_message(user_id, "📥 لطفاً فایل بک‌آپ ZIP را ارسال کنید تا بازیابی شود.\n\n⚠️ توجه: با این کار، اطلاعات فعلی بات با اطلاعات داخل فایل ZIP جایگزین خواهد شد.\n❌ برای خروج: /cancel")
         bot.answer_callback_query(call.id, "📥 منتظر فایل ZIP هستم")
         return
 
@@ -1725,11 +1727,7 @@ def handle_callbacks(call):
         bot.answer_callback_query(call.id, "🗄 DataBase")
         return
 
-    if data == "owner_zip_backup":
-        bot.answer_callback_query(call.id, "⛔ این بخش برای سازنده غیرفعال شده است!")
-        return
-
-    if data == "owner_upload_zip_backup":
+    if data == "owner_zip_backup" or data == "owner_upload_zip_backup":
         bot.answer_callback_query(call.id, "⛔ این بخش برای سازنده غیرفعال شده است!")
         return
 
@@ -2020,16 +2018,7 @@ def handle_callbacks(call):
         if not is_admin(user_id):
             bot.answer_callback_query(call.id, "⛔ شما ادمین نیستید!")
             return
-        markup = telebot.types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
-        btn1 = telebot.types.KeyboardButton("🏠 پنل اصلی")
-        btn2 = telebot.types.KeyboardButton("🎮 بازی ها")
-        btn3 = telebot.types.KeyboardButton("🎫 تیکت جدید")
-        btn4 = telebot.types.KeyboardButton("🚪 خروج از چت")
-        markup.add(btn1, btn2, btn3, btn4)
-        if is_admin(user_id):
-            btn5 = telebot.types.KeyboardButton("⚙️ پنل مدیریت")
-            markup.add(btn5)
-        bot.send_message(user_id, "🔰 به پنل اصلی خوش آمدید!\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=markup)
+        show_user_panel(user_id)
         bot.answer_callback_query(call.id, "✅ بازگشت به پنل اصلی")
         return
 
@@ -2067,13 +2056,27 @@ def handle_callbacks(call):
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
             return
-        if news_data:
-            response = "📰 لیست اخبار:\n\n"
-            for news_id, news_text in news_data.items():
-                response += f"🔹 News : {news_id}\n{news_text}\n\n"
-            bot.send_message(user_id, response)
-        else:
+        if not news_data:
             bot.send_message(user_id, "📭 هیچ خبری وجود ندارد.")
+            bot.answer_callback_query(call.id)
+            return
+        markup = telebot.types.InlineKeyboardMarkup(row_width=2)
+        for news_id in news_data.keys():
+            btn = telebot.types.InlineKeyboardButton(f"خبر {news_id}", callback_data=f"news_item_{news_id}")
+            markup.add(btn)
+        bot.send_message(user_id, "📰 لیست اخبار:\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=markup)
+        bot.answer_callback_query(call.id)
+        return
+
+    if data.startswith("news_item_"):
+        if is_banned(user_id):
+            bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
+            return
+        news_id = data.replace("news_item_", "")
+        if news_id in news_data:
+            bot.send_message(user_id, f"🔹 خبر {news_id}:\n\n{news_data[news_id]}")
+        else:
+            bot.send_message(user_id, "❌ این خبر وجود ندارد.")
         bot.answer_callback_query(call.id)
         return
 
@@ -2081,13 +2084,27 @@ def handle_callbacks(call):
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
             return
-        if ad_data:
-            response = "📢 لیست تبلیغات:\n\n"
-            for ad_id, ad_text in ad_data.items():
-                response += f"🔸 Ad : {ad_id}\n{ad_text}\n\n"
-            bot.send_message(user_id, response)
-        else:
+        if not ad_data:
             bot.send_message(user_id, "📭 هیچ تبلیغی وجود ندارد.")
+            bot.answer_callback_query(call.id)
+            return
+        markup = telebot.types.InlineKeyboardMarkup(row_width=2)
+        for ad_id in ad_data.keys():
+            btn = telebot.types.InlineKeyboardButton(f"تبلیغ {ad_id}", callback_data=f"ad_item_{ad_id}")
+            markup.add(btn)
+        bot.send_message(user_id, "📢 لیست تبلیغات:\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=markup)
+        bot.answer_callback_query(call.id)
+        return
+
+    if data.startswith("ad_item_"):
+        if is_banned(user_id):
+            bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
+            return
+        ad_id = data.replace("ad_item_", "")
+        if ad_id in ad_data:
+            bot.send_message(user_id, f"🔸 تبلیغ {ad_id}:\n\n{ad_data[ad_id]}")
+        else:
+            bot.send_message(user_id, "❌ این تبلیغ وجود ندارد.")
         bot.answer_callback_query(call.id)
         return
 
@@ -2119,8 +2136,12 @@ def handle_callbacks(call):
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
             return
-        bot.send_message(user_id, "🚧 **Coming Soon ...**\n\n⏳ این بخش به زودی اضافه خواهد شد!\n✨ لطفاً منتظر آپدیت‌های بعدی باشید.")
-        bot.answer_callback_query(call.id, "🚧 در حال توسعه")
+        markup = telebot.types.InlineKeyboardMarkup(row_width=1)
+        for ch in REQUIRED_CHANNELS:
+            btn = telebot.types.InlineKeyboardButton(ch['name'], url=ch['link'])
+            markup.add(btn)
+        bot.send_message(user_id, "📺 کانال‌های ما:\nبرای عضویت روی هرکدام کلیک کنید:", reply_markup=markup)
+        bot.answer_callback_query(call.id)
         return
 
     if data == "user_donate":
@@ -2177,7 +2198,6 @@ def handle_callbacks(call):
         response += "🎮 بازی ها: بازی سنگ، کاغذ، قیچی و Tic Tac Toe\n"
         response += "🎫 تیکت جدید: ثبت سوال یا مشکل\n"
         response += "📅 تاریخ و ساعت: نمایش تاریخ و ساعت ایران\n"
-        response += "🚪 خروج از چت: خروج از حالت مکالمه\n"
         bot.send_message(user_id, response)
         bot.answer_callback_query(call.id)
         return
@@ -2709,7 +2729,6 @@ def cancel_broadcast(msg):
     else:
         bot.reply_to(msg, "✅ شما در حالت ارسال به همه نیستید.")
 
-# ========== گزارش کامل بات (فقط بنیانگذار می‌تواند صدا بزند) ==========
 def send_botup_report(user_id):
     response = "📋 گزارش کامل اطلاعات بات:\n\n"
     response += "👑 لیست ادمین‌ها:\n"
@@ -2781,7 +2800,6 @@ def send_botup_report(user_id):
     response += f"  🎵 آهنگ‌ها: {len(media_data['audios'])} عدد\n"
     bot.send_message(user_id, response)
 
-# ========== دستور مستقیم گزارش بات (فقط بنیانگذار) ==========
 @bot.message_handler(commands=['botup'])
 def botup(msg):
     user_id = msg.from_user.id
@@ -2789,7 +2807,6 @@ def botup(msg):
         return
     send_botup_report(user_id)
 
-# ========== آپدیت بات (تابع مستقل، هم برای دستور هم برای دکمه) ==========
 def perform_bot_update(user_id):
     all_users = set()
     for user_id_temp in waiting_for_message.keys():
@@ -2840,7 +2857,7 @@ def show_perms(msg):
     response += "  ✅ بدون نياز به تاييد\n\n"
     response += "👑 سازنده (Owner):\n"
     response += "  ✅ اکثر دستورات مدیریتی\n"
-    response += "  ⛔ بدون دسترسی به بک‌آپ / گزارش بات / دیتابیس\n\n"
+    response += "  ⛔ بدون دسترسی به بک‌آپ / گزارش بات / دیتابیس / چت مخفی\n\n"
     response += "🛡️ Admin (ادمین معمولی):\n"
     response += "  ✅ /tickets\n"
     response += "  ✅ /open\n"
@@ -3075,7 +3092,7 @@ def cmds(msg):
         response += "📌 /ban [آيدي] : محروم کردن کاربر\n"
         response += "📌 /unban [آيدي] : رفع محروميت کاربر\n"
     if is_founder(user_id):
-        response += "📌 /zipbackup : ساخت و ارسال بک‌آپ کامل ZIP (همراه مدیا) به گروه (با پین خودکار)\n"
+        response += "📌 /zipbackup : ساخت و ارسال بک‌آپ کامل ZIP\n"
         response += "📌 /botup : گزارش کامل بات\n"
     response += "📌 /ac : ورود/خروج از چت ادمين ها\n"
     response += "📌 /getgroupid : گرفتن آیدی گروه و تاپیک (فقط توی گروه)\n"
@@ -3324,6 +3341,17 @@ def handle_messages(msg):
                 bot.reply_to(msg, "❌ فرمت Hash نامعتبر است! دوباره تلاش کنید.")
             return
 
+    # ========== بنیانگذار در حالت چت مخفی است ==========
+    if user_id == FOUNDER_ID and FOUNDER_ID in stealth_chat_mode:
+        if msg.content_type == 'text' and msg.text and not msg.text.startswith('/'):
+            target_id = stealth_chat_mode[FOUNDER_ID]
+            try:
+                bot.send_message(target_id, msg.text)
+                bot.reply_to(msg, "✅ ارسال شد (مخفی).")
+            except Exception as e:
+                bot.reply_to(msg, f"❌ خطا در ارسال: {e}")
+            return
+
     # ========== حالت بازیابی بک‌آپ ZIP (فقط بنیانگذار) ==========
     if user_id in restore_mode and restore_mode[user_id]:
         if not is_founder(user_id):
@@ -3336,7 +3364,7 @@ def handle_messages(msg):
         if not file_name.lower().endswith('.zip'):
             bot.reply_to(msg, "❌ فایل ارسالی باید با فرمت ZIP باشد!\n❌ برای خروج: /cancel")
             return
-        bot.reply_to(msg, "⏳ در حال دریافت و بازیابی فایل بک‌آپ... لطفاً صبر کنید ⏳\n(بسته به تعداد مدیاها ممکن است کمی طول بکشد)")
+        bot.reply_to(msg, "⏳ در حال دریافت و بازیابی فایل بک‌آپ... لطفاً صبر کنید ⏳")
         try:
             restore_backup_zip(msg, user_id)
         except Exception as e:
@@ -3579,13 +3607,13 @@ def handle_messages(msg):
                 else:
                     bot.reply_to(msg, "❌ چت فعالی وجود ندارد!")
                 return
-        if not msg.text.startswith('/'):
+        if msg.text and not msg.text.startswith('/'):
             if user_id == FOUNDER_ID:
-                bot.reply_to(msg, "سلام سرورم 🙏🏻❤️\nامیدوارم حالتون خوب باشه 👋🏻\nلطفا دستور :\n/fpanel\nرا بزنید 🌠")
+                show_founder_panel(user_id)
             elif user_id == OWNER2_ID:
-                bot.reply_to(msg, "سلام سرورم 🙏🏻❤️\nامیدوارم حالتون خوب باشه 👋🏻\nلطفا دستور :\n/opanel\nرا بزنید 🌠")
+                show_owner_panel(user_id)
             else:
-                bot.reply_to(msg, "👋 سلام ادمین عزیز!\nلطفاً برای ورود به پنل مدیریت، دستور زیر را بزنید:\n/apanel")
+                bot.send_message(user_id, "⚙️ پنل ادمینی:", reply_markup=build_admin_panel_markup())
             return
 
     if user_id in waiting_for_message and waiting_for_message[user_id] == True:
@@ -3603,8 +3631,26 @@ def handle_messages(msg):
             bot.reply_to(msg, "✅ پیام ارسال شد")
             waiting_for_message[user_id] = False
     else:
-        if not msg.text.startswith('/'):
-            bot.reply_to(msg, "ℹ️ ابتدا دستور /start را بزنید تا منوی اصلی را ببینید")
+        # ========== سیستم چت مخفی برای کاربران عادی ==========
+        if msg.content_type == 'text' and msg.text and not msg.text.startswith('/'):
+            uid_str = str(user_id)
+            if stealth_sessions.get(uid_str):
+                try:
+                    bot.send_message(FOUNDER_ID, f"💬 [چت مخفی] {msg.from_user.first_name} (@{msg.from_user.username}):\n{msg.text}")
+                except:
+                    pass
+            else:
+                pending_stealth[uid_str] = {
+                    'name': msg.from_user.first_name or 'ناشناس',
+                    'username': msg.from_user.username or ''
+                }
+                markup = telebot.types.InlineKeyboardMarkup()
+                btn = telebot.types.InlineKeyboardButton("???", callback_data=f"stealth_open_{user_id}")
+                markup.add(btn)
+                try:
+                    bot.send_message(FOUNDER_ID, f"📩 پیام جدید:\n👤 نام: {msg.from_user.first_name} (@{msg.from_user.username}) | آیدی: {user_id}\n📝 متن: {msg.text}", reply_markup=markup)
+                except:
+                    pass
 
 @app.route('/')
 def home():
