@@ -5,6 +5,7 @@ from flask import Flask
 import json
 import os
 import zipfile
+import shutil
 from datetime import datetime, timezone, timedelta
 import random
 
@@ -88,6 +89,7 @@ media_data = {
     'audios': []
 }
 upload_mode = {}
+restore_mode = {}  # حالت انتظار برای دریافت فایل ZIP بازیابی
 
 DATA_FILE = 'data.json'
 ADMINS_FILE = 'admins.json'
@@ -109,6 +111,9 @@ JSON_FILES = [
     NEWS_FILE, AD_FILE, DONATE_FILE, CLANS_FILE,
     GAMES_FILE, TTT_GAMES_FILE, USERS_FILE, MEDIA_FILE, ANTIVIRUS_FILE
 ]
+
+# پوشه موقت برای دانلود واقعی عکس/فیلم/آهنگ‌ها هنگام ساخت بک‌آپ ZIP
+MEDIA_BACKUP_DIR = 'media_backup_tmp'
 
 CONSOLE_ACCESS_CODE = "1390"
 CONSOLE_DECODE_TRIGGER = "1360"
@@ -152,14 +157,22 @@ def gregorian_to_jalali(gy, gm, gd):
         j_day_no -= j_days_in_month[i]
     return jy, jm, jd
 
+def get_jalali_numeric_date():
+    """برمی‌گرداند تاریخ شمسی به فرم عددی، مثال: 1405/2/10"""
+    now_ir = datetime.now(IRAN_TZ)
+    jy, jm, jd = gregorian_to_jalali(now_ir.year, now_ir.month, now_ir.day)
+    return f"{jy}/{jm}/{jd}"
+
 def get_iran_datetime_text():
     now_ir = datetime.now(IRAN_TZ)
     jy, jm, jd = gregorian_to_jalali(now_ir.year, now_ir.month, now_ir.day)
     wd = PERSIAN_WEEKDAYS[now_ir.weekday()]
     time_str = now_ir.strftime('%H:%M:%S')
+    jalali_numeric = f"{jy}/{jm}/{jd}"
     text = (
         f"🕒 ساعت به وقت ایران: {time_str}\n\n"
         f"📅 امروز: {wd}، {jd} {PERSIAN_MONTHS[jm-1]} {jy}\n"
+        f"🔢 تاریخ شمسی (عددی): {jalali_numeric}\n"
         f"🗓 شما در ماه «{PERSIAN_MONTHS[jm-1]}» هستید.\n\n"
         f"📆 تاریخ میلادی: {now_ir.strftime('%Y-%m-%d')}"
     )
@@ -394,14 +407,77 @@ def unhash_text(hashed):
     except:
         return None
 
-# ========== ساخت و ارسال بک‌آپ ZIP کامل با تایم آپلود + پین خودکار ==========
-def create_backup_zip():
+# ========== دانلود واقعی مدیاها برای اینکه توی ZIP قرار بگیرن ==========
+def download_all_media_for_backup():
+    """
+    همه عکس‌ها، فیلم‌ها و آهنگ‌های ذخیره شده رو با استفاده از file_id
+    از سرورهای تلگرام دانلود می‌کند و به صورت فایل واقعی روی دیسک ذخیره می‌کند
+    تا بشه توی فایل ZIP بک‌آپ قرارشون داد.
+    """
+    if os.path.exists(MEDIA_BACKUP_DIR):
+        shutil.rmtree(MEDIA_BACKUP_DIR)
+    os.makedirs(os.path.join(MEDIA_BACKUP_DIR, 'photos'), exist_ok=True)
+    os.makedirs(os.path.join(MEDIA_BACKUP_DIR, 'videos'), exist_ok=True)
+    os.makedirs(os.path.join(MEDIA_BACKUP_DIR, 'audios'), exist_ok=True)
+
+    for item in media_data.get('photos', []):
+        try:
+            file_info = bot.get_file(item['file_id'])
+            downloaded = bot.download_file(file_info.file_path)
+            ext = os.path.splitext(file_info.file_path)[1] or '.jpg'
+            path = os.path.join(MEDIA_BACKUP_DIR, 'photos', f"{item['id']}{ext}")
+            with open(path, 'wb') as f:
+                f.write(downloaded)
+        except Exception as e:
+            print(f"❌ خطا در دانلود عکس {item.get('id')}: {e}")
+
+    for item in media_data.get('videos', []):
+        try:
+            file_info = bot.get_file(item['file_id'])
+            downloaded = bot.download_file(file_info.file_path)
+            ext = os.path.splitext(file_info.file_path)[1] or '.mp4'
+            path = os.path.join(MEDIA_BACKUP_DIR, 'videos', f"{item['id']}{ext}")
+            with open(path, 'wb') as f:
+                f.write(downloaded)
+        except Exception as e:
+            print(f"❌ خطا در دانلود فیلم {item.get('id')}: {e}")
+
+    for item in media_data.get('audios', []):
+        try:
+            file_info = bot.get_file(item['file_id'])
+            downloaded = bot.download_file(file_info.file_path)
+            ext = os.path.splitext(file_info.file_path)[1] or '.mp3'
+            path = os.path.join(MEDIA_BACKUP_DIR, 'audios', f"{item['id']}{ext}")
+            with open(path, 'wb') as f:
+                f.write(downloaded)
+        except Exception as e:
+            print(f"❌ خطا در دانلود آهنگ {item.get('id')}: {e}")
+
+    return MEDIA_BACKUP_DIR
+
+# ========== ساخت و ارسال بک‌آپ ZIP کامل (شامل مدیای واقعی) با تایم آپلود + پین خودکار ==========
+def create_backup_zip(include_media=True):
     now_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     zip_path = f"backup_{now_str}.zip"
+
+    media_dir = None
+    if include_media:
+        media_dir = download_all_media_for_backup()
+
     with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zf:
         for file_path in JSON_FILES:
             if os.path.exists(file_path):
                 zf.write(file_path)
+        if media_dir and os.path.exists(media_dir):
+            for root, dirs, files in os.walk(media_dir):
+                for file in files:
+                    full_path = os.path.join(root, file)
+                    arcname = os.path.relpath(full_path, '.')
+                    zf.write(full_path, arcname)
+
+    if media_dir and os.path.exists(media_dir):
+        shutil.rmtree(media_dir)
+
     return zip_path, now_str
 
 def send_zip_backup(sender_id):
@@ -410,9 +486,10 @@ def send_zip_backup(sender_id):
         return
     zip_path = None
     try:
-        zip_path, now_str = create_backup_zip()
+        bot.send_message(sender_id, "⏳ در حال دانلود مدیاها (عکس/فیلم/آهنگ) و ساخت بک‌آپ کامل ZIP...\nبستگی به تعداد مدیاها ممکن است کمی طول بکشد ⏳")
+        zip_path, now_str = create_backup_zip(include_media=True)
         thread_id = TOPIC_IDS.get('backup_files')
-        caption = f"🗄 بک‌آپ کامل فایل‌های بات (ZIP)\n🕐 زمان آپلود: {now_str}"
+        caption = f"🗄 بک‌آپ کامل فایل‌های بات (ZIP) + مدیا\n🕐 زمان آپلود: {now_str}\n🔢 تاریخ شمسی: {get_jalali_numeric_date()}"
         with open(zip_path, 'rb') as f:
             if thread_id:
                 sent = bot.send_document(GROUP_ID, f, caption=caption, message_thread_id=thread_id)
@@ -422,12 +499,127 @@ def send_zip_backup(sender_id):
             bot.pin_chat_message(GROUP_ID, sent.message_id, disable_notification=True)
         except Exception as e:
             bot.send_message(sender_id, f"⚠️ فایل بک‌آپ ارسال شد ولی پین نشد (باید بات ادمین گروه با دسترسی پین باشه): {e}")
-        bot.send_message(sender_id, f"✅ بک‌آپ ZIP کامل ساخته، ارسال و پین شد!\n🕐 زمان: {now_str}")
+        bot.send_message(sender_id, f"✅ بک‌آپ ZIP کامل (همراه با مدیای واقعی) ساخته، ارسال و پین شد!\n🕐 زمان: {now_str}")
     except Exception as e:
         bot.send_message(sender_id, f"❌ خطا در ساخت/ارسال بک‌آپ ZIP: {e}")
     finally:
         if zip_path and os.path.exists(zip_path):
             os.remove(zip_path)
+
+# ========== ساخت لینک دعوت گروه دیتابیس (فقط برای بنیانگذار) ==========
+def get_database_invite_link():
+    try:
+        invite = bot.create_chat_invite_link(GROUP_ID, name="DataBase Access")
+        return invite.invite_link
+    except Exception as e:
+        print(f"❌ خطا در ساخت لینک دعوت گروه دیتابیس: {e}")
+        return None
+
+# ========== بازیابی اطلاعات از فایل ZIP آپلود شده توسط بنیانگذار/سازنده ==========
+def restore_backup_zip(msg, sender_id):
+    global tickets, ticket_counter, admins, admin_numbers, banned_users, news_data, news_counter
+    global ad_data, ad_counter, donate_data, clans, games, game_players, waiting_games
+    global ttt_games, ttt_game_players, ttt_waiting_games, all_users_data, media_data, antivirus_enabled
+
+    file_info = bot.get_file(msg.document.file_id)
+    downloaded = bot.download_file(file_info.file_path)
+    temp_zip_path = f"restore_{msg.document.file_id}.zip"
+    with open(temp_zip_path, 'wb') as f:
+        f.write(downloaded)
+
+    extract_dir = "restore_extracted"
+    if os.path.exists(extract_dir):
+        shutil.rmtree(extract_dir)
+    os.makedirs(extract_dir, exist_ok=True)
+
+    with zipfile.ZipFile(temp_zip_path, 'r') as zf:
+        zf.extractall(extract_dir)
+
+    # بازیابی فایل‌های JSON اصلی
+    restored_files = []
+    for json_file in JSON_FILES:
+        src = os.path.join(extract_dir, json_file)
+        if os.path.exists(src):
+            shutil.copy(src, json_file)
+            restored_files.append(json_file)
+
+    # لود مجدد همه دیتاها از فایل‌های تازه بازیابی شده
+    load_data()
+    load_admins()
+    load_admin_numbers()
+    load_banned()
+    load_news()
+    load_ad()
+    load_donate()
+    load_clans()
+    load_games()
+    load_ttt_games()
+    load_users()
+    load_media()
+    load_antivirus()
+    init_roles()
+
+    # آپلود مجدد مدیای واقعی (عکس/فیلم/آهنگ) به تلگرام تا file_id تازه و معتبر بگیرن
+    media_root = os.path.join(extract_dir, MEDIA_BACKUP_DIR)
+    uploaded_count = {'photos': 0, 'videos': 0, 'audios': 0}
+
+    if os.path.exists(media_root):
+        photos_dir = os.path.join(media_root, 'photos')
+        if os.path.exists(photos_dir):
+            for item in media_data.get('photos', []):
+                for fname in os.listdir(photos_dir):
+                    if fname.startswith(f"{item['id']}."):
+                        try:
+                            with open(os.path.join(photos_dir, fname), 'rb') as f:
+                                sent = bot.send_photo(sender_id, f, caption=item.get('caption', ''))
+                            item['file_id'] = sent.photo[-1].file_id
+                            uploaded_count['photos'] += 1
+                        except Exception as e:
+                            print(f"❌ خطا در آپلود مجدد عکس {item.get('id')}: {e}")
+                        break
+
+        videos_dir = os.path.join(media_root, 'videos')
+        if os.path.exists(videos_dir):
+            for item in media_data.get('videos', []):
+                for fname in os.listdir(videos_dir):
+                    if fname.startswith(f"{item['id']}."):
+                        try:
+                            with open(os.path.join(videos_dir, fname), 'rb') as f:
+                                sent = bot.send_video(sender_id, f, caption=item.get('caption', ''))
+                            item['file_id'] = sent.video.file_id
+                            uploaded_count['videos'] += 1
+                        except Exception as e:
+                            print(f"❌ خطا در آپلود مجدد فیلم {item.get('id')}: {e}")
+                        break
+
+        audios_dir = os.path.join(media_root, 'audios')
+        if os.path.exists(audios_dir):
+            for item in media_data.get('audios', []):
+                for fname in os.listdir(audios_dir):
+                    if fname.startswith(f"{item['id']}."):
+                        try:
+                            with open(os.path.join(audios_dir, fname), 'rb') as f:
+                                sent = bot.send_audio(sender_id, f, caption=item.get('caption', ''))
+                            item['file_id'] = sent.audio.file_id
+                            uploaded_count['audios'] += 1
+                        except Exception as e:
+                            print(f"❌ خطا در آپلود مجدد آهنگ {item.get('id')}: {e}")
+                        break
+
+        save_media()
+
+    # پاکسازی فایل‌های موقت
+    if os.path.exists(temp_zip_path):
+        os.remove(temp_zip_path)
+    if os.path.exists(extract_dir):
+        shutil.rmtree(extract_dir)
+
+    response = "✅ بازیابی بک‌آپ با موفقیت انجام شد!\n\n"
+    response += f"📄 فایل‌های اطلاعاتی بازیابی شده: {len(restored_files)}\n"
+    response += f"📸 عکس‌های بازیابی شده: {uploaded_count['photos']}\n"
+    response += f"🎥 فیلم‌های بازیابی شده: {uploaded_count['videos']}\n"
+    response += f"🎵 آهنگ‌های بازیابی شده: {uploaded_count['audios']}\n"
+    bot.send_message(sender_id, response)
 
 # ========== تابع ارسال گزارش متنی به گروه ==========
 def send_backup_to_group(sender_id):
@@ -951,6 +1143,9 @@ def cancel_mode(msg):
     if user_id in upload_mode:
         del upload_mode[user_id]
         canceled = True
+    if user_id in restore_mode:
+        del restore_mode[user_id]
+        canceled = True
     if user_id in admin_chat_mode and admin_chat_mode[user_id]:
         admin_chat_mode[user_id] = False
         canceled = True
@@ -978,11 +1173,11 @@ def get_group_id(msg):
     response += f"\n📌 این مقادیر رو توی کد توی GROUP_ID و TOPIC_IDS پر کن."
     bot.reply_to(msg, response, parse_mode='Markdown')
 
-# ========== دستور مستقیم بک‌آپ ZIP ==========
+# ========== دستور مستقیم بک‌آپ ZIP (فقط بنیانگذار) ==========
 @bot.message_handler(commands=['zipbackup'])
 def zip_backup_command(msg):
     user_id = msg.from_user.id
-    if not is_founder(user_id) and not is_owner(user_id):
+    if not is_founder(user_id):
         return
     bot.reply_to(msg, "⏳ در حال ساخت و ارسال بک‌آپ ZIP...")
     send_zip_backup(user_id)
@@ -1030,7 +1225,9 @@ def build_founder_markup():
     av_status = "🟢 روشن" if antivirus_enabled else "🔴 خاموش"
     btn15 = telebot.types.InlineKeyboardButton(f"🛡 Antivirus ({av_status})", callback_data="founder_antivirus_toggle")
     btn16 = telebot.types.InlineKeyboardButton("🗄 بک‌آپ کامل ZIP", callback_data="founder_zip_backup")
-    markup.add(btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8, btn9, btn10, btn11, btn12, btn13, btn14, btn15, btn16)
+    btn17 = telebot.types.InlineKeyboardButton("📥 بازیابی بک‌آپ ZIP", callback_data="founder_upload_zip_backup")
+    btn18 = telebot.types.InlineKeyboardButton("🗄 DataBase", callback_data="founder_database")
+    markup.add(btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8, btn9, btn10, btn11, btn12, btn13, btn14, btn15, btn16, btn17, btn18)
     return markup
 
 def show_founder_panel(user_id):
@@ -1044,7 +1241,7 @@ def founder_panel(msg):
         return
     show_founder_panel(user_id)
 
-# ========== پنل سازنده (تابع سازنده مارکاپ + نمایش) ==========
+# ========== پنل سازنده (دیگر شامل بک‌آپ/گزارش بات/دیتابیس نیست) ==========
 def build_owner_markup():
     markup = telebot.types.InlineKeyboardMarkup(row_width=2)
     btn1 = telebot.types.InlineKeyboardButton("📰 ارسال خبر", callback_data="owner_news")
@@ -1056,13 +1253,11 @@ def build_owner_markup():
     btn7 = telebot.types.InlineKeyboardButton("⛔ مدیریت محرومیت", callback_data="owner_bans")
     btn8 = telebot.types.InlineKeyboardButton("👑 مدیریت ادمین‌ها", callback_data="owner_admins")
     btn9 = telebot.types.InlineKeyboardButton("🔄 آپدیت بات", callback_data="owner_update")
-    btn10 = telebot.types.InlineKeyboardButton("📊 گزارش بات", callback_data="owner_botup")
     btn11 = telebot.types.InlineKeyboardButton("📢 ارسال به همه", callback_data="owner_broadcast")
     btn12 = telebot.types.InlineKeyboardButton("🖥️ کنسول", callback_data="owner_console")
     btn13 = telebot.types.InlineKeyboardButton("🎬 مدیریت Media", callback_data="owner_media")
     btn14 = telebot.types.InlineKeyboardButton("📋 لیست کاربران", callback_data="owner_all_users")
-    btn15 = telebot.types.InlineKeyboardButton("🗄 بک‌آپ کامل ZIP", callback_data="owner_zip_backup")
-    markup.add(btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8, btn9, btn10, btn11, btn12, btn13, btn14, btn15)
+    markup.add(btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8, btn9, btn11, btn12, btn13, btn14)
     return markup
 
 def show_owner_panel(user_id):
@@ -1505,12 +1700,37 @@ def handle_callbacks(call):
         send_zip_backup(user_id)
         return
 
-    if data == "owner_zip_backup":
-        if not is_owner(user_id):
-            bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
+    if data == "founder_upload_zip_backup":
+        if not is_founder(user_id):
+            bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
             return
-        bot.answer_callback_query(call.id, "⏳ در حال ساخت بک‌آپ...")
-        send_zip_backup(user_id)
+        restore_mode[user_id] = True
+        bot.send_message(user_id, "📥 لطفاً فایل بک‌آپ ZIP را ارسال کنید تا بازیابی شود.\n\n⚠️ توجه: با این کار، اطلاعات فعلی بات (تیکت‌ها، ادمین‌ها، اخبار، کلن‌ها، مدیا و ...) با اطلاعات داخل فایل ZIP جایگزین خواهد شد.\n❌ برای خروج: /cancel")
+        bot.answer_callback_query(call.id, "📥 منتظر فایل ZIP هستم")
+        return
+
+    if data == "founder_database":
+        if not is_founder(user_id):
+            bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
+            return
+        invite_link = get_database_invite_link()
+        if invite_link:
+            markup = telebot.types.InlineKeyboardMarkup()
+            btn_join = telebot.types.InlineKeyboardButton("🗄 ورود به گروه دیتابیس", url=invite_link)
+            markup.add(btn_join)
+            bot.send_message(user_id, "🗄 برای ورود به گروه دیتابیس روی دکمه زیر بزنید:", reply_markup=markup)
+            bot.send_message(user_id, f"📥 شما وارد گروه دیتابیس شدید!\n\n{get_iran_datetime_text()}")
+        else:
+            bot.send_message(user_id, "❌ خطا در ساخت لینک دعوت گروه دیتابیس!\nبررسی کنید بات در گروه ادمین با دسترسی «دعوت کاربران از طریق لینک» باشد.")
+        bot.answer_callback_query(call.id, "🗄 DataBase")
+        return
+
+    if data == "owner_zip_backup":
+        bot.answer_callback_query(call.id, "⛔ این بخش برای سازنده غیرفعال شده است!")
+        return
+
+    if data == "owner_upload_zip_backup":
+        bot.answer_callback_query(call.id, "⛔ این بخش برای سازنده غیرفعال شده است!")
         return
 
     if data == "owner_news":
@@ -1683,12 +1903,7 @@ def handle_callbacks(call):
         return
 
     if data == "owner_botup":
-        if not is_owner(user_id):
-            bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
-            return
-        bot.answer_callback_query(call.id, "📊 در حال ارسال گزارش به گروه...")
-        send_botup_report(user_id)
-        send_backup_to_group(user_id)
+        bot.answer_callback_query(call.id, "⛔ این بخش برای سازنده غیرفعال شده است!")
         return
 
     if data == "owner_broadcast":
@@ -2494,7 +2709,7 @@ def cancel_broadcast(msg):
     else:
         bot.reply_to(msg, "✅ شما در حالت ارسال به همه نیستید.")
 
-# ========== گزارش کامل بات (تابع مستقل، هم برای دستور هم برای دکمه) ==========
+# ========== گزارش کامل بات (فقط بنیانگذار می‌تواند صدا بزند) ==========
 def send_botup_report(user_id):
     response = "📋 گزارش کامل اطلاعات بات:\n\n"
     response += "👑 لیست ادمین‌ها:\n"
@@ -2566,10 +2781,11 @@ def send_botup_report(user_id):
     response += f"  🎵 آهنگ‌ها: {len(media_data['audios'])} عدد\n"
     bot.send_message(user_id, response)
 
+# ========== دستور مستقیم گزارش بات (فقط بنیانگذار) ==========
 @bot.message_handler(commands=['botup'])
 def botup(msg):
     user_id = msg.from_user.id
-    if not is_founder(user_id) and not is_owner(user_id):
+    if not is_founder(user_id):
         return
     send_botup_report(user_id)
 
@@ -2623,8 +2839,8 @@ def show_perms(msg):
     response += "  ✅ همه دستورات\n"
     response += "  ✅ بدون نياز به تاييد\n\n"
     response += "👑 سازنده (Owner):\n"
-    response += "  ✅ همه دستورات\n"
-    response += "  ✅ بدون نياز به تاييد\n\n"
+    response += "  ✅ اکثر دستورات مدیریتی\n"
+    response += "  ⛔ بدون دسترسی به بک‌آپ / گزارش بات / دیتابیس\n\n"
     response += "🛡️ Admin (ادمین معمولی):\n"
     response += "  ✅ /tickets\n"
     response += "  ✅ /open\n"
@@ -2858,7 +3074,9 @@ def cmds(msg):
         response += "📌 /kickadmin [آيدي] : حذف ادمين\n"
         response += "📌 /ban [آيدي] : محروم کردن کاربر\n"
         response += "📌 /unban [آيدي] : رفع محروميت کاربر\n"
-        response += "📌 /zipbackup : ساخت و ارسال بک‌آپ کامل ZIP به گروه (با پین خودکار)\n"
+    if is_founder(user_id):
+        response += "📌 /zipbackup : ساخت و ارسال بک‌آپ کامل ZIP (همراه مدیا) به گروه (با پین خودکار)\n"
+        response += "📌 /botup : گزارش کامل بات\n"
     response += "📌 /ac : ورود/خروج از چت ادمين ها\n"
     response += "📌 /getgroupid : گرفتن آیدی گروه و تاپیک (فقط توی گروه)\n"
     bot.reply_to(msg, response)
@@ -3105,6 +3323,26 @@ def handle_messages(msg):
             else:
                 bot.reply_to(msg, "❌ فرمت Hash نامعتبر است! دوباره تلاش کنید.")
             return
+
+    # ========== حالت بازیابی بک‌آپ ZIP (فقط بنیانگذار) ==========
+    if user_id in restore_mode and restore_mode[user_id]:
+        if not is_founder(user_id):
+            del restore_mode[user_id]
+            return
+        if msg.content_type != 'document':
+            bot.reply_to(msg, "❌ لطفاً یک فایل ZIP ارسال کنید!\n❌ برای خروج: /cancel")
+            return
+        file_name = msg.document.file_name or ""
+        if not file_name.lower().endswith('.zip'):
+            bot.reply_to(msg, "❌ فایل ارسالی باید با فرمت ZIP باشد!\n❌ برای خروج: /cancel")
+            return
+        bot.reply_to(msg, "⏳ در حال دریافت و بازیابی فایل بک‌آپ... لطفاً صبر کنید ⏳\n(بسته به تعداد مدیاها ممکن است کمی طول بکشد)")
+        try:
+            restore_backup_zip(msg, user_id)
+        except Exception as e:
+            bot.send_message(user_id, f"❌ خطا در بازیابی بک‌آپ: {e}")
+        del restore_mode[user_id]
+        return
 
     if user_id in upload_mode:
         media_type = upload_mode[user_id]
