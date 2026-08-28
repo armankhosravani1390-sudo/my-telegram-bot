@@ -1205,6 +1205,23 @@ def build_admin_panel_markup():
     markup.add(btn1, btn2)
     return markup
 
+# ========== کیبورد ثابت پایین صفحه با دکمه «پنل اصلی بات» ==========
+def build_main_reply_keyboard(user_id):
+    markup = telebot.types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
+    btn = telebot.types.KeyboardButton("🏠 پنل اصلی بات")
+    markup.add(btn)
+    return markup
+
+def open_main_panel_for(user_id):
+    if is_founder(user_id):
+        show_founder_panel(user_id)
+    elif is_owner(user_id):
+        show_owner_panel(user_id)
+    elif is_admin(user_id):
+        bot.send_message(user_id, "⚙️ پنل ادمینی:\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=build_admin_panel_markup())
+    else:
+        show_user_panel(user_id)
+
 @bot.message_handler(commands=['start'])
 def start(msg):
     user_id = msg.from_user.id
@@ -1220,7 +1237,7 @@ def start(msg):
         return
     if not check_and_ask_join(user_id, msg):
         return
-    bot.reply_to(msg, "🔰 سلام! به بات خوش آمدید!")
+    bot.reply_to(msg, "🔰 سلام! به بات خوش آمدید!", reply_markup=build_main_reply_keyboard(user_id))
     show_user_panel(user_id)
 
 # ========== پنل بنیانگذار ==========
@@ -1326,7 +1343,7 @@ def handle_callbacks(call):
             return
         is_member, channel_name, channel_link = is_user_in_channels(user_id)
         if is_member:
-            bot.send_message(user_id, "✅ عضویت شما در هر دو کانال تایید شد! حالا می‌توانید از بات استفاده کنید.")
+            bot.send_message(user_id, "✅ عضویت شما در هر دو کانال تایید شد! حالا می‌توانید از بات استفاده کنید.", reply_markup=build_main_reply_keyboard(user_id))
             bot.answer_callback_query(call.id, "✅ عضویت تایید شد")
             show_user_panel(user_id)
         else:
@@ -1338,7 +1355,7 @@ def handle_callbacks(call):
         if not is_founder(user_id) and not is_owner(user_id):
             bot.answer_callback_query(call.id, "⛔ شما دسترسی ندارید!")
             return
-        bot.send_message(user_id, "✅ دسترسی شما تایید شد! خوش آمدید.")
+        bot.send_message(user_id, "✅ دسترسی شما تایید شد! خوش آمدید.", reply_markup=build_main_reply_keyboard(user_id))
         bot.answer_callback_query(call.id, "✅ تایید شد")
         show_user_panel(user_id)
         return
@@ -3304,6 +3321,15 @@ def ticket(msg):
             except:
                 pass
     bot.reply_to(msg, "✅ پيام شما ارسال شد. منتظر پاسخ ادمین باشید.")
+
+# ========== هندلر دکمه ثابت «پنل اصلی بات» ==========
+@bot.message_handler(func=lambda m: m.text == "🏠 پنل اصلی بات")
+def main_panel_button_handler(msg):
+    user_id = msg.from_user.id
+    if is_banned(user_id):
+        bot.reply_to(msg, "⛔ *** [ Ban.System ] : شما از بات محروم شدید ***")
+        return
+    open_main_panel_for(user_id)
 
 @bot.message_handler(func=lambda m: True, content_types=['text', 'photo', 'video', 'audio', 'document'])
 def handle_messages(msg):
