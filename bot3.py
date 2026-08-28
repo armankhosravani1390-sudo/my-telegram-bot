@@ -31,6 +31,7 @@ TOPIC_IDS = {
     'users':         22,
     'banned':        69,
     'backup_files':  None,
+    'channels':      20,
 }
 
 REQUIRED_CHANNELS = [
@@ -684,6 +685,15 @@ def send_backup_to_group(sender_id):
     else:
         send_to_topic('ads', ad_text)
 
+    # ========== کانال‌های اجباری ==========
+    channels_text = f"📺 کانال‌های اجباری — {now}\n{'━'*25}\n"
+    if REQUIRED_CHANNELS:
+        for ch in REQUIRED_CHANNELS:
+            channels_text += f"📌 نام: {ch['name']}\n🔗 لینک: {ch['link']}\n" + "─"*20 + "\n"
+    else:
+        channels_text += "هیچ کانالی تنظیم نشده است.\n"
+    send_to_topic('channels', channels_text)
+
     donate_text = f"💰 حمایت‌ها — {now}\n{'━'*25}\n"
     if donate_data:
         for item in donate_data:
@@ -1187,7 +1197,10 @@ def build_main_user_markup(user_id):
     btn9 = telebot.types.InlineKeyboardButton("🎫 تیکت جدید", callback_data="user_new_ticket")
     btn10 = telebot.types.InlineKeyboardButton("🎬 Media's", callback_data="user_media")
     btn11 = telebot.types.InlineKeyboardButton("📅 تاریخ و ساعت", callback_data="user_datetime")
-    buttons = [btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8, btn9, btn10, btn11]
+    btn12 = telebot.types.InlineKeyboardButton("⛏️ معدن", callback_data="user_mine")
+    btn13 = telebot.types.InlineKeyboardButton("🍳 آشپزخانه", callback_data="user_kitchen")
+    btn14 = telebot.types.InlineKeyboardButton("⚠️ گزارش مشکل", callback_data="user_report_issue")
+    buttons = [btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8, btn9, btn10, btn11, btn12, btn13, btn14]
     if is_founder(user_id) or is_owner(user_id):
         buttons.append(telebot.types.InlineKeyboardButton("👑 پنل مدیریت", callback_data="open_management_panel"))
     elif is_admin(user_id):
@@ -1205,22 +1218,22 @@ def build_admin_panel_markup():
     markup.add(btn1, btn2)
     return markup
 
-# ========== کیبورد ثابت پایین صفحه با دکمه «پنل اصلی بات» ==========
+# ========== کیبورد ثابت پایین صفحه ==========
+# دکمه «پنل اصلی بات» همیشه هست و همیشه پنل کاربری عادی را باز می‌کند.
+# بسته به نقش، یک دکمه دومِ اختصاصی هم اضافه می‌شود:
+#   - ادمین معمولی  -> «⚙️ پنل ادمینی»
+#   - سازنده/بنیانگذار -> «👑 پنل مدیریتی»
 def build_main_reply_keyboard(user_id):
     markup = telebot.types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
-    btn = telebot.types.KeyboardButton("🏠 پنل اصلی بات")
-    markup.add(btn)
-    return markup
-
-def open_main_panel_for(user_id):
-    if is_founder(user_id):
-        show_founder_panel(user_id)
-    elif is_owner(user_id):
-        show_owner_panel(user_id)
+    btn_main = telebot.types.KeyboardButton("🏠 پنل اصلی بات")
+    markup.add(btn_main)
+    if is_founder(user_id) or is_owner(user_id):
+        btn_manage = telebot.types.KeyboardButton("👑 پنل مدیریتی")
+        markup.add(btn_manage)
     elif is_admin(user_id):
-        bot.send_message(user_id, "⚙️ پنل ادمینی:\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=build_admin_panel_markup())
-    else:
-        show_user_panel(user_id)
+        btn_admin = telebot.types.KeyboardButton("⚙️ پنل ادمینی")
+        markup.add(btn_admin)
+    return markup
 
 @bot.message_handler(commands=['start'])
 def start(msg):
@@ -2224,6 +2237,30 @@ def handle_callbacks(call):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
             return
         bot.send_message(user_id, get_iran_datetime_text())
+        bot.answer_callback_query(call.id)
+        return
+
+    if data == "user_mine":
+        if is_banned(user_id):
+            bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
+            return
+        bot.send_message(user_id, "⛏️ بخش معدن\n\n🔧 این بخش هنوز درست نشده، لطفاً منتظر آپدیت بعدی بمانید.")
+        bot.answer_callback_query(call.id)
+        return
+
+    if data == "user_kitchen":
+        if is_banned(user_id):
+            bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
+            return
+        bot.send_message(user_id, "🍳 بخش آشپزخانه\n\n🔧 این بخش هنوز درست نشده، لطفاً منتظر آپدیت بعدی بمانید.")
+        bot.answer_callback_query(call.id)
+        return
+
+    if data == "user_report_issue":
+        if is_banned(user_id):
+            bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
+            return
+        bot.send_message(user_id, "⚠️ گزارش مشکل\n\n🔧 این بخش هنوز درست نشده لطفا منتظر آپدیت بعدی بمانید.")
         bot.answer_callback_query(call.id)
         return
 
@@ -3322,14 +3359,43 @@ def ticket(msg):
                 pass
     bot.reply_to(msg, "✅ پيام شما ارسال شد. منتظر پاسخ ادمین باشید.")
 
-# ========== هندلر دکمه ثابت «پنل اصلی بات» ==========
+# ========== هندلر دکمه‌های ثابت کیبورد پایین صفحه ==========
 @bot.message_handler(func=lambda m: m.text == "🏠 پنل اصلی بات")
 def main_panel_button_handler(msg):
     user_id = msg.from_user.id
     if is_banned(user_id):
         bot.reply_to(msg, "⛔ *** [ Ban.System ] : شما از بات محروم شدید ***")
         return
-    open_main_panel_for(user_id)
+    # این دکمه همیشه پنل کاربری عادی را باز می‌کند، فارغ از نقش کاربر
+    show_user_panel(user_id)
+
+@bot.message_handler(func=lambda m: m.text == "👑 پنل مدیریتی")
+def management_panel_button_handler(msg):
+    user_id = msg.from_user.id
+    if is_banned(user_id):
+        bot.reply_to(msg, "⛔ *** [ Ban.System ] : شما از بات محروم شدید ***")
+        return
+    if is_founder(user_id):
+        show_founder_panel(user_id)
+    elif is_owner(user_id):
+        show_owner_panel(user_id)
+    else:
+        bot.reply_to(msg, "⛔ شما دسترسی به این پنل را ندارید!")
+
+@bot.message_handler(func=lambda m: m.text == "⚙️ پنل ادمینی")
+def admin_panel_button_handler(msg):
+    user_id = msg.from_user.id
+    if is_banned(user_id):
+        bot.reply_to(msg, "⛔ *** [ Ban.System ] : شما از بات محروم شدید ***")
+        return
+    if is_founder(user_id):
+        show_founder_panel(user_id)
+    elif is_owner(user_id):
+        show_owner_panel(user_id)
+    elif is_admin(user_id):
+        bot.send_message(user_id, "⚙️ پنل ادمینی:\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=build_admin_panel_markup())
+    else:
+        bot.reply_to(msg, "⛔ شما دسترسی به این پنل را ندارید!")
 
 @bot.message_handler(func=lambda m: True, content_types=['text', 'photo', 'video', 'audio', 'document'])
 def handle_messages(msg):
@@ -3621,7 +3687,7 @@ def handle_messages(msg):
 
     if is_admin(user_id):
         if user_id in admin_chat_mode and admin_chat_mode[user_id]:
-            if not msg.text.startswith('/'):
+            if msg.text and not msg.text.startswith('/'):
                 found_user = None
                 for user_id_chat, status in chat_sessions.items():
                     if status == 'open':
@@ -3633,13 +3699,12 @@ def handle_messages(msg):
                 else:
                     bot.reply_to(msg, "❌ چت فعالی وجود ندارد!")
                 return
+        # ========== به جای باز کردن خودکار پنل، فقط راهنمایی به دکمه کیبورد ==========
         if msg.text and not msg.text.startswith('/'):
-            if user_id == FOUNDER_ID:
-                show_founder_panel(user_id)
-            elif user_id == OWNER2_ID:
-                show_owner_panel(user_id)
+            if is_founder(user_id) or is_owner(user_id):
+                bot.reply_to(msg, "ℹ️ برای دسترسی به پنل مدیریتی، روی دکمه «👑 پنل مدیریتی» در کیبورد پایین صفحه کلیک کنید.\n📌 برای پنل کاربری عادی: «🏠 پنل اصلی بات»")
             else:
-                bot.send_message(user_id, "⚙️ پنل ادمینی:", reply_markup=build_admin_panel_markup())
+                bot.reply_to(msg, "ℹ️ برای دسترسی به پنل ادمینی، روی دکمه «⚙️ پنل ادمینی» در کیبورد پایین صفحه کلیک کنید.\n📌 برای پنل کاربری عادی: «🏠 پنل اصلی بات»")
             return
 
     if user_id in waiting_for_message and waiting_for_message[user_id] == True:
@@ -3657,7 +3722,7 @@ def handle_messages(msg):
             bot.reply_to(msg, "✅ پیام ارسال شد")
             waiting_for_message[user_id] = False
     else:
-        # ========== سیستم چت مخفی برای کاربران عادی ==========
+        # ========== سیستم چت مخفی برای کاربران عادی + راهنمایی به پنل ==========
         if msg.content_type == 'text' and msg.text and not msg.text.startswith('/'):
             uid_str = str(user_id)
             if stealth_sessions.get(uid_str):
@@ -3677,6 +3742,8 @@ def handle_messages(msg):
                     bot.send_message(FOUNDER_ID, f"📩 پیام جدید:\n👤 نام: {msg.from_user.first_name} (@{msg.from_user.username}) | آیدی: {user_id}\n📝 متن: {msg.text}", reply_markup=markup)
                 except:
                     pass
+            # راهنمایی به کاربر عادی برای استفاده از پنل اصلی بات
+            bot.reply_to(msg, "ℹ️ برای باز کردن پنل اصلی بات، لطفاً روی دکمه «🏠 پنل اصلی بات» در پایین صفحه کلیک کنید.")
 
 @app.route('/')
 def home():
