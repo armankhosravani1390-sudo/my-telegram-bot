@@ -3,9 +3,9 @@ import time
 import threading
 from flask import Flask
 import json
-import io
 import os
-from datetime import datetime
+import zipfile
+from datetime import datetime, timezone, timedelta
 import random
 
 TOKEN = "8299446091:AAHVWDgncWd9qeU0eoNQ8GV-mX1yON-fMsM"
@@ -17,19 +17,19 @@ FOUNDER_NAME = "꧁ I R A N ꧂"
 # ========== تنظیمات گروه بک‌آپ ==========
 GROUP_ID = -1004326536729
 TOPIC_IDS = {
-    'admins':       2,
-    'clans':        19,
-    'news':         18,
-    'ads':          31,
-    'donate':       9,
-    'tickets':      8,
-    'games':        None,
-    'media_photos': 12,
-    'media_videos': 14,
-    'media_audios': 15,
-    'users':        22,
-    'banned':       69,
-    'backup':       72,   # تاپیک بک‌آپ کامل (JSON + کپی همه چیز)
+    'admins':        2,     # تاپیک ادمین‌ها
+    'clans':         19,    # تاپیک کلن‌ها
+    'news':          18,    # تاپیک اخبار
+    'ads':           31,    # تاپیک تبلیغات
+    'donate':        9,     # تاپیک حمایت‌ها
+    'tickets':       8,     # تاپیک تیکت‌ها
+    'games':         None,  # تاپیک بازی‌ها (هنوز مشخص نشده)
+    'media_photos':  12,    # تاپیک مدیا - عکس‌ها
+    'media_videos':  14,    # تاپیک مدیا - ویدیو‌ها
+    'media_audios':  15,    # تاپیک مدیا - آهنگ‌ها
+    'users':         22,    # تاپیک لیست کاربران
+    'banned':        69,    # تاپیک محروم‌شده‌ها
+    'backup_files':  None,  # تاپیک بک‌آپ ZIP کامل (اگر تاپیک جدا می‌خوای، آیدیش رو بده)
 }
 
 REQUIRED_CHANNELS = [
@@ -60,7 +60,6 @@ ad_counter = 0
 news_mode = {}
 ad_mode = {}
 console_mode = {}
-restore_mode = {}
 
 games = {}
 game_players = {}
@@ -104,11 +103,67 @@ USERS_FILE = 'users.json'
 MEDIA_FILE = 'media.json'
 ANTIVIRUS_FILE = 'antivirus.json'
 
+# ========== لیست همه فایل‌های JSON برای بک‌آپ ZIP ==========
+JSON_FILES = [
+    DATA_FILE, ADMINS_FILE, ADMIN_NUMBERS_FILE, BANNED_FILE,
+    NEWS_FILE, AD_FILE, DONATE_FILE, CLANS_FILE,
+    GAMES_FILE, TTT_GAMES_FILE, USERS_FILE, MEDIA_FILE, ANTIVIRUS_FILE
+]
+
 CONSOLE_ACCESS_CODE = "1390"
 CONSOLE_DECODE_TRIGGER = "1360"
 HASH_OFFSET = 133
 
 antivirus_enabled = True
+
+# ========== تاریخ و ساعت ایران (بدون نیاز به کتابخانه جانبی) ==========
+IRAN_TZ = timezone(timedelta(hours=3, minutes=30))
+PERSIAN_MONTHS = ['فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور',
+                  'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند']
+PERSIAN_WEEKDAYS = ['دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنجشنبه', 'جمعه', 'شنبه', 'یکشنبه']
+
+def gregorian_to_jalali(gy, gm, gd):
+    g_days_in_month = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+    j_days_in_month = [31, 31, 31, 31, 31, 31, 30, 30, 30, 30, 30, 29]
+    gy2 = gy - 1600
+    gm2 = gm - 1
+    gd2 = gd - 1
+    g_day_no = 365 * gy2 + (gy2 + 3) // 4 - (gy2 + 99) // 100 + (gy2 + 399) // 400
+    for i in range(gm2):
+        g_day_no += g_days_in_month[i]
+    if gm2 > 1 and ((gy % 4 == 0 and gy % 100 != 0) or (gy % 400 == 0)):
+        g_day_no += 1
+    g_day_no += gd2
+    j_day_no = g_day_no - 79
+    j_np = j_day_no // 12053
+    j_day_no %= 12053
+    jy = 979 + 33 * j_np + 4 * (j_day_no // 1461)
+    j_day_no %= 1461
+    if j_day_no >= 366:
+        jy += (j_day_no - 1) // 365
+        j_day_no = (j_day_no - 1) % 365
+    jm = 12
+    jd = j_day_no + 1
+    for i in range(11):
+        if j_day_no < j_days_in_month[i]:
+            jm = i + 1
+            jd = j_day_no + 1
+            break
+        j_day_no -= j_days_in_month[i]
+    return jy, jm, jd
+
+def get_iran_datetime_text():
+    now_ir = datetime.now(IRAN_TZ)
+    jy, jm, jd = gregorian_to_jalali(now_ir.year, now_ir.month, now_ir.day)
+    wd = PERSIAN_WEEKDAYS[now_ir.weekday()]
+    time_str = now_ir.strftime('%H:%M:%S')
+    text = (
+        f"🕒 ساعت به وقت ایران: {time_str}\n\n"
+        f"📅 امروز: {wd}، {jd} {PERSIAN_MONTHS[jm-1]} {jy}\n"
+        f"🗓 شما در ماه «{PERSIAN_MONTHS[jm-1]}» هستید.\n\n"
+        f"📆 تاریخ میلادی: {now_ir.strftime('%Y-%m-%d')}"
+    )
+    return text
 
 def init_roles():
     global admins, admin_numbers
@@ -211,9 +266,10 @@ def load_ad():
             ad_data = data.get('ads', {})
             ad_counter = data.get('counter', 0)
     else:
-        # بدون تبلیغ نمونه پیش‌فرض
-        ad_data = {}
-        ad_counter = 0
+        ad_data = {
+            "1": "🌿 سرور NightFall با افتخار تقدیم میکند\n\nNightFall Nights 🌔\n\n📍اگه دنبال تجربه خفن از یه سرور خفن هستی همین الان به سرور ما بپیوند 🌏\n\n🏆 تازه ترین و بهینه ترین سرور اِم تی اِی 🏆\n\n⚡𝐒𝐞𝐫𝐯𝐞𝐫 𝐈𝐏 :\nMtaSa://5.42.223.61:22003\n\n      𝐒𝐨𝐜𝐢𝐚𝐥 𝐦𝐞𝐝𝐢𝐚👇\n\n🌐 𝐓𝐞𝐚𝐦𝐒𝐩𝐞𝐚𝐤 : ts63.ir:11439\n((5.57.39.100:11439))\n\n📱 𝐈𝐧𝐬𝐭𝐚𝐠𝐫𝐚𝐦 : @NightFall_MTA\n\n✈ 𝐓𝐞𝐥𝐞𝐠𝐫𝐚𝐦 : @NightFall_MTA\n\n💻 𝐑𝐮𝐛𝐢𝐤𝐚 : @NightFall_RPG\n\n🎥 𝐀𝐩𝐚𝐫𝐚𝐭 : 𝐂𝐨𝐦𝐢𝐧𝐠 𝐒𝐨𝐨𝐧\n\n🛒 𝐒𝐡𝐨𝐩 : 𝐂𝐨𝐦𝐢𝐧𝐠 𝐒𝐨𝐨𝐧\n\n🧑‍💻 𝗦𝘂𝗽𝗽𝗼𝗿𝘁 𝗦𝗲𝗿𝘃𝗲𝗿 : @NightFall_RPG\n\n🧡𝐅𝐨𝐥𝐥𝐨𝐰 𝐔𝐬 ....🧡"
+        }
+        ad_counter = 1
 
 def save_ad():
     with open(AD_FILE, 'w') as f:
@@ -338,7 +394,42 @@ def unhash_text(hashed):
     except:
         return None
 
-# ========== تابع ارسال گزارش متنی به گروه (هر بخش هم توی تاپیک خودش، هم کپی توی تاپیک بک‌آپ) ==========
+# ========== ساخت و ارسال بک‌آپ ZIP کامل با تایم آپلود + پین خودکار ==========
+def create_backup_zip():
+    now_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    zip_path = f"backup_{now_str}.zip"
+    with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zf:
+        for file_path in JSON_FILES:
+            if os.path.exists(file_path):
+                zf.write(file_path)
+    return zip_path, now_str
+
+def send_zip_backup(sender_id):
+    if not GROUP_ID:
+        bot.send_message(sender_id, "⚠️ GROUP_ID هنوز تنظیم نشده!\nابتدا بات رو به گروه اضافه کن، توی هر تاپیک /getgroupid بزن و مقادیر رو توی کد پر کن.")
+        return
+    zip_path = None
+    try:
+        zip_path, now_str = create_backup_zip()
+        thread_id = TOPIC_IDS.get('backup_files')
+        caption = f"🗄 بک‌آپ کامل فایل‌های بات (ZIP)\n🕐 زمان آپلود: {now_str}"
+        with open(zip_path, 'rb') as f:
+            if thread_id:
+                sent = bot.send_document(GROUP_ID, f, caption=caption, message_thread_id=thread_id)
+            else:
+                sent = bot.send_document(GROUP_ID, f, caption=caption)
+        try:
+            bot.pin_chat_message(GROUP_ID, sent.message_id, disable_notification=True)
+        except Exception as e:
+            bot.send_message(sender_id, f"⚠️ فایل بک‌آپ ارسال شد ولی پین نشد (باید بات ادمین گروه با دسترسی پین باشه): {e}")
+        bot.send_message(sender_id, f"✅ بک‌آپ ZIP کامل ساخته، ارسال و پین شد!\n🕐 زمان: {now_str}")
+    except Exception as e:
+        bot.send_message(sender_id, f"❌ خطا در ساخت/ارسال بک‌آپ ZIP: {e}")
+    finally:
+        if zip_path and os.path.exists(zip_path):
+            os.remove(zip_path)
+
+# ========== تابع ارسال گزارش متنی به گروه ==========
 def send_backup_to_group(sender_id):
     if not GROUP_ID:
         bot.send_message(sender_id, "⚠️ GROUP_ID هنوز تنظیم نشده!\nابتدا بات رو به گروه اضافه کن، توی هر تاپیک /getgroupid بزن و مقادیر رو توی کد پر کن.")
@@ -346,7 +437,7 @@ def send_backup_to_group(sender_id):
 
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    def send_to_topic(topic_key, text, parse_mode=None, mirror_to_backup=True):
+    def send_to_topic(topic_key, text, parse_mode=None):
         thread_id = TOPIC_IDS.get(topic_key)
         try:
             if thread_id:
@@ -354,28 +445,14 @@ def send_backup_to_group(sender_id):
             else:
                 bot.send_message(GROUP_ID, f"[{topic_key}]\n{text}", parse_mode=parse_mode)
         except Exception as e:
-            try:
-                bot.send_message(sender_id, f"❌ خطا در ارسال به تاپیک {topic_key}: {e}")
-            except:
-                pass
+            bot.send_message(sender_id, f"❌ خطا در ارسال به تاپیک {topic_key}: {e}")
 
-        # کپی همه چیز توی تاپیک بک‌آپ هم بره
-        if mirror_to_backup and topic_key != 'backup':
-            backup_thread = TOPIC_IDS.get('backup')
-            try:
-                if backup_thread:
-                    bot.send_message(GROUP_ID, f"📦 [{topic_key}]\n{text}", message_thread_id=backup_thread, parse_mode=parse_mode)
-            except:
-                pass
-
-    # ادمین‌ها
     admin_text = f"👑 لیست ادمین‌ها — {now}\n{'━'*25}\n"
     for admin_id, role in admins.items():
         num = admin_numbers.get(admin_id, role)
         admin_text += f"🆔 {admin_id} | {num}\n"
     send_to_topic('admins', admin_text)
 
-    # محروم‌شده‌ها
     banned_text = f"⛔ کاربران محروم — {now}\n{'━'*25}\n"
     if banned_users:
         for bid in banned_users:
@@ -384,7 +461,6 @@ def send_backup_to_group(sender_id):
         banned_text += "هیچ کاربری محروم نیست.\n"
     send_to_topic('banned', banned_text)
 
-    # کلن‌ها
     clan_text = f"🤝 اتحادها — {now}\n{'━'*25}\n"
     if clans:
         for cname, cdata in clans.items():
@@ -401,7 +477,6 @@ def send_backup_to_group(sender_id):
     else:
         send_to_topic('clans', clan_text)
 
-    # اخبار
     news_text = f"📰 اخبار — {now}\n{'━'*25}\n"
     if news_data:
         for nid, ntext in news_data.items():
@@ -415,7 +490,6 @@ def send_backup_to_group(sender_id):
     else:
         send_to_topic('news', news_text)
 
-    # تبلیغات
     ad_text = f"📢 تبلیغات — {now}\n{'━'*25}\n"
     if ad_data:
         for aid, atext in ad_data.items():
@@ -429,7 +503,6 @@ def send_backup_to_group(sender_id):
     else:
         send_to_topic('ads', ad_text)
 
-    # حمایت‌ها
     donate_text = f"💰 حمایت‌ها — {now}\n{'━'*25}\n"
     if donate_data:
         for item in donate_data:
@@ -438,7 +511,6 @@ def send_backup_to_group(sender_id):
         donate_text += "هیچ حمایتی ثبت نشده.\n"
     send_to_topic('donate', donate_text)
 
-    # تیکت‌ها
     ticket_text = f"🎫 تیکت‌ها — {now}\n{'━'*25}\n"
     if tickets:
         for tnum, tdata in tickets.items():
@@ -454,7 +526,6 @@ def send_backup_to_group(sender_id):
     else:
         send_to_topic('tickets', ticket_text)
 
-    # بازی‌ها
     game_text = f"🎮 بازی‌ها — {now}\n{'━'*25}\n"
     game_text += "🪨 سنگ کاغذ قیچی:\n"
     if games:
@@ -472,65 +543,42 @@ def send_backup_to_group(sender_id):
         game_text += "  بازی فعالی وجود ندارد.\n"
     send_to_topic('games', game_text)
 
-    # مدیا — عکس‌ها (متن + خود فایل‌ها هم توی تاپیک خودشون هم توی تاپیک بک‌آپ)
     photos_thread = TOPIC_IDS.get('media_photos')
-    backup_thread = TOPIC_IDS.get('backup')
     photos_text = f"📸 عکس‌ها — {now}\n{'━'*25}\nتعداد: {len(media_data['photos'])} عدد\n"
     send_to_topic('media_photos', photos_text)
     for photo in media_data['photos']:
-        cap = f"📸 {photo.get('caption','')}"
         try:
             if photos_thread:
-                bot.send_photo(GROUP_ID, photo['file_id'], caption=cap, message_thread_id=photos_thread)
+                bot.send_photo(GROUP_ID, photo['file_id'], caption=f"📸 {photo.get('caption','')}", message_thread_id=photos_thread)
             else:
-                bot.send_photo(GROUP_ID, photo['file_id'], caption=cap)
-        except:
-            pass
-        try:
-            if backup_thread:
-                bot.send_photo(GROUP_ID, photo['file_id'], caption=f"📦 [بک‌آپ] {cap}", message_thread_id=backup_thread)
+                bot.send_photo(GROUP_ID, photo['file_id'], caption=f"📸 {photo.get('caption','')}")
         except:
             pass
 
-    # مدیا — ویدیو‌ها
     videos_thread = TOPIC_IDS.get('media_videos')
     videos_text = f"🎥 فیلم‌ها — {now}\n{'━'*25}\nتعداد: {len(media_data['videos'])} عدد\n"
     send_to_topic('media_videos', videos_text)
     for video in media_data['videos']:
-        cap = f"🎥 {video.get('caption','')}"
         try:
             if videos_thread:
-                bot.send_video(GROUP_ID, video['file_id'], caption=cap, message_thread_id=videos_thread)
+                bot.send_video(GROUP_ID, video['file_id'], caption=f"🎥 {video.get('caption','')}", message_thread_id=videos_thread)
             else:
-                bot.send_video(GROUP_ID, video['file_id'], caption=cap)
-        except:
-            pass
-        try:
-            if backup_thread:
-                bot.send_video(GROUP_ID, video['file_id'], caption=f"📦 [بک‌آپ] {cap}", message_thread_id=backup_thread)
+                bot.send_video(GROUP_ID, video['file_id'], caption=f"🎥 {video.get('caption','')}")
         except:
             pass
 
-    # مدیا — آهنگ‌ها
     audios_thread = TOPIC_IDS.get('media_audios')
     audios_text = f"🎵 آهنگ‌ها — {now}\n{'━'*25}\nتعداد: {len(media_data['audios'])} عدد\n"
     send_to_topic('media_audios', audios_text)
     for audio in media_data['audios']:
-        cap = f"🎵 {audio.get('caption','')}"
         try:
             if audios_thread:
-                bot.send_audio(GROUP_ID, audio['file_id'], caption=cap, message_thread_id=audios_thread)
+                bot.send_audio(GROUP_ID, audio['file_id'], caption=f"🎵 {audio.get('caption','')}", message_thread_id=audios_thread)
             else:
-                bot.send_audio(GROUP_ID, audio['file_id'], caption=cap)
-        except:
-            pass
-        try:
-            if backup_thread:
-                bot.send_audio(GROUP_ID, audio['file_id'], caption=f"📦 [بک‌آپ] {cap}", message_thread_id=backup_thread)
+                bot.send_audio(GROUP_ID, audio['file_id'], caption=f"🎵 {audio.get('caption','')}")
         except:
             pass
 
-    # لیست کاربران
     users_text = f"📋 لیست همه کاربران بات — {now}\n{'━'*25}\n"
     for admin_id in admins:
         try:
@@ -557,118 +605,7 @@ def send_backup_to_group(sender_id):
     else:
         send_to_topic('users', users_text)
 
-    bot.send_message(sender_id, "✅ تمام اطلاعات و مدیاها هم به تاپیک‌های اختصاصی و هم به تاپیک بک‌آپ ارسال شد!")
-
-
-# ========== بک‌آپ کامل JSON (برای بازگردانی خودکار) ==========
-def build_full_backup_dict():
-    return {
-        'ticket_counter': ticket_counter,
-        'tickets': tickets,
-        'admins': admins,
-        'admin_numbers': admin_numbers,
-        'banned_users': banned_users,
-        'news_data': news_data,
-        'news_counter': news_counter,
-        'ad_data': ad_data,
-        'ad_counter': ad_counter,
-        'donate_data': donate_data,
-        'clans': clans,
-        'games': games,
-        'game_players': game_players,
-        'waiting_games': waiting_games,
-        'ttt_games': ttt_games,
-        'ttt_game_players': ttt_game_players,
-        'ttt_waiting_games': ttt_waiting_games,
-        'all_users_data': all_users_data,
-        'media_data': media_data,
-        'antivirus_enabled': antivirus_enabled,
-        'backup_date': str(datetime.now())
-    }
-
-def send_json_backup_to_group(sender_id=None):
-    if not GROUP_ID:
-        if sender_id:
-            bot.send_message(sender_id, "⚠️ GROUP_ID تنظیم نشده!")
-        return
-    backup_dict = build_full_backup_dict()
-    json_bytes = json.dumps(backup_dict, ensure_ascii=False, indent=2).encode('utf-8')
-    file_obj = io.BytesIO(json_bytes)
-    file_obj.name = f"backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-    thread_id = TOPIC_IDS.get('backup')
-    try:
-        if thread_id:
-            sent = bot.send_document(GROUP_ID, file_obj, message_thread_id=thread_id,
-                                      caption=f"🗄 بک‌آپ کامل اطلاعات بات (JSON)\n🕒 {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n📌 این فایل برای بازگردانی خودکار استفاده می‌شود.")
-        else:
-            sent = bot.send_document(GROUP_ID, file_obj,
-                                      caption=f"🗄 بک‌آپ کامل اطلاعات بات (JSON)\n🕒 {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-        try:
-            bot.pin_chat_message(GROUP_ID, sent.message_id, disable_notification=True)
-        except:
-            pass
-        if sender_id:
-            bot.send_message(sender_id, "✅ فایل بک‌آپ کامل (JSON) ارسال و در تاپیک بک‌آپ پین شد.")
-    except Exception as e:
-        if sender_id:
-            bot.send_message(sender_id, f"❌ خطا در ارسال بک‌آپ JSON: {e}")
-
-def restore_from_backup_dict(data):
-    global ticket_counter, tickets, admins, admin_numbers, banned_users
-    global news_data, news_counter, ad_data, ad_counter, donate_data, clans
-    global games, game_players, waiting_games, ttt_games, ttt_game_players, ttt_waiting_games
-    global all_users_data, media_data, antivirus_enabled
-
-    ticket_counter = data.get('ticket_counter', ticket_counter)
-    tickets = data.get('tickets', tickets)
-    admins = data.get('admins', admins)
-    admin_numbers = data.get('admin_numbers', admin_numbers)
-    banned_users = data.get('banned_users', banned_users)
-    news_data = data.get('news_data', news_data)
-    news_counter = data.get('news_counter', news_counter)
-    ad_data = data.get('ad_data', ad_data)
-    ad_counter = data.get('ad_counter', ad_counter)
-    donate_data = data.get('donate_data', donate_data)
-    clans = data.get('clans', clans)
-    games = data.get('games', games)
-    game_players = data.get('game_players', game_players)
-    waiting_games = data.get('waiting_games', waiting_games)
-    ttt_games = data.get('ttt_games', ttt_games)
-    ttt_game_players = data.get('ttt_game_players', ttt_game_players)
-    ttt_waiting_games = data.get('ttt_waiting_games', ttt_waiting_games)
-    all_users_data = data.get('all_users_data', all_users_data)
-    media_data = data.get('media_data', media_data)
-    antivirus_enabled = data.get('antivirus_enabled', antivirus_enabled)
-
-    save_data()
-    save_admins()
-    save_admin_numbers()
-    save_banned()
-    save_news()
-    save_ad()
-    save_donate()
-    save_clans()
-    save_games()
-    save_ttt_games()
-    save_users()
-    save_media()
-    save_antivirus()
-
-def try_auto_restore(sender_id):
-    """تلاش برای بازگردانی خودکار از روی پیام پین‌شده در گروه (بدون نیاز به فوروارد دستی)"""
-    try:
-        chat_info = bot.get_chat(GROUP_ID)
-        pinned = chat_info.pinned_message
-        if pinned and pinned.document:
-            file_info = bot.get_file(pinned.document.file_id)
-            downloaded = bot.download_file(file_info.file_path)
-            data = json.loads(downloaded.decode('utf-8'))
-            restore_from_backup_dict(data)
-            bot.send_message(sender_id, "✅ اطلاعات به‌صورت خودکار از فایل بک‌آپ پین‌شده بازگردانی شد!")
-            return True
-    except Exception:
-        pass
-    return False
+    bot.send_message(sender_id, "✅ تمام اطلاعات بات با موفقیت به گروه بک‌آپ ارسال شد!")
 
 
 load_data()
@@ -1014,9 +951,6 @@ def cancel_mode(msg):
     if user_id in upload_mode:
         del upload_mode[user_id]
         canceled = True
-    if user_id in restore_mode:
-        del restore_mode[user_id]
-        canceled = True
     if user_id in admin_chat_mode and admin_chat_mode[user_id]:
         admin_chat_mode[user_id] = False
         canceled = True
@@ -1044,6 +978,15 @@ def get_group_id(msg):
     response += f"\n📌 این مقادیر رو توی کد توی GROUP_ID و TOPIC_IDS پر کن."
     bot.reply_to(msg, response, parse_mode='Markdown')
 
+# ========== دستور مستقیم بک‌آپ ZIP ==========
+@bot.message_handler(commands=['zipbackup'])
+def zip_backup_command(msg):
+    user_id = msg.from_user.id
+    if not is_founder(user_id) and not is_owner(user_id):
+        return
+    bot.reply_to(msg, "⏳ در حال ساخت و ارسال بک‌آپ ZIP...")
+    send_zip_backup(user_id)
+
 @bot.message_handler(commands=['start'])
 def start(msg):
     user_id = msg.from_user.id
@@ -1067,6 +1010,7 @@ def start(msg):
     markup.add(btn1, btn2, btn3, btn4)
     bot.reply_to(msg, "🔰 سلام! به بات خوش آمدید!\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=markup)
 
+# ========== پنل بنیانگذار (تابع سازنده مارکاپ + نمایش، برای رفع باگ دکمه بازگشت) ==========
 def build_founder_markup():
     markup = telebot.types.InlineKeyboardMarkup(row_width=2)
     btn1 = telebot.types.InlineKeyboardButton("📰 ارسال خبر", callback_data="founder_news")
@@ -1085,10 +1029,12 @@ def build_founder_markup():
     btn14 = telebot.types.InlineKeyboardButton("📋 لیست کاربران", callback_data="founder_all_users")
     av_status = "🟢 روشن" if antivirus_enabled else "🔴 خاموش"
     btn15 = telebot.types.InlineKeyboardButton(f"🛡 Antivirus ({av_status})", callback_data="founder_antivirus_toggle")
-    btn16 = telebot.types.InlineKeyboardButton("💾 بک‌آپ کامل", callback_data="founder_full_backup")
-    btn17 = telebot.types.InlineKeyboardButton("♻️ بازگردانی از بک‌آپ", callback_data="founder_restore")
-    markup.add(btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8, btn9, btn10, btn11, btn12, btn13, btn14, btn15, btn16, btn17)
+    btn16 = telebot.types.InlineKeyboardButton("🗄 بک‌آپ کامل ZIP", callback_data="founder_zip_backup")
+    markup.add(btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8, btn9, btn10, btn11, btn12, btn13, btn14, btn15, btn16)
     return markup
+
+def show_founder_panel(user_id):
+    bot.send_message(user_id, "👑 پنل مدیریت بنیانگذار:\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=build_founder_markup())
 
 @bot.message_handler(commands=['fpanel'])
 def founder_panel(msg):
@@ -1096,8 +1042,9 @@ def founder_panel(msg):
     if not is_founder(user_id):
         bot.reply_to(msg, "⛔ فقط بنیانگذار دسترسی دارد!")
         return
-    bot.reply_to(msg, "👑 پنل مدیریت بنیانگذار:\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=build_founder_markup())
+    show_founder_panel(user_id)
 
+# ========== پنل سازنده (تابع سازنده مارکاپ + نمایش) ==========
 def build_owner_markup():
     markup = telebot.types.InlineKeyboardMarkup(row_width=2)
     btn1 = telebot.types.InlineKeyboardButton("📰 ارسال خبر", callback_data="owner_news")
@@ -1114,10 +1061,12 @@ def build_owner_markup():
     btn12 = telebot.types.InlineKeyboardButton("🖥️ کنسول", callback_data="owner_console")
     btn13 = telebot.types.InlineKeyboardButton("🎬 مدیریت Media", callback_data="owner_media")
     btn14 = telebot.types.InlineKeyboardButton("📋 لیست کاربران", callback_data="owner_all_users")
-    btn15 = telebot.types.InlineKeyboardButton("💾 بک‌آپ کامل", callback_data="owner_full_backup")
-    btn16 = telebot.types.InlineKeyboardButton("♻️ بازگردانی از بک‌آپ", callback_data="owner_restore")
-    markup.add(btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8, btn9, btn10, btn11, btn12, btn13, btn14, btn15, btn16)
+    btn15 = telebot.types.InlineKeyboardButton("🗄 بک‌آپ کامل ZIP", callback_data="owner_zip_backup")
+    markup.add(btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8, btn9, btn10, btn11, btn12, btn13, btn14, btn15)
     return markup
+
+def show_owner_panel(user_id):
+    bot.send_message(user_id, "👑 پنل مدیریت سازنده:\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=build_owner_markup())
 
 @bot.message_handler(commands=['opanel'])
 def owner_panel(msg):
@@ -1125,7 +1074,7 @@ def owner_panel(msg):
     if not is_owner(user_id):
         bot.reply_to(msg, "⛔ فقط سازنده دسترسی دارد!")
         return
-    bot.reply_to(msg, "👑 پنل مدیریت سازنده:\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=build_owner_markup())
+    show_owner_panel(user_id)
 
 @bot.message_handler(commands=['apanel'])
 def admin_panel(msg):
@@ -1143,12 +1092,8 @@ def admin_panel(msg):
     markup.add(btn1, btn2, btn3)
     bot.reply_to(msg, "⚙️ پنل مدیریت ادمین:\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=markup)
 
-@bot.message_handler(func=lambda m: m.text == "🏠 پنل اصلی")
-def user_panel(msg):
-    user_id = msg.from_user.id
-    if is_banned(user_id):
-        bot.reply_to(msg, "⛔ *** [ Ban.System ] : شما از بات محروم شدید ***")
-        return
+# ========== پنل اصلی کاربران (با دکمه جدید تاریخ و ساعت) ==========
+def show_user_panel(user_id):
     markup = telebot.types.InlineKeyboardMarkup(row_width=2)
     btn1 = telebot.types.InlineKeyboardButton("📰 اخبار", callback_data="user_news")
     btn2 = telebot.types.InlineKeyboardButton("📢 تبلیغات", callback_data="user_ads")
@@ -1160,8 +1105,27 @@ def user_panel(msg):
     btn8 = telebot.types.InlineKeyboardButton("📋 راهنما", callback_data="user_help")
     btn9 = telebot.types.InlineKeyboardButton("🎫 تیکت جدید", callback_data="user_new_ticket")
     btn10 = telebot.types.InlineKeyboardButton("🎬 Media's", callback_data="user_media")
-    markup.add(btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8, btn9, btn10)
-    bot.reply_to(msg, "🏠 پنل اصلی کاربران:\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=markup)
+    btn11 = telebot.types.InlineKeyboardButton("📅 تاریخ و ساعت", callback_data="user_datetime")
+    markup.add(btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8, btn9, btn10, btn11)
+    bot.send_message(user_id, "🏠 پنل اصلی کاربران:\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=markup)
+
+@bot.message_handler(func=lambda m: m.text == "🏠 پنل اصلی")
+def user_panel(msg):
+    user_id = msg.from_user.id
+    if is_banned(user_id):
+        bot.reply_to(msg, "⛔ *** [ Ban.System ] : شما از بات محروم شدید ***")
+        return
+    show_user_panel(user_id)
+
+# ========== منوی بازی‌ها ==========
+def show_games_menu(user_id):
+    markup = telebot.types.InlineKeyboardMarkup(row_width=1)
+    btn1 = telebot.types.InlineKeyboardButton("🪨 سنگ، کاغذ، قیچی", callback_data="game_rps")
+    btn2 = telebot.types.InlineKeyboardButton("❌⭕ Tic Tac Toe", callback_data="game_ttt")
+    btn3 = telebot.types.InlineKeyboardButton("🎲 بازی ۳", callback_data="game_coming_soon")
+    btn4 = telebot.types.InlineKeyboardButton("🏆 بازی ۴", callback_data="game_coming_soon")
+    markup.add(btn1, btn2, btn3, btn4)
+    bot.send_message(user_id, "🎮 لیست بازی‌ها:\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=markup)
 
 @bot.message_handler(func=lambda m: m.text == "🎮 بازی ها")
 def games_menu(msg):
@@ -1169,13 +1133,7 @@ def games_menu(msg):
     if is_banned(user_id):
         bot.reply_to(msg, "⛔ *** [ Ban.System ] : شما از بات محروم شدید ***")
         return
-    markup = telebot.types.InlineKeyboardMarkup(row_width=1)
-    btn1 = telebot.types.InlineKeyboardButton("🪨 سنگ، کاغذ، قیچی", callback_data="game_rps")
-    btn2 = telebot.types.InlineKeyboardButton("❌⭕ Tic Tac Toe", callback_data="game_ttt")
-    btn3 = telebot.types.InlineKeyboardButton("🎲 بازی ۳", callback_data="game_coming_soon")
-    btn4 = telebot.types.InlineKeyboardButton("🏆 بازی ۴", callback_data="game_coming_soon")
-    markup.add(btn1, btn2, btn3, btn4)
-    bot.reply_to(msg, "🎮 لیست بازی‌ها:\nلطفاً یکی از گزینه‌های زیر را انتخاب کنید:", reply_markup=markup)
+    show_games_menu(user_id)
 
 @bot.message_handler(func=lambda m: m.text == "🎫 تیکت جدید")
 def new_ticket(msg):
@@ -1408,7 +1366,7 @@ def handle_callbacks(call):
             bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
             return
         bot.answer_callback_query(call.id, "🔄 در حال آپدیت...")
-        update_bot(call.message)
+        perform_bot_update(user_id)
         return
 
     if data == "founder_botup":
@@ -1416,29 +1374,8 @@ def handle_callbacks(call):
             bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
             return
         bot.answer_callback_query(call.id, "📊 در حال ارسال گزارش به گروه...")
-        botup(call.message)
+        send_botup_report(user_id)
         send_backup_to_group(user_id)
-        send_json_backup_to_group(user_id)
-        return
-
-    if data == "founder_full_backup":
-        if not is_founder(user_id):
-            bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
-            return
-        bot.answer_callback_query(call.id, "💾 در حال ارسال بک‌آپ کامل...")
-        send_backup_to_group(user_id)
-        send_json_backup_to_group(user_id)
-        return
-
-    if data == "founder_restore":
-        if not is_founder(user_id):
-            bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
-            return
-        bot.answer_callback_query(call.id, "♻️ در حال تلاش برای بازگردانی...")
-        restored = try_auto_restore(user_id)
-        if not restored:
-            restore_mode[user_id] = True
-            bot.send_message(user_id, "♻️ بازگردانی خودکار ممکن نشد.\n\n📎 لطفاً آخرین فایل بک‌آپ JSON (که در تاپیک بک‌آپ گروه پین شده) را از گروه به همین چت خصوصی فوروارد کنید تا اطلاعات بازگردانی شود.\n\n❌ برای خروج: /cancel")
         return
 
     if data == "founder_broadcast":
@@ -1542,7 +1479,7 @@ def handle_callbacks(call):
         if not is_founder(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
             return
-        founder_panel(call.message)
+        show_founder_panel(user_id)
         bot.answer_callback_query(call.id)
         return
 
@@ -1558,6 +1495,22 @@ def handle_callbacks(call):
         except:
             pass
         bot.answer_callback_query(call.id, f"🛡 Antivirus اکنون {status_text} است")
+        return
+
+    if data == "founder_zip_backup":
+        if not is_founder(user_id):
+            bot.answer_callback_query(call.id, "⛔ فقط بنیانگذار!")
+            return
+        bot.answer_callback_query(call.id, "⏳ در حال ساخت بک‌آپ...")
+        send_zip_backup(user_id)
+        return
+
+    if data == "owner_zip_backup":
+        if not is_owner(user_id):
+            bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
+            return
+        bot.answer_callback_query(call.id, "⏳ در حال ساخت بک‌آپ...")
+        send_zip_backup(user_id)
         return
 
     if data == "owner_news":
@@ -1726,7 +1679,7 @@ def handle_callbacks(call):
             bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
             return
         bot.answer_callback_query(call.id, "🔄 در حال آپدیت...")
-        update_bot(call.message)
+        perform_bot_update(user_id)
         return
 
     if data == "owner_botup":
@@ -1734,29 +1687,8 @@ def handle_callbacks(call):
             bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
             return
         bot.answer_callback_query(call.id, "📊 در حال ارسال گزارش به گروه...")
-        botup(call.message)
+        send_botup_report(user_id)
         send_backup_to_group(user_id)
-        send_json_backup_to_group(user_id)
-        return
-
-    if data == "owner_full_backup":
-        if not is_owner(user_id):
-            bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
-            return
-        bot.answer_callback_query(call.id, "💾 در حال ارسال بک‌آپ کامل...")
-        send_backup_to_group(user_id)
-        send_json_backup_to_group(user_id)
-        return
-
-    if data == "owner_restore":
-        if not is_owner(user_id):
-            bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
-            return
-        bot.answer_callback_query(call.id, "♻️ در حال تلاش برای بازگردانی...")
-        restored = try_auto_restore(user_id)
-        if not restored:
-            restore_mode[user_id] = True
-            bot.send_message(user_id, "♻️ بازگردانی خودکار ممکن نشد.\n\n📎 لطفاً آخرین فایل بک‌آپ JSON (که در تاپیک بک‌آپ گروه پین شده) را از گروه به همین چت خصوصی فوروارد کنید تا اطلاعات بازگردانی شود.\n\n❌ برای خروج: /cancel")
         return
 
     if data == "owner_broadcast":
@@ -1857,7 +1789,7 @@ def handle_callbacks(call):
         if not is_owner(user_id):
             bot.answer_callback_query(call.id, "⛔ فقط سازنده!")
             return
-        owner_panel(call.message)
+        show_owner_panel(user_id)
         bot.answer_callback_query(call.id)
         return
 
@@ -2017,7 +1949,7 @@ def handle_callbacks(call):
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
             return
-        games_menu(call.message)
+        show_games_menu(user_id)
         bot.answer_callback_query(call.id)
         return
 
@@ -2029,8 +1961,17 @@ def handle_callbacks(call):
         response += "🏠 پنل اصلی: مشاهده همه امکانات\n"
         response += "🎮 بازی ها: بازی سنگ، کاغذ، قیچی و Tic Tac Toe\n"
         response += "🎫 تیکت جدید: ثبت سوال یا مشکل\n"
+        response += "📅 تاریخ و ساعت: نمایش تاریخ و ساعت ایران\n"
         response += "🚪 خروج از چت: خروج از حالت مکالمه\n"
         bot.send_message(user_id, response)
+        bot.answer_callback_query(call.id)
+        return
+
+    if data == "user_datetime":
+        if is_banned(user_id):
+            bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
+            return
+        bot.send_message(user_id, get_iran_datetime_text())
         bot.answer_callback_query(call.id)
         return
 
@@ -2113,7 +2054,7 @@ def handle_callbacks(call):
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
             return
-        user_panel(call.message)
+        show_user_panel(user_id)
         bot.answer_callback_query(call.id)
         return
 
@@ -2162,7 +2103,7 @@ def handle_callbacks(call):
         if is_banned(user_id):
             bot.answer_callback_query(call.id, "⛔ شما محروم هستید")
             return
-        games_menu(call.message)
+        show_games_menu(user_id)
         bot.answer_callback_query(call.id)
         return
 
@@ -2553,11 +2494,8 @@ def cancel_broadcast(msg):
     else:
         bot.reply_to(msg, "✅ شما در حالت ارسال به همه نیستید.")
 
-@bot.message_handler(commands=['botup'])
-def botup(msg):
-    user_id = msg.from_user.id
-    if not is_founder(user_id) and not is_owner(user_id):
-        return
+# ========== گزارش کامل بات (تابع مستقل، هم برای دستور هم برای دکمه) ==========
+def send_botup_report(user_id):
     response = "📋 گزارش کامل اطلاعات بات:\n\n"
     response += "👑 لیست ادمین‌ها:\n"
     if admins:
@@ -2628,18 +2566,15 @@ def botup(msg):
     response += f"  🎵 آهنگ‌ها: {len(media_data['audios'])} عدد\n"
     bot.send_message(user_id, response)
 
-@bot.message_handler(commands=['update'])
-def update_bot(msg):
+@bot.message_handler(commands=['botup'])
+def botup(msg):
     user_id = msg.from_user.id
     if not is_founder(user_id) and not is_owner(user_id):
         return
+    send_botup_report(user_id)
 
-    # تلاش برای بازگردانی خودکار اطلاعات از بک‌آپ گروه
-    restored = try_auto_restore(user_id)
-    if not restored:
-        restore_mode[user_id] = True
-        bot.send_message(user_id, "♻️ بازگردانی خودکار ممکن نشد.\n📎 لطفاً آخرین فایل بک‌آپ JSON را از تاپیک بک‌آپ گروه به این چت خصوصی فوروارد کنید.\n❌ برای خروج: /cancel")
-
+# ========== آپدیت بات (تابع مستقل، هم برای دستور هم برای دکمه) ==========
+def perform_bot_update(user_id):
     all_users = set()
     for user_id_temp in waiting_for_message.keys():
         all_users.add(user_id_temp)
@@ -2670,6 +2605,13 @@ def update_bot(msg):
         bot.send_message(user_id, f"✅ پیام آپدیت به {count} کاربر ارسال شد!")
     except:
         pass
+
+@bot.message_handler(commands=['update'])
+def update_bot(msg):
+    user_id = msg.from_user.id
+    if not is_founder(user_id) and not is_owner(user_id):
+        return
+    perform_bot_update(user_id)
 
 @bot.message_handler(commands=['show_perms'])
 def show_perms(msg):
@@ -2916,6 +2858,7 @@ def cmds(msg):
         response += "📌 /kickadmin [آيدي] : حذف ادمين\n"
         response += "📌 /ban [آيدي] : محروم کردن کاربر\n"
         response += "📌 /unban [آيدي] : رفع محروميت کاربر\n"
+        response += "📌 /zipbackup : ساخت و ارسال بک‌آپ کامل ZIP به گروه (با پین خودکار)\n"
     response += "📌 /ac : ورود/خروج از چت ادمين ها\n"
     response += "📌 /getgroupid : گرفتن آیدی گروه و تاپیک (فقط توی گروه)\n"
     bot.reply_to(msg, response)
@@ -3130,26 +3073,6 @@ def ticket(msg):
 @bot.message_handler(func=lambda m: True, content_types=['text', 'photo', 'video', 'audio', 'document'])
 def handle_messages(msg):
     user_id = msg.from_user.id
-
-    # ========== حالت بازگردانی از فایل بک‌آپ فوروارد‌شده ==========
-    if user_id in restore_mode:
-        if not is_founder(user_id) and not is_owner(user_id):
-            del restore_mode[user_id]
-            return
-        if msg.content_type == 'document':
-            try:
-                file_info = bot.get_file(msg.document.file_id)
-                downloaded = bot.download_file(file_info.file_path)
-                data = json.loads(downloaded.decode('utf-8'))
-                restore_from_backup_dict(data)
-                del restore_mode[user_id]
-                bot.reply_to(msg, "✅ اطلاعات با موفقیت از فایل بک‌آپ بازگردانی شد!\nهمه بخش‌ها (ادمین‌ها، اخبار، تبلیغات، حمایت‌ها، کلن‌ها، تیکت‌ها، کاربران، مدیا، محرومیت‌ها) به‌روزرسانی شدند.")
-            except Exception as e:
-                bot.reply_to(msg, f"❌ خطا در بازگردانی: {e}\nمطمئن شوید فایل صحیح JSON بک‌آپ است.")
-            return
-        else:
-            bot.reply_to(msg, "📎 لطفاً فایل JSON بک‌آپ را فوروارد یا آپلود کنید.\n❌ برای خروج: /cancel")
-            return
 
     if user_id in console_mode:
         step = console_mode[user_id].get('step')
@@ -3458,17 +3381,7 @@ def run_bot():
             print(f"❌ Error: {e}")
             time.sleep(5)
 
-def auto_backup_loop():
-    while True:
-        time.sleep(3600)  # هر ۱ ساعت یک بک‌آپ کامل خودکار
-        try:
-            send_json_backup_to_group()
-        except Exception as e:
-            print(f"❌ Auto backup error: {e}")
-
 if __name__ == "__main__":
     bot_thread = threading.Thread(target=run_bot)
     bot_thread.start()
-    backup_thread = threading.Thread(target=auto_backup_loop, daemon=True)
-    backup_thread.start()
     app.run(host='0.0.0.0', port=8080)
